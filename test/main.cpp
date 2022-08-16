@@ -682,7 +682,7 @@ void draw_lib3d_model(
             lib3d::math::cross3(normal, v0, v1);
             float norm2{ lib3d::math::dot3(normal, normal) };
             lib3d::math::mul3(normal, lib3d::math::invsqrt(norm2));
-            for (int nv{}; nv < f.count; ++nv)
+            for (uint32_t nv{}; nv < f.count; ++nv)
             {
                 float* v{ lib3d_model_vertices[f.index / lib3d_model_vert_stride + nv] };
                 lib3d::math::sub3(v0, v, light_pos_t);
