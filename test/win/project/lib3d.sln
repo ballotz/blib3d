@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32510.428
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lib3d", "lib3d.vcxproj", "{C6701E0A-3A06-43B0-981D-52F9B788D452}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C6701E0A-3A06-43B0-981D-52F9B788D452}.Debug|x64.ActiveCfg = Debug|x64
+		{C6701E0A-3A06-43B0-981D-52F9B788D452}.Debug|x64.Build.0 = Debug|x64
+		{C6701E0A-3A06-43B0-981D-52F9B788D452}.Debug|x86.ActiveCfg = Debug|Win32
+		{C6701E0A-3A06-43B0-981D-52F9B788D452}.Debug|x86.Build.0 = Debug|Win32
+		{C6701E0A-3A06-43B0-981D-52F9B788D452}.Release|x64.ActiveCfg = Release|x64
+		{C6701E0A-3A06-43B0-981D-52F9B788D452}.Release|x64.Build.0 = Release|x64
+		{C6701E0A-3A06-43B0-981D-52F9B788D452}.Release|x86.ActiveCfg = Release|Win32
+		{C6701E0A-3A06-43B0-981D-52F9B788D452}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DBBBFCBC-2C93-4E95-81B5-C2815B4699E0}
+	EndGlobalSection
+EndGlobal
