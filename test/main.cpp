@@ -305,8 +305,8 @@ void draw_test_rect(uint32_t* frame, float* depth, int32_t width, int32_t height
         {  1 * d, -1 * d, 2 * d, 1,   0, 255, 255,   0, 255, 255,  0 },
         {  1 * d,  1 * d, 3 * d, 1,   0,   0, 255, 255,  64,  64, 64 },
     };
-    float ws{ std::min(width, height) / (float)height };
-    float hs{ std::min(width, height) / (float)width };
+    float ws{ lib3d::math::min(width, height) / (float)height };
+    float hs{ lib3d::math::min(width, height) / (float)width };
     for (int n{}; n < num_vertices; ++n)
     {
         float x{ vertices[n][0] * (width / (ws * 2.f)) + vertices[n][2] * (width / 2.f) };
@@ -359,25 +359,41 @@ void draw_test_rect(uint32_t* frame, float* depth, int32_t width, int32_t height
     lib3d::raster::scan_faces(&cfg);
 }
 
-//alignas(16) uint32_t correct_gamma_out_table[256];
-//
-//void correct_gamma_out_build_table()
-//{
-//    for (int n{}; n < 256; ++n)
-//        correct_gamma_out_table[n] = (uint32_t)(std::pow((float)n / 0xFF, 2.f) * 0xFF + 0.5f);
-//}
+alignas(16) uint32_t correct_gamma_in_table[256];
+alignas(16) uint32_t correct_gamma_out_table[256];
+
+void correct_gamma_in_build_table()
+{
+    for (int n{}; n < 256; ++n)
+        correct_gamma_in_table[n] = (uint32_t)(std::pow((float)n / 0xFF, 2.f) * 0xFF + 0.5f);
+}
+
+void correct_gamma_out_build_table()
+{
+    for (int n{}; n < 256; ++n)
+        correct_gamma_out_table[n] = (uint32_t)(std::pow((float)n / 0xFF, 0.5f) * 0xFF + 0.5f);
+}
+
+inline uint32_t correct_gamma_in(uint32_t v)
+{
+    return
+        0xFF000000u +
+        (correct_gamma_in_table[(v & 0x00FF0000) >> 16u] << 16u) +
+        (correct_gamma_in_table[(v & 0x0000FF00) >> 8u] << 8u) +
+        (correct_gamma_in_table[(v & 0x000000FF)]);
+}
 
 inline uint32_t correct_gamma_out(uint32_t v)
 {
-    //return
-    //    0xFF000000u +
-    //    (correct_gamma_out_table[(v & 0x00FF0000) >> 16u] << 16u) +
-    //    (correct_gamma_out_table[(v & 0x0000FF00) >>  8u] <<  8u) +
-    //    (correct_gamma_out_table[(v & 0x000000FF)       ]       );
-    uint32_t r{ (v & 0x00FF0000) >> 16u };
-    uint32_t g{ (v & 0x0000FF00) >>  8u };
-    uint32_t b{ (v & 0x000000FF)        };
-    return 0xFF000000u + (((r * r) >> 8u) << 16u) + ((g * g) & 0x0000FF00u) + ((b * b) >> 8u);
+    return
+        0xFF000000u +
+        (correct_gamma_out_table[(v & 0x00FF0000) >> 16u] << 16u) +
+        (correct_gamma_out_table[(v & 0x0000FF00) >>  8u] <<  8u) +
+        (correct_gamma_out_table[(v & 0x000000FF)       ]       );
+    //uint32_t r{ (v & 0x00FF0000) >> 16u };
+    //uint32_t g{ (v & 0x0000FF00) >>  8u };
+    //uint32_t b{ (v & 0x000000FF)        };
+    //return 0xFF000000u + (((r * r) >> 8u) << 16u) + ((g * g) & 0x0000FF00u) + ((b * b) >> 8u);
 }
 
 void correct_gamma_out(uint32_t* frame, int32_t width, int32_t height, int32_t stride)
@@ -659,50 +675,60 @@ void draw_lib3d_model(
 
     // light
     {
-        lib3d::math::vec4 light_pos{ 0, -8, -20, 1 };
-        lib3d::math::vec3 light_intensity{ 200, 200, 0 };
+        lib3d::math::vec4 light_pos{ 0, -8, 4, 1 };
+        lib3d::math::vec3 light_intensity{ 255, 183, 76 };
 
         lib3d::math::vec4 light_pos_t;
-        //lib3d::math::mat4x4 model_mat_t;
-        //lib3d::math::trn4x4(model_mat_t, model_mat);
-        //lib3d::math::mul4x4t_4(light_pos_t, model_mat_t, light_pos);
-        lib3d::math::mul4x4t_4(light_pos_t, model_mat, light_pos);
+        {
+            lib3d::math::mat3x3 r;
+            lib3d::math::vec3 t;
+            lib3d::math::trn3x3(r, model_rotation);
+            lib3d::math::mul3x3_3(t, r, model_origin);
+            lib3d::math::mat4x4 m =
+            {
+                r[0], r[1], r[2], -t[0],
+                r[3], r[4], r[5], -t[1],
+                r[6], r[7], r[8], -t[2],
+                 0.f,  0.f,  0.f,   1.f
+            };
+            lib3d::math::mat4x4 mt;
+            lib3d::math::trn4x4(mt, m);
+            lib3d::math::mul4x4t_4(light_pos_t, mt, light_pos);
+            lib3d::math::mul4(light_pos_t, 1.f / light_pos_t[3]);
+        }
+
+        //lib3d::math::vec4 light_pos_t;
+        ////lib3d::math::mat4x4 model_mat_t;
+        ////lib3d::math::trn4x4(model_mat_t, model_mat);
+        ////lib3d::math::mul4x4t_4(light_pos_t, model_mat_t, light_pos);
+        //lib3d::math::mul4x4t_4(light_pos_t, model_mat, light_pos);
+        //lib3d::math::mul4(light_pos_t, 1.f / light_pos_t[3]);
 
         for (int nf{}; nf < lib3d_model_num_face; ++nf)
         {
             lib3d::raster::face f{ lib3d_model_faces[nf] };
-            lib3d::math::vec3 v0;
-            lib3d::math::vec3 v1;
+            uint32_t vert_index{ f.index / lib3d_model_vert_stride };
+            lib3d::math::vec3 v0, v1;
             lib3d::math::vec3 normal;
-            float* vert0{ lib3d_model_vertices[f.index / lib3d_model_vert_stride + 0] };
-            float* vert1{ lib3d_model_vertices[f.index / lib3d_model_vert_stride + 1] };
-            float* vert2{ lib3d_model_vertices[f.index / lib3d_model_vert_stride + 2] };
-            lib3d::math::sub3(v0, vert2, vert0);
-            lib3d::math::sub3(v1, vert1, vert0);
+            lib3d::math::sub3(v0, lib3d_model_vertices[vert_index + 1], lib3d_model_vertices[vert_index + 0]);
+            lib3d::math::sub3(v1, lib3d_model_vertices[vert_index + 2], lib3d_model_vertices[vert_index + 0]);
             lib3d::math::cross3(normal, v0, v1);
-            float norm2{ lib3d::math::dot3(normal, normal) };
-            lib3d::math::mul3(normal, lib3d::math::invsqrt(norm2));
+            lib3d::math::mul3(normal, lib3d::math::invsqrt(lib3d::math::dot3(normal, normal)));
             for (uint32_t nv{}; nv < f.count; ++nv)
             {
-                float* v{ lib3d_model_vertices[f.index / lib3d_model_vert_stride + nv] };
-                lib3d::math::sub3(v0, v, light_pos_t);
+                float* v{ lib3d_model_vertices[vert_index + nv] };
+                lib3d::math::sub3(v0, light_pos_t, v);
                 float dist2{ lib3d::math::dot3(v0, v0) };
-                float angle{ lib3d::math::dot3(v0, normal) };
-                if (angle < 0)
-                    angle = 0;
-                angle *= lib3d::math::invsqrt(dist2);
-                float scale{ angle / dist2 };
+                float scale{ lib3d::math::dot3(v0, normal) };
+                if (scale < 0)
+                    scale = 0;
+                scale *= lib3d::math::invsqrt(dist2);
+                scale /= dist2;
                 lib3d::math::vec3 light;
                 lib3d::math::mul3(light, light_intensity, scale);
                 light[0] *= 255;
-                if (light[0] > 255)
-                    light[0] = 255;
                 light[1] *= 255;
-                if (light[1] > 255)
-                    light[1] = 255;
                 light[2] *= 255;
-                if (light[2] > 255)
-                    light[2] = 255;
                 lib3d::math::copy3(v + 4, light);
             }
         }
@@ -715,8 +741,8 @@ void draw_lib3d_model(
     lib3d::math::make_rotation(view_rotation, view_angle);
     lib3d::math::mat4x4 view_proj{};
     {
-        float wspan = std::max(width, height) / (float)height;
-        float hspan = std::max(width, height) / (float)width;
+        float wspan = lib3d::math::max(width, height) / (float)height;
+        float hspan = lib3d::math::max(width, height) / (float)width;
         view_proj[0] = 1.f / wspan;
         view_proj[5] = 1.f / hspan;
         view_proj[11] = -1.f;
@@ -820,7 +846,7 @@ int SDL_main(int argc, char* argv[])
     float fps{};
     float fps_count{};
 
-    //correct_gamma_out_build_table();
+    correct_gamma_out_build_table();
     make_lib3d_model(1.f, 2.f);
     float lib3d_model_angle{ -3.1416f / 2 };
     float lib3d_model_angle_speed{ 3.1416f / 10.f };
