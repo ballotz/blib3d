@@ -297,6 +297,8 @@ void draw_test_rect(uint32_t* frame, float* depth, int32_t width, int32_t height
     constexpr int num_vertices{ 4 };
     constexpr int num_components{ 12 }; // x y z w r g b a sr sg sb x
 
+    uint32_t lightmap[4]{ 0xFFFF0000u, 0xFF0000FFu, 0xFFFFFF00u, 0xFF00FFFFu };
+
     float d{ 20 };
     alignas(16) float vertices[num_vertices][num_components] =
     {
@@ -305,6 +307,16 @@ void draw_test_rect(uint32_t* frame, float* depth, int32_t width, int32_t height
         {  1 * d, -1 * d, 2 * d, 1,   0, 255, 255,   0, 255, 255,  0 },
         {  1 * d,  1 * d, 3 * d, 1,   0,   0, 255, 255,  64,  64, 64 },
     };
+#if 0
+    vertices[0][4] = 0;
+    vertices[0][5] = 0;
+    vertices[1][4] = 0;
+    vertices[1][5] = 1;
+    vertices[2][4] = 1;
+    vertices[2][5] = 1;
+    vertices[3][4] = 1;
+    vertices[3][5] = 0;
+#endif
     float ws{ lib3d::math::min(width, height) / (float)height };
     float hs{ lib3d::math::min(width, height) / (float)width };
     for (int n{}; n < num_vertices; ++n)
@@ -327,19 +339,23 @@ void draw_test_rect(uint32_t* frame, float* depth, int32_t width, int32_t height
 
     lib3d::raster::config cfg;
 
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_NONE;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_NONE;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_ADD;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_MUL;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_NONE;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ADD;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_MUL;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_NONE;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_ADD;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_MUL;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_ALPHA;
+    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_NONE;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_ADD;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_MUL;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_NONE;
+    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ADD;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_MUL;
     cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ALPHA;
@@ -355,6 +371,10 @@ void draw_test_rect(uint32_t* frame, float* depth, int32_t width, int32_t height
     cfg.frame_buffer = (lib3d::raster::ARGB*)frame;
 
     cfg.fill_color = { 128, 128, 128, 64 };
+
+    cfg.lightmap_width = 2;
+    cfg.lightmap_height = 2;
+    cfg.lightmap = (lib3d::raster::ARGB*)lightmap;
 
     lib3d::raster::scan_faces(&cfg);
 }
@@ -475,6 +495,11 @@ void make_lib3d_model(float step, float depth)
                     lib3d_model_faces[lib3d_model_num_face].count = 4;
                     lib3d_model_num_face++;
 
+                    lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                    lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
+                    lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
+                    lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
+                    lib3d_model_num_vert++;
                     lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
                     lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
                     lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
@@ -487,11 +512,6 @@ void make_lib3d_model(float step, float depth)
                     lib3d_model_num_vert++;
                     lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
                     lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                    lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                    lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                    lib3d_model_num_vert++;
-                    lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                    lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
                     lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
                     lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
                     lib3d_model_num_vert++;
@@ -541,21 +561,21 @@ void make_lib3d_model(float step, float depth)
 
                         lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
                         lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
                         lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
                         lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
                         lib3d_model_num_vert++;
                         lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
                         lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
+                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
+                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
+                        lib3d_model_num_vert++;
+                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
+                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
+                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
+                        lib3d_model_num_vert++;
+                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
+                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
                         lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
                         lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
                         lib3d_model_num_vert++;
@@ -597,20 +617,20 @@ void make_lib3d_model(float step, float depth)
 
                         lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
                         lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
+                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
+                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
+                        lib3d_model_num_vert++;
+                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
+                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
+                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
+                        lib3d_model_num_vert++;
+                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
                         lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
                         lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
                         lib3d_model_num_vert++;
                         lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
                         lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
                         lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
                         lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
@@ -651,6 +671,7 @@ void make_lib3d_model(float step, float depth)
 }
 
 float lib3d_model_vertices_transformed[4096][lib3d_model_vert_stride];
+lib3d::raster::ARGB lib3d_model_lightmap[1024][4];
 
 void draw_lib3d_model(
     uint32_t* frame_buffer,
@@ -697,13 +718,6 @@ void draw_lib3d_model(
             lib3d::math::mul4(light_pos_t, 1.f / light_pos_t[3]);
         }
 
-        //lib3d::math::vec4 light_pos_t;
-        ////lib3d::math::mat4x4 model_mat_t;
-        ////lib3d::math::trn4x4(model_mat_t, model_mat);
-        ////lib3d::math::mul4x4t_4(light_pos_t, model_mat_t, light_pos);
-        //lib3d::math::mul4x4t_4(light_pos_t, model_mat, light_pos);
-        //lib3d::math::mul4(light_pos_t, 1.f / light_pos_t[3]);
-
         for (int nf{}; nf < lib3d_model_num_face; ++nf)
         {
             lib3d::raster::face f{ lib3d_model_faces[nf] };
@@ -714,6 +728,7 @@ void draw_lib3d_model(
             lib3d::math::sub3(v1, lib3d_model_vertices[vert_index + 2], lib3d_model_vertices[vert_index + 0]);
             lib3d::math::cross3(normal, v0, v1);
             lib3d::math::mul3(normal, lib3d::math::invsqrt(lib3d::math::dot3(normal, normal)));
+#if 0
             for (uint32_t nv{}; nv < f.count; ++nv)
             {
                 float* v{ lib3d_model_vertices[vert_index + nv] };
@@ -732,6 +747,62 @@ void draw_lib3d_model(
                 lib3d::math::copy3(v + 4, light);
             }
         }
+#else
+            for (uint32_t nv{}; nv < f.count; ++nv)
+            {
+                float* v{ lib3d_model_vertices[vert_index + nv] };
+                lib3d::math::sub3(v0, light_pos_t, v);
+                float dist2{ lib3d::math::dot3(v0, v0) };
+                float scale{ lib3d::math::dot3(v0, normal) };
+                if (scale < 0)
+                    scale = 0;
+                scale *= lib3d::math::invsqrt(dist2);
+                scale /= dist2;
+                lib3d::math::vec3 light;
+                lib3d::math::mul3(light, light_intensity, scale);
+                light[0] *= 255;
+                light[1] *= 255;
+                light[2] *= 255;
+                if (light[0] > 255)
+                    light[0] = 255;
+                if (light[1] > 255)
+                    light[1] = 255;
+                if (light[2] > 255)
+                    light[2] = 255;
+                switch (nv)
+                {
+                case 3:
+                    lib3d_model_lightmap[nf][0].r = (uint8_t)light[0];
+                    lib3d_model_lightmap[nf][0].g = (uint8_t)light[1];
+                    lib3d_model_lightmap[nf][0].b = (uint8_t)light[2];
+                    v[4] =          0.f;
+                    v[5] = nf * 2 + 0.f;
+                    break;
+                case 2:
+                    lib3d_model_lightmap[nf][1].r = (uint8_t)light[0];
+                    lib3d_model_lightmap[nf][1].g = (uint8_t)light[1];
+                    lib3d_model_lightmap[nf][1].b = (uint8_t)light[2];
+                    v[4] =          1.f;
+                    v[5] = nf * 2 + 0.f;
+                    break;
+                case 0:
+                    lib3d_model_lightmap[nf][2].r = (uint8_t)light[0];
+                    lib3d_model_lightmap[nf][2].g = (uint8_t)light[1];
+                    lib3d_model_lightmap[nf][2].b = (uint8_t)light[2];
+                    v[4] =          0.f;
+                    v[5] = nf * 2 + 1.f;
+                    break;
+                case 1:
+                    lib3d_model_lightmap[nf][3].r = (uint8_t)light[0];
+                    lib3d_model_lightmap[nf][3].g = (uint8_t)light[1];
+                    lib3d_model_lightmap[nf][3].b = (uint8_t)light[2];
+                    v[4] =          1.f;
+                    v[5] = nf * 2 + 1.f;
+                    break;
+                }
+            }
+        }
+#endif
     }
 
     lib3d::math::vec3 view_origin{ 0, 0, 0 };
@@ -798,19 +869,23 @@ void draw_lib3d_model(
 
     lib3d::raster::config cfg;
 
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_NONE;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_NONE;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_ADD;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_MUL;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_ALPHA;
-    cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_NONE;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ADD;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_MUL;
     //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_NONE;
+    cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_ADD;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_MUL;
+    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_ALPHA;
+    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_NONE;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_ADD;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_MUL;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_NONE | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_NONE;
+    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ADD;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_MUL;
     //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ALPHA;
@@ -826,6 +901,10 @@ void draw_lib3d_model(
     cfg.frame_buffer = (lib3d::raster::ARGB*)frame_buffer;
 
     cfg.fill_color = { 255, 255, 255, 128 };
+
+    cfg.lightmap_width = 2;
+    cfg.lightmap_height = 2 * 1024;
+    cfg.lightmap = (lib3d::raster::ARGB*)lib3d_model_lightmap;
 
     lib3d::raster::scan_faces(&cfg);
 }

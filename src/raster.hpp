@@ -41,32 +41,26 @@ struct ARGB
 
 enum
 {
-    FILL_NONE    = 0b0001,
+    FILL_DEPTH   = 0b0001,
     FILL_SOLID   = 0b0010,
     FILL_VERTEX  = 0b0100,
     FILL_TEXTURE = 0b1000,
 
-    SHADE_NONE    = 0b0001 << 4,
-    SHADE_SOLID   = 0b0010 << 4,
-    SHADE_VERTEX  = 0b0100 << 4,
-    SHADE_TEXTURE = 0b1000 << 4,
+    SHADE_NONE     = 0b0001 << 4,
+    SHADE_SOLID    = 0b0010 << 4,
+    SHADE_VERTEX   = 0b0100 << 4,
+    SHADE_LIGHTMAP = 0b1000 << 4,
 
-    BLEND_NONE  = 0b0000 << 8,
     BLEND_MASK  = 0b0001 << 8,
     BLEND_ADD   = 0b0010 << 8,
     BLEND_MUL   = 0b0100 << 8,
     BLEND_ALPHA = 0b1000 << 8,
 
-    MIP_FACE  = 0b0 << 12,
-    MIP_PIXEL = 0b1 << 12,
+    MIP_FACE    = 0b01 << 12,
+    MIP_SUBSPAN = 0b10 << 12,
 
-    FILL_FILTER_NEAR   = 0b00 << 13,
-    FILL_FILTER_DITHER = 0b01 << 13,
-    FILL_FILTER_LINEAR = 0b10 << 13,
-
-    SHADE_FILTER_NEAR   = 0b00 << 15,
-    SHADE_FILTER_DITHER = 0b01 << 15,
-    SHADE_FILTER_LINEAR = 0b10 << 15,
+    FILL_FILTER_DITHER = 0b01 << 14,
+    FILL_FILTER_LINEAR = 0b10 << 14,
 };
 
 struct config
@@ -85,6 +79,10 @@ struct config
     ARGB* frame_buffer;
 
     ARGB fill_color;
+
+    int32_t lightmap_width;
+    int32_t lightmap_height;
+    ARGB* lightmap;
 };
 
 void scan_faces(const config* c);

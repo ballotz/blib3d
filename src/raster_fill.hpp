@@ -68,4 +68,55 @@ struct blend_alpha
     }
 };
 
+force_inline uint32_t bilinear(
+    uint32_t v0, uint32_t v1,
+    uint32_t v2, uint32_t v3,
+    uint32_t a0,
+    uint32_t a1)
+{
+    uint32_t w3{ a0 * a1 >> 8u };
+    uint32_t w2{ a1 - w3 };
+    uint32_t w1{ a0 - w3 };
+    uint32_t w0{ 0x100u - a0 - w2 };
+    uint32_t r0
+    {
+        (v0 & 0x00FF00FFu) * w0 +
+        (v1 & 0x00FF00FFu) * w1 +
+        (v2 & 0x00FF00FFu) * w2 +
+        (v3 & 0x00FF00FFu) * w3
+    };
+    r0 >>= 8u;
+    v0 >>= 8u;
+    v1 >>= 8u;
+    v2 >>= 8u;
+    v3 >>= 8u;
+    uint32_t r1
+    {
+        (v0 & 0x00FF00FFu) * w0 +
+        (v1 & 0x00FF00FFu) * w1 +
+        (v2 & 0x00FF00FFu) * w2 +
+        (v3 & 0x00FF00FFu) * w3
+    };
+    return (r0 & 0x00FF00FFu) + (r1 & 0xFF00FF00u);
+}
+
+force_inline uint32_t sample_bilinear(int32_t u, int32_t v, int32_t vshift, uint32_t* pt)
+{
+    int32_t ua{ (u >> 8) & 0xFF };
+    int32_t va{ (v >> 8) & 0xFF };
+    int32_t u0{ u >> 16 };
+    int32_t u1{ (u + 0xFFFF) >> 16 };
+    int32_t v0{ v >> 16 };
+    int32_t v1{ (v + 0xFFFF) >> 16 };
+    v0 <<= vshift;
+    v1 <<= vshift;
+    return bilinear(
+        pt[u0 + v0],
+        pt[u1 + v0],
+        pt[u0 + v1],
+        pt[u1 + v1],
+        ua,
+        va);
+}
+
 } // namespace lib3d::raster
