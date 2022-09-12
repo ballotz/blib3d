@@ -10,11 +10,55 @@ SDL_Renderer* renderer{};
 SDL_Texture* frame_texture{};
 float* depth_buffer{};
 
-int init(int width, int height)
+int init(int& width, int& height)
 {
     // attempt to initialize SDL
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
         return 1; // SDL init fail
+
+    SDL_DisplayMode mode;
+    if (SDL_GetDesktopDisplayMode(0, &mode) != 0)
+        return 1;
+    
+    //enum
+    //{
+    //    ratio_5_4,
+    //    ratio_4_3,
+    //    ratio_3_2,
+    //    ratio_16_10,
+    //    ratio_16_9,
+    //    ratio_unknown
+    //};
+    //int ratio{ ratio_unknown };
+    //if (mode.h * 5 == mode.w * 4)
+    //    ratio = ratio_5_4;
+    //else if (mode.h * 4 == mode.w * 3)
+    //    ratio = ratio_4_3;
+    //else if (mode.h * 3 == mode.w * 2)
+    //    ratio = ratio_3_2;
+    //else if (mode.h * 16 == mode.w * 10)
+    //    ratio = ratio_16_10;
+    //else if (mode.h * 16 == mode.w * 9)
+    //    ratio = ratio_16_9;
+
+    //if (ratio == ratio_4_3)
+    //{
+    //    width = 640;
+    //    height = 480;
+    //}
+    //else if (ratio == ratio_3_2)
+    //{
+    //    width = 720;
+    //    height = 480;
+    //}
+    //else if (ratio == ratio_16_9)
+    //{
+    //    width = 960;
+    //    height = 540;
+    //}
+
+    width = mode.w / 2;
+    height = mode.h / 2;
 
     // init the window
     window = SDL_CreateWindow("lib3d test",
@@ -22,7 +66,8 @@ int init(int width, int height)
         SDL_WINDOWPOS_CENTERED,
         width,
         height,
-        SDL_WINDOW_SHOWN
+        //SDL_WINDOW_SHOWN
+        SDL_WINDOW_FULLSCREEN_DESKTOP
         //SDL_WINDOW_FULLSCREEN
     );
     if (window == 0)
@@ -50,11 +95,15 @@ int init(int width, int height)
     SDL_UnlockTexture(frame_texture);
     depth_buffer = new float[width * (pitch / sizeof(uint32_t))];
 
+    SDL_ShowCursor(SDL_DISABLE);
+
     return 0;
 }
 
 void deinit()
 {
+    SDL_ShowCursor(SDL_ENABLE);
+
     // clean up SDL
     delete[] depth_buffer;
     SDL_DestroyWindow(window);
@@ -911,14 +960,12 @@ void draw_lib3d_model(
 
 //------------------------------------------------------------------------------
 
-#define SCREEN_WIDTH  720
-#define SCREEN_HEIGHT 480
-//#define SCREEN_WIDTH  (2 * 1280)
-//#define SCREEN_HEIGHT (2 *  720)
-
 int SDL_main(int argc, char* argv[])
 {
-    if (init(SCREEN_WIDTH, SCREEN_HEIGHT) != 0)
+    int screen_width{ 720 };
+    int screen_height{ 480 };
+
+    if (init(screen_width, screen_height) != 0)
         return 1;
 
     lib3d::timer::interval interval;
@@ -956,8 +1003,8 @@ int SDL_main(int argc, char* argv[])
             {
                 draw_rect_type rect;
                 rect.data = (uint32_t*)pixels;
-                rect.height = SCREEN_HEIGHT;
-                rect.width = SCREEN_WIDTH;
+                rect.height = screen_height;
+                rect.width = screen_width;
                 rect.stride = pitch / sizeof(uint32_t);
                 draw_fill(&rect, 0xFFC0C0C0);
 
@@ -965,12 +1012,12 @@ int SDL_main(int argc, char* argv[])
                     for (int x{}; x < rect.width; ++x)
                         depth_buffer[x + y * rect.stride] = 0.f;
 
-                draw_test_rect((uint32_t*)pixels, depth_buffer, SCREEN_WIDTH, SCREEN_HEIGHT, pitch / sizeof(uint32_t));
+                draw_test_rect((uint32_t*)pixels, depth_buffer, screen_width, screen_height, pitch / sizeof(uint32_t));
 
-                draw_lib3d_model((uint32_t*)pixels, depth_buffer, SCREEN_WIDTH, SCREEN_HEIGHT, pitch / sizeof(uint32_t), lib3d_model_angle);
+                draw_lib3d_model((uint32_t*)pixels, depth_buffer, screen_width, screen_height, pitch / sizeof(uint32_t), lib3d_model_angle);
                 lib3d_model_angle += lib3d_model_angle_speed * interval.get_s();
 
-                correct_gamma_out((uint32_t*)pixels, SCREEN_WIDTH, SCREEN_HEIGHT, pitch / sizeof(uint32_t));
+                correct_gamma_out((uint32_t*)pixels, screen_width, screen_height, pitch / sizeof(uint32_t));
 
                 char string[128];
                 if (interval.get_s() != 0)
@@ -979,7 +1026,7 @@ int SDL_main(int argc, char* argv[])
                     fps = (fps * fps_count + new_fps) / (fps_count + 1);
                     fps_count++;
                 }
-                snprintf(string, sizeof(string), "FPS %i", (int)fps);
+                snprintf(string, sizeof(string), "%ix%i\nFPS %i", screen_width, screen_height, (int)fps);
 
                 draw_string(&rect, 0, 0, string, 0xFFFFFFFF);
             }

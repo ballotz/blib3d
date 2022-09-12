@@ -1,6 +1,7 @@
 #include "raster.hpp"
 #include "raster_interp.hpp"
 #include "raster_fill.hpp"
+//#include <cassert>
 
 namespace lib3d::raster
 {
@@ -443,8 +444,8 @@ struct raster_solid_shade_lightmap : public abstract_raster
         fill_color[1] = (uint32_t)c->fill_color.r;
         fill_color[2] = (uint32_t)c->fill_color.g;
         fill_color[3] = (uint32_t)c->fill_color.b;
-        umax = (c->lightmap_width << 16) - 1;
-        vmax = (c->lightmap_height << 16) - 1;
+        umax = (c->lightmap_width - 1) << 16;
+        vmax = (c->lightmap_height - 1) << 16;
         vshift = math::log2(c->lightmap_width);
         lightmap = (uint32_t*)(c->lightmap);
     }
