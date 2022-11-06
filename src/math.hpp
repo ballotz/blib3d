@@ -175,8 +175,24 @@ inline void copy3(vec3 out, const vec3 in)
     out[2] = in[2];
 }
 
+inline void copy4(vec3 out, const vec3 in)
+{
+#if defined(ARCH_INTEL) && defined(USE_SIMD)
+    _mm_storeu_ps(out, _mm_loadu_ps(in));
+#else
+    out[0] = in[0];
+    out[1] = in[1];
+    out[2] = in[2];
+    out[3] = in[3];
+#endif
+}
+
 inline void copy3x3(mat3x3 out, const mat3x3 in)
 {
+#if defined(ARCH_INTEL) && defined(USE_SIMD)
+    _mm_storeu_ps(out + 0, _mm_loadu_ps(in + 0));
+    _mm_storeu_ps(out + 4, _mm_loadu_ps(in + 4));
+#else
     out[0] = in[0];
     out[1] = in[1];
     out[2] = in[2];
@@ -185,11 +201,18 @@ inline void copy3x3(mat3x3 out, const mat3x3 in)
     out[5] = in[5];
     out[6] = in[6];
     out[7] = in[7];
+#endif
     out[8] = in[8];
 }
 
 inline void copy4x4(mat4x4 out, const mat4x4 in)
 {
+#if defined(ARCH_INTEL) && defined(USE_SIMD)
+    _mm_storeu_ps(out +  0, _mm_loadu_ps(in +  0));
+    _mm_storeu_ps(out +  4, _mm_loadu_ps(in +  4));
+    _mm_storeu_ps(out +  8, _mm_loadu_ps(in +  8));
+    _mm_storeu_ps(out + 12, _mm_loadu_ps(in + 12));
+#else
     out[ 0] = in[ 0];
     out[ 1] = in[ 1];
     out[ 2] = in[ 2];
@@ -206,6 +229,7 @@ inline void copy4x4(mat4x4 out, const mat4x4 in)
     out[13] = in[13];
     out[14] = in[14];
     out[15] = in[15];
+#endif
 }
 
 // add
@@ -235,12 +259,16 @@ inline void mul3(vec3 inout, const float a)
     inout[2] *= a;
 }
 
-inline void mul4(vec3 inout, const float a)
+inline void mul4(vec4 inout, const float a)
 {
+#if defined(ARCH_INTEL) && defined(USE_SIMD)
+    _mm_storeu_ps(inout, _mm_mul_ps(_mm_loadu_ps(inout), _mm_load1_ps(&a)));
+#else
     inout[0] *= a;
     inout[1] *= a;
     inout[2] *= a;
     inout[3] *= a;
+#endif
 }
 
 inline void mul3(vec3 out, const vec3 a, const float b)
@@ -255,6 +283,13 @@ inline void mul3x3_3(vec3 out, const mat3x3 a, const vec3 b)
     out[0] = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     out[1] = a[3] * b[0] + a[4] * b[1] + a[5] * b[2];
     out[2] = a[6] * b[0] + a[7] * b[1] + a[8] * b[2];
+}
+
+inline void mul3x3t_3(vec3 out, const mat3x3 a, const vec3 b)
+{
+    out[0] = a[0] * b[0] + a[3] * b[1] + a[6] * b[2];
+    out[1] = a[1] * b[0] + a[4] * b[1] + a[7] * b[2];
+    out[2] = a[2] * b[0] + a[5] * b[1] + a[8] * b[2];
 }
 
 inline void mul3x3_3x3(mat3x3 out, const mat3x3 a, const mat3x3 b)

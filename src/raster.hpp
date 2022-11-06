@@ -6,26 +6,14 @@ namespace lib3d::raster
 
 struct face
 {
-    uint32_t index; // index of face begin in vertex data array
-    uint32_t count; // number of vertices
+    uint32_t index; // vertex index
+    uint32_t count; // vertex count
 };
 
 //------------------------------------------------------------------------------
 
-force_inline int32_t real_to_raster(float v)
-{
-    return math::ceil(v - 0.5f);
-}
-
-force_inline float raster_to_real(int32_t v)
-{
-    return (float)v + 0.5f;
-}
-
-//------------------------------------------------------------------------------
-
 static constexpr uint32_t num_max_vertices{ 12 };
-static constexpr uint32_t num_max_attributes{ 10 };
+static constexpr uint32_t num_max_attributes{ 9 }; // [x y] z w cr cg cb ca sr sg sb
 
 //------------------------------------------------------------------------------
 
@@ -41,26 +29,35 @@ struct ARGB
 
 enum
 {
-    FILL_DEPTH   = 0b0001,
-    FILL_SOLID   = 0b0010,
-    FILL_VERTEX  = 0b0100,
-    FILL_TEXTURE = 0b1000,
+    FILL_SHIFT    = 0,
+    FILL_BIT_MASK = 0b000000000111,
+    FILL_DEPTH    = 1,
+    FILL_SOLID    = 2,
+    FILL_VERTEX   = 3,
+    FILL_TEXTURE  = 4,
 
-    SHADE_NONE     = 0b0001 << 4,
-    SHADE_SOLID    = 0b0010 << 4,
-    SHADE_VERTEX   = 0b0100 << 4,
-    SHADE_LIGHTMAP = 0b1000 << 4,
+    SHADE_SHIFT    = 3,
+    SHADE_BIT_MASK = 0b000000011000,
+    SHADE_SOLID    = 1 << SHADE_SHIFT,
+    SHADE_VERTEX   = 2 << SHADE_SHIFT,
+    SHADE_LIGHTMAP = 3 << SHADE_SHIFT,
 
-    BLEND_MASK  = 0b0001 << 8,
-    BLEND_ADD   = 0b0010 << 8,
-    BLEND_MUL   = 0b0100 << 8,
-    BLEND_ALPHA = 0b1000 << 8,
+    BLEND_SHIFT    = 5,
+    BLEND_BIT_MASK = 0b000011100000,
+    BLEND_MASK     = 1 << BLEND_SHIFT,
+    BLEND_ADD      = 2 << BLEND_SHIFT,
+    BLEND_MUL      = 3 << BLEND_SHIFT,
+    BLEND_ALPHA    = 4 << BLEND_SHIFT,
 
-    MIP_FACE    = 0b01 << 12,
-    MIP_SUBSPAN = 0b10 << 12,
+    MIP_SHIFT    = 8,
+    MIP_BIT_MASK = 0b001100000000,
+    MIP_FACE     = 1 << MIP_SHIFT,
+    MIP_SUBSPAN  = 2 << MIP_SHIFT,
 
-    FILL_FILTER_DITHER = 0b01 << 14,
-    FILL_FILTER_LINEAR = 0b10 << 14,
+    FILL_FILTER_SHIFT    = 10,
+    FILL_FILTER_BIT_MASK = 0b110000000000,
+    FILL_FILTER_DITHER   = 1 << FILL_FILTER_SHIFT,
+    FILL_FILTER_LINEAR   = 2 << FILL_FILTER_SHIFT,
 };
 
 struct config
@@ -79,6 +76,12 @@ struct config
     ARGB* frame_buffer;
 
     ARGB fill_color;
+    ARGB shade_color;
+
+    int32_t texture_width;
+    int32_t texture_height;
+    ARGB* texture_lut;
+    uint8_t* texture_data;
 
     int32_t lightmap_width;
     int32_t lightmap_height;

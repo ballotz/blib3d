@@ -18,6 +18,16 @@ struct abstract_raster
 
 //------------------------------------------------------------------------------
 
+force_inline int32_t real_to_raster(float v)
+{
+    return math::ceil(v - 0.5f);
+}
+
+force_inline float raster_to_real(int32_t v)
+{
+    return (float)v + 0.5f;
+}
+
 /*
           v0
           *
@@ -879,16 +889,16 @@ void scan_faces(const config* c)
     case (FILL_DEPTH):
         r = new (raster) raster_depth(c);
         break;
-    case (FILL_SOLID | SHADE_NONE):
+    case (FILL_SOLID):
         r = new (raster) raster_solid_shade_none<blend_none>(c);
         break;
-    case (FILL_SOLID | SHADE_NONE | BLEND_ADD):
+    case (FILL_SOLID | BLEND_ADD):
         r = new (raster) raster_solid_shade_none<blend_add>(c);
         break;
-    case (FILL_SOLID | SHADE_NONE | BLEND_MUL):
+    case (FILL_SOLID | BLEND_MUL):
         r = new (raster) raster_solid_shade_none<blend_mul>(c);
         break;
-    case (FILL_SOLID | SHADE_NONE | BLEND_ALPHA):
+    case (FILL_SOLID | BLEND_ALPHA):
         r = new (raster) raster_solid_shade_none<blend_alpha>(c);
         break;
     case (FILL_SOLID | SHADE_VERTEX):
@@ -915,16 +925,16 @@ void scan_faces(const config* c)
     case (FILL_SOLID | SHADE_LIGHTMAP | BLEND_ALPHA):
         r = new (raster) raster_solid_shade_lightmap<blend_alpha>(c);
         break;
-    case (FILL_VERTEX | SHADE_NONE):
+    case (FILL_VERTEX):
         r = new (raster) raster_vertex_shade_none<blend_none>(c);
         break;
-    case (FILL_VERTEX | SHADE_NONE | BLEND_ADD):
+    case (FILL_VERTEX | BLEND_ADD):
         r = new (raster) raster_vertex_shade_none<blend_add>(c);
         break;
-    case (FILL_VERTEX | SHADE_NONE | BLEND_MUL):
+    case (FILL_VERTEX | BLEND_MUL):
         r = new (raster) raster_vertex_shade_none<blend_mul>(c);
         break;
-    case (FILL_VERTEX | SHADE_NONE | BLEND_ALPHA):
+    case (FILL_VERTEX | BLEND_ALPHA):
         r = new (raster) raster_vertex_shade_none<blend_alpha>(c);
         break;
     case (FILL_VERTEX | SHADE_VERTEX):
@@ -960,7 +970,7 @@ void scan_faces(const config* c)
         faces++;
 
         const float* pv[num_max_vertices];
-        const float* p{ &vertex_data[vertex_index] };
+        const float* p{ &vertex_data[vertex_stride * vertex_index ] };
         for (uint32_t nv{}; nv < vertex_count; ++nv)
         {
             pv[nv] = p;

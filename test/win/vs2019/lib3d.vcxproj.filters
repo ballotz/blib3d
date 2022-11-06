@@ -11,6 +11,12 @@
     <ClCompile Include="..\..\..\src\timer.cpp">
       <Filter>lib3d</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\render.cpp">
+      <Filter>lib3d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\view.cpp">
+      <Filter>lib3d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\math.hpp">
@@ -29,6 +35,12 @@
       <Filter>lib3d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\timer.hpp">
+      <Filter>lib3d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\render.hpp">
+      <Filter>lib3d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\view.hpp">
       <Filter>lib3d</Filter>
     </ClInclude>
   </ItemGroup>
