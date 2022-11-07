@@ -213,11 +213,11 @@ struct raster_depth : public abstract_raster
 
     interp<1> interp;
 
-    float attrib;
-    float depth;
-
     int32_t frame_stride;
     float* depth_buffer;
+
+    float attrib;
+    float depth;
 
     float* depth_addr;
 
@@ -277,13 +277,13 @@ struct raster_solid_shade_none : public abstract_raster
 
     interp<1> interp;
 
-    float attrib;
-    float depth;
-
     int32_t frame_stride;
     float* depth_buffer;
     ARGB* frame_buffer;
     uint32_t fill_color;
+
+    float attrib;
+    float depth;
 
     float* depth_addr;
     uint32_t* frame_addr;
@@ -352,19 +352,19 @@ struct raster_solid_shade_vertex : public abstract_raster
 
     interp<5> interp;
 
-    float attrib[5];
-    float depth;
-    int32_t attrib_int_dx[3]; // 16.16
-    int32_t attrib_int[3]; // 16.16
-    int32_t attrib_int_next[3]; // 16.16
-
     int32_t frame_stride;
     float* depth_buffer;
     ARGB* frame_buffer;
     uint32_t fill_color[4];
 
+    float attrib[5];
+    float depth;
+
     float* depth_addr;
     uint32_t* frame_addr;
+    int32_t attrib_int_dx[3]; // 16.16
+    int32_t attrib_int[3]; // 16.16
+    int32_t attrib_int_next[3]; // 16.16
 
     force_inline void setup_span(int32_t y, int32_t x0)
     {
@@ -476,9 +476,6 @@ struct raster_solid_shade_lightmap : public abstract_raster
 
     interp<4> interp;
 
-    float attrib[4];
-    float depth;
-
     int32_t frame_stride;
     float* depth_buffer;
     ARGB* frame_buffer;
@@ -487,6 +484,9 @@ struct raster_solid_shade_lightmap : public abstract_raster
     int32_t vmax;
     int32_t vshift;
     uint32_t* lightmap;
+
+    float attrib[4];
+    float depth;
 
     float* depth_addr;
     uint32_t* frame_addr;
@@ -503,12 +503,12 @@ struct raster_solid_shade_lightmap : public abstract_raster
         attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
         attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
         float w{ (float)0x10000 / attrib[1] };
-        int32_t attrib_int[2]
+        int32_t attrib_shade_int[2]
         {
             math::clamp((int32_t)(attrib[2] * w), 0, umax), // clamp
             math::clamp((int32_t)(attrib[3] * w), 0, vmax), // clamp
         };
-        uint32_t shade{ sample_bilinear(attrib_int[0], attrib_int[1], vshift, lightmap) };
+        uint32_t shade{ sample_bilinear(attrib_shade_int[0], attrib_shade_int[1], vshift, lightmap) };
         shade_int_next[0] = (shade & 0x00FF0000u)       ;
         shade_int_next[1] = (shade & 0x0000FF00u) <<  8u;
         shade_int_next[2] = (shade & 0x000000FFu) << 16u;
@@ -608,18 +608,18 @@ struct raster_vertex_shade_none : public abstract_raster
 
     interp<6> interp;
 
-    float attrib[6];
-    float depth;
-    int32_t attrib_int_dx[4]; // 16.16
-    int32_t attrib_int[4]; // 16.16
-    int32_t attrib_int_next[4]; // 16.16
-
     int32_t frame_stride;
     float* depth_buffer;
     ARGB* frame_buffer;
 
+    float attrib[6];
+    float depth;
+
     float* depth_addr;
     uint32_t* frame_addr;
+    int32_t attrib_int_dx[4]; // 16.16
+    int32_t attrib_int[4]; // 16.16
+    int32_t attrib_int_next[4]; // 16.16
 
     force_inline void setup_span(int32_t y, int32_t x0)
     {
@@ -731,18 +731,18 @@ struct raster_vertex_shade_vertex : public abstract_raster
 
     interp<9> interp;
 
-    float attrib[9];
-    float depth;
-    int32_t attrib_int_dx[7]; // 16.16
-    int32_t attrib_int[7]; // 16.16
-    int32_t attrib_int_next[7]; // 16.16
-
     int32_t frame_stride;
     float* depth_buffer;
     ARGB* frame_buffer;
 
+    float attrib[9];
+    float depth;
+
     float* depth_addr;
     uint32_t* frame_addr;
+    int32_t attrib_int_dx[7]; // 16.16
+    int32_t attrib_int[7]; // 16.16
+    int32_t attrib_int_next[7]; // 16.16
 
     force_inline void setup_span(int32_t y, int32_t x0)
     {
@@ -850,6 +850,666 @@ struct raster_vertex_shade_vertex : public abstract_raster
     }
 };
 
+template<typename blend_type>
+struct raster_vertex_shade_lightmap : public abstract_raster
+{
+    raster_vertex_shade_lightmap(const config* c)
+    {
+        interp.setup(c);
+
+        frame_stride = c->frame_stride;
+        depth_buffer = c->depth_buffer;
+        frame_buffer = c->frame_buffer;
+        umax = (c->lightmap_width - 1) << 16;
+        vmax = (c->lightmap_height - 1) << 16;
+        vshift = math::log2(c->lightmap_width);
+        lightmap = (uint32_t*)(c->lightmap);
+    }
+
+    // abstract_raster
+
+    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    {
+        return interp.setup_face(pv, vertex_count, is_clockwise);
+    }
+
+    void process_span(int32_t y, int32_t x0, int32_t x1) override
+    {
+        process_span_algo(*this, y, x0, x1);
+    }
+
+    // raster
+
+    interp<8> interp;
+
+    int32_t frame_stride;
+    float* depth_buffer;
+    ARGB* frame_buffer;
+    int32_t umax;
+    int32_t vmax;
+    int32_t vshift;
+    uint32_t* lightmap;
+
+    float attrib[8];
+    float depth;
+
+    float* depth_addr;
+    uint32_t* frame_addr;
+    int32_t attrib_int_dx[4]; // 16.16
+    int32_t attrib_int[4]; // 16.16
+    int32_t attrib_int_next[4]; // 16.16
+    int32_t shade_int_dx[3]; // 16.16
+    int32_t shade_int[3]; // 16.16
+    int32_t shade_int_next[3]; // 16.16
+
+    force_inline void setup_span(int32_t y, int32_t x0)
+    {
+        float x0f{ raster_to_real(x0) };
+        float y0f{ raster_to_real(y) };
+        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
+        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
+        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
+        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
+        attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
+        attrib[5] = interp.g[5].dx * x0f + interp.g[5].dy * y0f + interp.g[5].d;
+        attrib[6] = interp.g[6].dx * x0f + interp.g[6].dy * y0f + interp.g[6].d;
+        attrib[7] = interp.g[7].dx * x0f + interp.g[7].dy * y0f + interp.g[7].d;
+        float w{ (float)0x10000 / attrib[1] };
+        attrib_int_next[0] = math::min((int32_t)(attrib[2] * w), 0x00FFFFFF); // saturate
+        attrib_int_next[1] = math::min((int32_t)(attrib[3] * w), 0x00FFFFFF); // saturate
+        attrib_int_next[2] = math::min((int32_t)(attrib[4] * w), 0x00FFFFFF); // saturate
+        attrib_int_next[3] = math::min((int32_t)(attrib[5] * w), 0x00FFFFFF); // saturate
+        int32_t attrib_shade_int[2]
+        {
+            math::clamp((int32_t)(attrib[6] * w), 0, umax), // clamp
+            math::clamp((int32_t)(attrib[7] * w), 0, vmax), // clamp
+        };
+        uint32_t shade{ sample_bilinear(attrib_shade_int[0], attrib_shade_int[1], vshift, lightmap) };
+        shade_int_next[0] = (shade & 0x00FF0000u)       ;
+        shade_int_next[1] = (shade & 0x0000FF00u) <<  8u;
+        shade_int_next[2] = (shade & 0x000000FFu) << 16u;
+
+        int32_t start{ frame_stride * y + x0 };
+        depth_addr = &depth_buffer[start];
+        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+    }
+
+    force_inline void setup_subspan(int32_t count)
+    {
+        float count_float{ (float)count };
+        depth = attrib[0];
+        attrib[0] += interp.g[0].dx * count_float;
+        attrib[1] += interp.g[1].dx * count_float;
+        attrib[2] += interp.g[2].dx * count_float;
+        attrib[3] += interp.g[3].dx * count_float;
+        attrib[4] += interp.g[4].dx * count_float;
+        attrib[5] += interp.g[5].dx * count_float;
+        attrib[6] += interp.g[6].dx * count_float;
+        attrib[7] += interp.g[7].dx * count_float;
+        float w{ (float)0x10000 / attrib[1] };
+        attrib_int[0] = attrib_int_next[0];
+        attrib_int[1] = attrib_int_next[1];
+        attrib_int[2] = attrib_int_next[2];
+        attrib_int[3] = attrib_int_next[3];
+        shade_int[0] = shade_int_next[0];
+        shade_int[1] = shade_int_next[1];
+        shade_int[2] = shade_int_next[2];
+        attrib_int_next[0] = math::min((int32_t)(attrib[2] * w), 0x00FFFFFF); // saturate
+        attrib_int_next[1] = math::min((int32_t)(attrib[3] * w), 0x00FFFFFF); // saturate
+        attrib_int_next[2] = math::min((int32_t)(attrib[4] * w), 0x00FFFFFF); // saturate
+        attrib_int_next[3] = math::min((int32_t)(attrib[5] * w), 0x00FFFFFF); // saturate
+        int32_t attrib_shade_int[2]
+        {
+            math::clamp((int32_t)(attrib[6] * w), 0, umax), // clamp
+            math::clamp((int32_t)(attrib[7] * w), 0, vmax), // clamp
+        };
+        uint32_t shade{ sample_bilinear(attrib_shade_int[0], attrib_shade_int[1], vshift, lightmap) };
+        shade_int_next[0] = (shade & 0x00FF0000u)       ;
+        shade_int_next[1] = (shade & 0x0000FF00u) <<  8u;
+        shade_int_next[2] = (shade & 0x000000FFu) << 16u;
+        if (count == span_block_size)
+        {
+            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
+            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
+            attrib_int_dx[2] = (attrib_int_next[2] - attrib_int[2]) >> span_block_size_shift;
+            attrib_int_dx[3] = (attrib_int_next[3] - attrib_int[3]) >> span_block_size_shift;
+            shade_int_dx[0] = (shade_int_next[0] - shade_int[0]) >> span_block_size_shift;
+            shade_int_dx[1] = (shade_int_next[1] - shade_int[1]) >> span_block_size_shift;
+            shade_int_dx[2] = (shade_int_next[2] - shade_int[2]) >> span_block_size_shift;
+        }
+        else
+        {
+            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) / count;
+            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) / count;
+            attrib_int_dx[2] = (attrib_int_next[2] - attrib_int[2]) / count;
+            attrib_int_dx[3] = (attrib_int_next[3] - attrib_int[3]) / count;
+            shade_int_dx[0] = (shade_int_next[0] - shade_int[0]) / count;
+            shade_int_dx[1] = (shade_int_next[1] - shade_int[1]) / count;
+            shade_int_dx[2] = (shade_int_next[2] - shade_int[2]) / count;
+        }
+    }
+
+    force_inline void fill()
+    {
+        if (*depth_addr > depth)
+        {
+            uint32_t color
+            {
+                (((((uint32_t)attrib_int[3] << 8u)                                 ) & 0xFF000000u)       ) +
+                (((((uint32_t)attrib_int[0] >> 8u) * ((uint32_t)shade_int[0] >> 8u)) & 0xFF000000u) >>  8u) +
+                (((((uint32_t)attrib_int[1] >> 8u) * ((uint32_t)shade_int[1] >> 8u)) & 0xFF000000u) >> 16u) +
+                (((((uint32_t)attrib_int[2] >> 8u) * ((uint32_t)shade_int[2] >> 8u))              ) >> 24u)
+            };
+            *frame_addr = blend_type::process(*frame_addr, color);
+            *depth_addr = depth;
+        }
+
+        depth += interp.g[0].dx;
+        attrib_int[0] += attrib_int_dx[0];
+        attrib_int[1] += attrib_int_dx[1];
+        attrib_int[2] += attrib_int_dx[2];
+        attrib_int[3] += attrib_int_dx[3];
+        shade_int[0] += shade_int_dx[0];
+        shade_int[1] += shade_int_dx[1];
+        shade_int[2] += shade_int_dx[2];
+
+        depth_addr++;
+        frame_addr++;
+    }
+};
+
+//------------------------------------------------------------------------------
+
+template<typename blend_type>
+struct raster_texture_shade_none : public abstract_raster
+{
+    raster_texture_shade_none(const config* c)
+    {
+        interp.setup(c);
+
+        texture_width = (float)c->texture_width;
+        texture_height = (float)c->texture_height;
+
+        frame_stride = c->frame_stride;
+        depth_buffer = c->depth_buffer;
+        frame_buffer = c->frame_buffer;
+        smask = (c->texture_width - 1) << 16;
+        tmask = (c->texture_height - 1) << 16;
+        tshift = 16 - math::log2(c->texture_width);
+        texture_lut = (uint32_t*)(c->texture_lut);
+        texture_data = c->texture_data;
+    }
+
+    // abstract_raster
+
+    float texture_width;
+    float texture_height;
+
+    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    {
+        if (interp.setup_face(pv, vertex_count, is_clockwise))
+        {
+            interp.g[2].dx *= texture_width;
+            interp.g[2].dy *= texture_width;
+            interp.g[2].d *= texture_width;
+            interp.g[3].dx *= texture_height;
+            interp.g[3].dy *= texture_height;
+            interp.g[3].d *= texture_height;
+            return true;
+        }
+        return false;
+    }
+
+    void process_span(int32_t y, int32_t x0, int32_t x1) override
+    {
+        process_span_algo(*this, y, x0, x1);
+    }
+
+    // raster
+
+    interp<4> interp;
+
+    int32_t frame_stride;
+    float* depth_buffer;
+    ARGB* frame_buffer;
+    int32_t smask;
+    int32_t tmask;
+    int32_t tshift;
+    uint32_t* texture_lut;
+    uint8_t* texture_data;
+
+    float attrib[4];
+    float depth;
+
+    float* depth_addr;
+    uint32_t* frame_addr;
+    int32_t attrib_int_dx[2]; // 16.16
+    int32_t attrib_int[2]; // 16.16
+    int32_t attrib_int_next[2]; // 16.16
+
+    force_inline void setup_span(int32_t y, int32_t x0)
+    {
+        float x0f{ raster_to_real(x0) };
+        float y0f{ raster_to_real(y) };
+        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
+        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
+        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
+        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
+        float w{ (float)0x10000 / attrib[1] };
+        attrib_int_next[0] = (int32_t)(attrib[2] * w);
+        attrib_int_next[1] = (int32_t)(attrib[3] * w);
+
+        int32_t start{ frame_stride * y + x0 };
+        depth_addr = &depth_buffer[start];
+        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+    }
+
+    force_inline void setup_subspan(int32_t count)
+    {
+        float count_float{ (float)count };
+        depth = attrib[0];
+        attrib[0] += interp.g[0].dx * count_float;
+        attrib[1] += interp.g[1].dx * count_float;
+        attrib[2] += interp.g[2].dx * count_float;
+        attrib[3] += interp.g[3].dx * count_float;
+        float w{ (float)0x10000 / attrib[1] };
+        attrib_int[0] = attrib_int_next[0];
+        attrib_int[1] = attrib_int_next[1];
+        attrib_int_next[0] = (int32_t)(attrib[2] * w);
+        attrib_int_next[1] = (int32_t)(attrib[3] * w);
+        if (count == span_block_size)
+        {
+            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
+            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
+        }
+        else
+        {
+            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) / count;
+            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) / count;
+        }
+    }
+
+    force_inline void fill()
+    {
+        if (*depth_addr > depth)
+        {
+            uint8_t index{ sample_nearest(
+                attrib_int[0] & smask,
+                attrib_int[1] & tmask,
+                tshift,
+                texture_data) };
+            //if (index != 255u)
+            {
+                uint32_t color{ texture_lut[index] };
+                *frame_addr = blend_type::process(*frame_addr, color);
+                *depth_addr = depth;
+            }
+        }
+
+        depth += interp.g[0].dx;
+        attrib_int[0] += attrib_int_dx[0];
+        attrib_int[1] += attrib_int_dx[1];
+
+        depth_addr++;
+        frame_addr++;
+    }
+};
+
+template<typename blend_type>
+struct raster_texture_shade_vertex : public abstract_raster
+{
+    raster_texture_shade_vertex(const config* c)
+    {
+        interp.setup(c);
+
+        texture_width = (float)c->texture_width;
+        texture_height = (float)c->texture_height;
+
+        frame_stride = c->frame_stride;
+        depth_buffer = c->depth_buffer;
+        frame_buffer = c->frame_buffer;
+        smask = (c->texture_width - 1) << 16;
+        tmask = (c->texture_height - 1) << 16;
+        tshift = 16 - math::log2(c->texture_width);
+        texture_lut = (uint32_t*)(c->texture_lut);
+        texture_data = c->texture_data;
+    }
+
+    // abstract_raster
+
+    float texture_width;
+    float texture_height;
+
+    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    {
+        if (interp.setup_face(pv, vertex_count, is_clockwise))
+        {
+            interp.g[2].dx *= texture_width;
+            interp.g[2].dy *= texture_width;
+            interp.g[2].d *= texture_width;
+            interp.g[3].dx *= texture_height;
+            interp.g[3].dy *= texture_height;
+            interp.g[3].d *= texture_height;
+            return true;
+        }
+        return false;
+    }
+
+    void process_span(int32_t y, int32_t x0, int32_t x1) override
+    {
+        process_span_algo(*this, y, x0, x1);
+    }
+
+    // raster
+
+    interp<7> interp;
+
+    int32_t frame_stride;
+    float* depth_buffer;
+    ARGB* frame_buffer;
+    int32_t smask;
+    int32_t tmask;
+    int32_t tshift;
+    uint32_t* texture_lut;
+    uint8_t* texture_data;
+
+    float attrib[7];
+    float depth;
+
+    float* depth_addr;
+    uint32_t* frame_addr;
+    int32_t attrib_int_dx[5]; // 16.16
+    int32_t attrib_int[5]; // 16.16
+    int32_t attrib_int_next[5]; // 16.16
+
+    force_inline void setup_span(int32_t y, int32_t x0)
+    {
+        float x0f{ raster_to_real(x0) };
+        float y0f{ raster_to_real(y) };
+        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
+        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
+        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
+        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
+        attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
+        attrib[5] = interp.g[5].dx * x0f + interp.g[5].dy * y0f + interp.g[5].d;
+        attrib[6] = interp.g[6].dx * x0f + interp.g[6].dy * y0f + interp.g[6].d;
+        float w{ (float)0x10000 / attrib[1] };
+        attrib_int_next[0] = (int32_t)(attrib[2] * w);
+        attrib_int_next[1] = (int32_t)(attrib[3] * w);
+        attrib_int_next[2] = math::min((int32_t)(attrib[4] * w), 0x00FFFFFF); // saturate
+        attrib_int_next[3] = math::min((int32_t)(attrib[5] * w), 0x00FFFFFF); // saturate
+        attrib_int_next[4] = math::min((int32_t)(attrib[6] * w), 0x00FFFFFF); // saturate
+
+        int32_t start{ frame_stride * y + x0 };
+        depth_addr = &depth_buffer[start];
+        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+    }
+
+    force_inline void setup_subspan(int32_t count)
+    {
+        float count_float{ (float)count };
+        depth = attrib[0];
+        attrib[0] += interp.g[0].dx * count_float;
+        attrib[1] += interp.g[1].dx * count_float;
+        attrib[2] += interp.g[2].dx * count_float;
+        attrib[3] += interp.g[3].dx * count_float;
+        attrib[4] += interp.g[4].dx * count_float;
+        attrib[5] += interp.g[5].dx * count_float;
+        attrib[6] += interp.g[6].dx * count_float;
+        float w{ (float)0x10000 / attrib[1] };
+        attrib_int[0] = attrib_int_next[0];
+        attrib_int[1] = attrib_int_next[1];
+        attrib_int[2] = attrib_int_next[2];
+        attrib_int[3] = attrib_int_next[3];
+        attrib_int[4] = attrib_int_next[4];
+        attrib_int_next[0] = (int32_t)(attrib[2] * w);
+        attrib_int_next[1] = (int32_t)(attrib[3] * w);
+        attrib_int_next[2] = math::min((int32_t)(attrib[4] * w), 0x00FFFFFF); // saturate
+        attrib_int_next[3] = math::min((int32_t)(attrib[5] * w), 0x00FFFFFF); // saturate
+        attrib_int_next[4] = math::min((int32_t)(attrib[6] * w), 0x00FFFFFF); // saturate
+
+        if (count == span_block_size)
+        {
+            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
+            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
+            attrib_int_dx[2] = (attrib_int_next[2] - attrib_int[2]) >> span_block_size_shift;
+            attrib_int_dx[3] = (attrib_int_next[3] - attrib_int[3]) >> span_block_size_shift;
+            attrib_int_dx[4] = (attrib_int_next[4] - attrib_int[4]) >> span_block_size_shift;
+        }
+        else
+        {
+            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) / count;
+            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) / count;
+            attrib_int_dx[2] = (attrib_int_next[2] - attrib_int[2]) / count;
+            attrib_int_dx[3] = (attrib_int_next[3] - attrib_int[3]) / count;
+            attrib_int_dx[4] = (attrib_int_next[4] - attrib_int[4]) / count;
+        }
+    }
+
+    force_inline void fill()
+    {
+        if (*depth_addr > depth)
+        {
+            uint8_t index{ sample_nearest(
+                attrib_int[0] & smask,
+                attrib_int[1] & tmask,
+                tshift,
+                texture_data) };
+            //if (index != 255u)
+            {
+                uint32_t texel{ texture_lut[index] };
+                uint32_t color
+                {
+                    (((((texel & 0xFF000000u)        )                          )              )       ) +
+                    (((((texel & 0x00FF0000u) >> 16u ) * (uint32_t)attrib_int[2]) & 0xFF000000u) >>  8u) +
+                    (((((texel & 0x0000FF00u) >>  8u ) * (uint32_t)attrib_int[3]) & 0xFF000000u) >> 16u) +
+                    (((((texel & 0x000000FFu)        ) * (uint32_t)attrib_int[4])              ) >> 24u)
+                };
+                *frame_addr = blend_type::process(*frame_addr, color);
+                *depth_addr = depth;
+            }
+        }
+
+        depth += interp.g[0].dx;
+        attrib_int[0] += attrib_int_dx[0];
+        attrib_int[1] += attrib_int_dx[1];
+        attrib_int[2] += attrib_int_dx[2];
+        attrib_int[3] += attrib_int_dx[3];
+        attrib_int[4] += attrib_int_dx[4];
+
+        depth_addr++;
+        frame_addr++;
+    }
+};
+
+template<typename blend_type>
+struct raster_texture_shade_lightmap : public abstract_raster
+{
+    raster_texture_shade_lightmap(const config* c)
+    {
+        interp.setup(c);
+
+        texture_width = (float)c->texture_width;
+        texture_height = (float)c->texture_height;
+
+        frame_stride = c->frame_stride;
+        depth_buffer = c->depth_buffer;
+        frame_buffer = c->frame_buffer;
+        smask = (c->texture_width - 1) << 16;
+        tmask = (c->texture_height - 1) << 16;
+        tshift = 16 - math::log2(c->texture_width);
+        texture_lut = (uint32_t*)(c->texture_lut);
+        texture_data = c->texture_data;
+        umax = (c->lightmap_width - 1) << 16;
+        vmax = (c->lightmap_height - 1) << 16;
+        vshift = math::log2(c->lightmap_width);
+        lightmap = (uint32_t*)(c->lightmap);
+    }
+
+    // abstract_raster
+
+    float texture_width;
+    float texture_height;
+
+    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    {
+        if (interp.setup_face(pv, vertex_count, is_clockwise))
+        {
+            interp.g[2].dx *= texture_width;
+            interp.g[2].dy *= texture_width;
+            interp.g[2].d *= texture_width;
+            interp.g[3].dx *= texture_height;
+            interp.g[3].dy *= texture_height;
+            interp.g[3].d *= texture_height;
+            return true;
+        }
+        return false;
+    }
+
+    void process_span(int32_t y, int32_t x0, int32_t x1) override
+    {
+        process_span_algo(*this, y, x0, x1);
+    }
+
+    // raster
+
+    interp<6> interp;
+
+    int32_t frame_stride;
+    float* depth_buffer;
+    ARGB* frame_buffer;
+    int32_t smask;
+    int32_t tmask;
+    int32_t tshift;
+    uint32_t* texture_lut;
+    uint8_t* texture_data;
+    int32_t umax;
+    int32_t vmax;
+    int32_t vshift;
+    uint32_t* lightmap;
+
+    float attrib[6];
+    float depth;
+
+    float* depth_addr;
+    uint32_t* frame_addr;
+    int32_t attrib_int_dx[2]; // 16.16
+    int32_t attrib_int[2]; // 16.16
+    int32_t attrib_int_next[2]; // 16.16
+    int32_t shade_int_dx[3]; // 16.16
+    int32_t shade_int[3]; // 16.16
+    int32_t shade_int_next[3]; // 16.16
+
+    force_inline void setup_span(int32_t y, int32_t x0)
+    {
+        float x0f{ raster_to_real(x0) };
+        float y0f{ raster_to_real(y) };
+        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
+        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
+        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
+        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
+        attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
+        attrib[5] = interp.g[5].dx * x0f + interp.g[5].dy * y0f + interp.g[5].d;
+        float w{ (float)0x10000 / attrib[1] };
+        attrib_int_next[0] = (int32_t)(attrib[2] * w);
+        attrib_int_next[1] = (int32_t)(attrib[3] * w);
+        int32_t attrib_shade_int[2]
+        {
+            math::clamp((int32_t)(attrib[4] * w), 0, umax), // clamp
+            math::clamp((int32_t)(attrib[5] * w), 0, vmax), // clamp
+        };
+        uint32_t shade{ sample_bilinear(attrib_shade_int[0], attrib_shade_int[1], vshift, lightmap) };
+        shade_int_next[0] = (shade & 0x00FF0000u)       ;
+        shade_int_next[1] = (shade & 0x0000FF00u) <<  8u;
+        shade_int_next[2] = (shade & 0x000000FFu) << 16u;
+
+        int32_t start{ frame_stride * y + x0 };
+        depth_addr = &depth_buffer[start];
+        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+    }
+
+    force_inline void setup_subspan(int32_t count)
+    {
+        float count_float{ (float)count };
+        depth = attrib[0];
+        attrib[0] += interp.g[0].dx * count_float;
+        attrib[1] += interp.g[1].dx * count_float;
+        attrib[2] += interp.g[2].dx * count_float;
+        attrib[3] += interp.g[3].dx * count_float;
+        attrib[4] += interp.g[4].dx * count_float;
+        attrib[5] += interp.g[5].dx * count_float;
+        float w{ (float)0x10000 / attrib[1] };
+        attrib_int[0] = attrib_int_next[0];
+        attrib_int[1] = attrib_int_next[1];
+        shade_int[0] = shade_int_next[0];
+        shade_int[1] = shade_int_next[1];
+        shade_int[2] = shade_int_next[2];
+        attrib_int_next[0] = (int32_t)(attrib[2] * w);
+        attrib_int_next[1] = (int32_t)(attrib[3] * w);
+        int32_t attrib_shade_int[2]
+        {
+            math::clamp((int32_t)(attrib[4] * w), 0, umax), // clamp
+            math::clamp((int32_t)(attrib[5] * w), 0, vmax), // clamp
+        };
+        uint32_t shade{ sample_bilinear(attrib_shade_int[0], attrib_shade_int[1], vshift, lightmap) };
+        shade_int_next[0] = (shade & 0x00FF0000u)       ;
+        shade_int_next[1] = (shade & 0x0000FF00u) <<  8u;
+        shade_int_next[2] = (shade & 0x000000FFu) << 16u;
+
+        if (count == span_block_size)
+        {
+            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
+            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
+            shade_int_dx[0] = (shade_int_next[0] - shade_int[0]) >> span_block_size_shift;
+            shade_int_dx[1] = (shade_int_next[1] - shade_int[1]) >> span_block_size_shift;
+            shade_int_dx[2] = (shade_int_next[2] - shade_int[2]) >> span_block_size_shift;
+        }
+        else
+        {
+            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) / count;
+            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) / count;
+            shade_int_dx[0] = (shade_int_next[0] - shade_int[0]) / count;
+            shade_int_dx[1] = (shade_int_next[1] - shade_int[1]) / count;
+            shade_int_dx[2] = (shade_int_next[2] - shade_int[2]) / count;
+        }
+    }
+
+    force_inline void fill()
+    {
+        if (*depth_addr > depth)
+        {
+            uint8_t index{ sample_nearest(
+                attrib_int[0] & smask,
+                attrib_int[1] & tmask,
+                tshift,
+                texture_data) };
+            //if (index != 255u)
+            {
+                uint32_t texel{ texture_lut[index] };
+                uint32_t color
+                {
+                    (((((texel & 0xFF000000u)        )                         )              )       ) +
+                    (((((texel & 0x00FF0000u) >> 16u ) * (uint32_t)shade_int[0]) & 0xFF000000u) >>  8u) +
+                    (((((texel & 0x0000FF00u) >>  8u ) * (uint32_t)shade_int[1]) & 0xFF000000u) >> 16u) +
+                    (((((texel & 0x000000FFu)        ) * (uint32_t)shade_int[2])              ) >> 24u)
+                };
+                *frame_addr = blend_type::process(*frame_addr, color);
+                *depth_addr = depth;
+            }
+        }
+
+        depth += interp.g[0].dx;
+        attrib_int[0] += attrib_int_dx[0];
+        attrib_int[1] += attrib_int_dx[1];
+        shade_int[0] += shade_int_dx[0];
+        shade_int[1] += shade_int_dx[1];
+        shade_int[2] += shade_int_dx[2];
+
+        depth_addr++;
+        frame_addr++;
+    }
+};
+
 //------------------------------------------------------------------------------
 
 void scan_faces(const config* c)
@@ -881,6 +1541,22 @@ void scan_faces(const config* c)
         raster_vertex_shade_vertex<blend_add> r18;
         raster_vertex_shade_vertex<blend_mul> r19;
         raster_vertex_shade_vertex<blend_alpha> r20;
+        raster_vertex_shade_lightmap<blend_none> r21;
+        raster_vertex_shade_lightmap<blend_add> r22;
+        raster_vertex_shade_lightmap<blend_mul> r23;
+        raster_vertex_shade_lightmap<blend_alpha> r24;
+        raster_texture_shade_none<blend_none> r25;
+        raster_texture_shade_none<blend_add> r26;
+        raster_texture_shade_none<blend_mul> r27;
+        raster_texture_shade_none<blend_alpha> r28;
+        raster_texture_shade_vertex<blend_none> r29;
+        raster_texture_shade_vertex<blend_add> r30;
+        raster_texture_shade_vertex<blend_mul> r31;
+        raster_texture_shade_vertex<blend_alpha> r32;
+        raster_texture_shade_lightmap<blend_none> r33;
+        raster_texture_shade_lightmap<blend_add> r34;
+        raster_texture_shade_lightmap<blend_mul> r35;
+        raster_texture_shade_lightmap<blend_alpha> r36;
     };
     alignas(alignof(raster_pool)) uint8_t raster[sizeof(raster_pool)];
 
@@ -949,6 +1625,55 @@ void scan_faces(const config* c)
     case (FILL_VERTEX | SHADE_VERTEX | BLEND_ALPHA):
         r = new (raster) raster_vertex_shade_vertex<blend_alpha>(c);
         break;
+    case (FILL_VERTEX | SHADE_LIGHTMAP):
+        r = new (raster) raster_vertex_shade_lightmap<blend_none>(c);
+        break;
+    case (FILL_VERTEX | SHADE_LIGHTMAP | BLEND_ADD):
+        r = new (raster) raster_vertex_shade_lightmap<blend_add>(c);
+        break;
+    case (FILL_VERTEX | SHADE_LIGHTMAP | BLEND_MUL):
+        r = new (raster) raster_vertex_shade_lightmap<blend_mul>(c);
+        break;
+    case (FILL_VERTEX | SHADE_LIGHTMAP | BLEND_ALPHA):
+        r = new (raster) raster_vertex_shade_lightmap<blend_alpha>(c);
+        break;
+    case (FILL_TEXTURE):
+        r = new (raster) raster_texture_shade_none<blend_none>(c);
+        break;
+    case (FILL_TEXTURE | BLEND_ADD):
+        r = new (raster) raster_texture_shade_none<blend_add>(c);
+        break;
+    case (FILL_TEXTURE | BLEND_MUL):
+        r = new (raster) raster_texture_shade_none<blend_mul>(c);
+        break;
+    case (FILL_TEXTURE | BLEND_ALPHA):
+        r = new (raster) raster_texture_shade_none<blend_alpha>(c);
+        break;
+    case (FILL_TEXTURE | SHADE_VERTEX):
+        r = new (raster) raster_texture_shade_vertex<blend_none>(c);
+        break;
+    case (FILL_TEXTURE | SHADE_VERTEX | BLEND_ADD):
+        r = new (raster) raster_texture_shade_vertex<blend_add>(c);
+        break;
+    case (FILL_TEXTURE | SHADE_VERTEX | BLEND_MUL):
+        r = new (raster) raster_texture_shade_vertex<blend_mul>(c);
+        break;
+    case (FILL_TEXTURE | SHADE_VERTEX | BLEND_ALPHA):
+        r = new (raster) raster_texture_shade_vertex<blend_alpha>(c);
+        break;
+    case (FILL_TEXTURE | SHADE_LIGHTMAP):
+        r = new (raster) raster_texture_shade_lightmap<blend_none>(c);
+        break;
+    case (FILL_TEXTURE | SHADE_LIGHTMAP | BLEND_ADD):
+        r = new (raster) raster_texture_shade_lightmap<blend_add>(c);
+        break;
+    case (FILL_TEXTURE | SHADE_LIGHTMAP | BLEND_MUL):
+        r = new (raster) raster_texture_shade_lightmap<blend_mul>(c);
+        break;
+    case (FILL_TEXTURE | SHADE_LIGHTMAP | BLEND_ALPHA):
+        r = new (raster) raster_texture_shade_lightmap<blend_alpha>(c);
+        break;
+
     default:
         break;
     }

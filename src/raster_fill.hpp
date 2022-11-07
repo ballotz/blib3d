@@ -100,6 +100,11 @@ force_inline uint32_t bilinear(
     return (r0 & 0x00FF00FFu) + (r1 & 0xFF00FF00u);
 }
 
+force_inline uint8_t sample_nearest(int32_t u, int32_t v, int32_t vshift, uint8_t* pt)
+{
+    return pt[(u >> 16) + (v >> vshift)];
+}
+
 force_inline uint32_t sample_bilinear(int32_t u, int32_t v, int32_t vshift, uint32_t* pt)
 {
     int32_t ua{ (u >> 8) & 0xFF };

@@ -24,6 +24,7 @@
     <ClCompile Include="..\..\..\src\render.cpp" />
     <ClCompile Include="..\..\..\src\timer.cpp" />
     <ClCompile Include="..\..\..\src\view.cpp" />
+    <ClCompile Include="..\..\brick.c" />
     <ClCompile Include="..\..\main.cpp" />
   </ItemGroup>
   <ItemGroup>

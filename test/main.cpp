@@ -7,6 +7,18 @@
 #include "../src/render.hpp"
 #include "../src/view.hpp"
 
+extern "C"
+{
+
+extern const uint8_t brick_lut[256][4];
+extern const uint8_t brick_data[262144];
+extern const uint32_t brick_width;
+extern const uint32_t brick_height;
+
+};
+
+uint32_t brick_lut_linear[256];
+
 SDL_Window* window{};
 SDL_Renderer* renderer{};
 SDL_Texture* frame_texture{};
@@ -61,6 +73,8 @@ int init(int& width, int& height)
     //    height = 540;
     //}
 
+    //width = mode.w;
+    //height = mode.h;
     width = mode.w / 2;
     height = mode.h / 2;
 
@@ -345,123 +359,42 @@ void draw_string(draw_rect_type* rect, int32_t pos_x, int32_t pos_y, const char*
 
 //------------------------------------------------------------------------------
 
-void draw_test_rect(uint32_t* frame, float* depth, int32_t width, int32_t height, int32_t stride)
+void draw_test_rect()
 {
     constexpr int num_vertices{ 4 };
-    constexpr int num_components{ 12 }; // x y z w r g b a sr sg sb x
+    constexpr int num_components{ 16 }; // x y z w r g b a sr sg sb ls lt
 
-    uint32_t lightmap[4]{ 0xFFFF0000u, 0xFF0000FFu, 0xFFFFFF00u, 0xFF00FFFFu };
+    //constexpr uint32_t lightmap[4]{ 0xFF404040u, 0xFF404040u, 0xFFFFFF00u, 0xFFFFFF00u };
+    constexpr uint32_t lightmap[8][8]
+    {
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u },
+        { 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+    };
 
     float d{ 20 };
     alignas(16) float vertices[num_vertices][num_components] =
     {
-        { -1 * d,  1 * d, 3 * d, 1, 255,   0,   0, 255,  64,  64, 64 },
-        { -1 * d, -1 * d, 2 * d, 1, 255, 255,   0,   0, 255, 255,  0 },
-        {  1 * d, -1 * d, 2 * d, 1,   0, 255, 255,   0, 255, 255,  0 },
-        {  1 * d,  1 * d, 3 * d, 1,   0,   0, 255, 255,  64,  64, 64 },
+        { -1 * d,  1 * d, 3 * d, 1, 255,   0,   0, 255,  64,  64, 64, 0, 0, 0, 0 },
+        {  1 * d,  1 * d, 3 * d, 1,   0,   0, 255, 255,  64,  64, 64, 1, 0, 7, 0 },
+        {  1 * d, -1 * d, 2 * d, 1,   0, 255, 255,   0, 255, 255,  0, 1, 1, 7, 7 },
+        { -1 * d, -1 * d, 2 * d, 1, 255, 255,   0,   0, 255, 255,  0, 0, 1, 0, 7 },
     };
-#if 0
-    vertices[0][4] = 0;
-    vertices[0][5] = 0;
-    vertices[1][4] = 0;
-    vertices[1][5] = 1;
-    vertices[2][4] = 1;
-    vertices[2][5] = 1;
-    vertices[3][4] = 1;
-    vertices[3][5] = 0;
-#endif
-    float ws{ lib3d::math::min(width, height) / (float)height };
-    float hs{ lib3d::math::min(width, height) / (float)width };
-    for (int n{}; n < num_vertices; ++n)
-    {
-        float x{ vertices[n][0] * (width / (ws * 2.f)) + vertices[n][2] * (width / 2.f) };
-        float y{ vertices[n][1] * (-height / (hs * 2.f)) + vertices[n][2] * (height / 2.f) };
-        float z{ -vertices[n][3] };
-        float w{ vertices[n][2] };
-        float winv{ 1.f / w };
-        vertices[n][0] = x * winv;
-        vertices[n][1] = y * winv;
-        vertices[n][2] = z * winv;
-        vertices[n][3] = winv;
-        for (int a{ 4 }; a < num_components; ++a)
-            vertices[n][a] *= winv;
-    }
-    lib3d::raster::face faces[1];
-    faces[0].count = num_vertices;
-    faces[0].index = 0;
 
-    lib3d::raster::config cfg;
-
-    //cfg.flags = lib3d::raster::FILL_SOLID;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::BLEND_ADD;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::BLEND_MUL;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ADD;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_MUL;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_ADD;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_MUL;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_VERTEX;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::BLEND_ADD;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::BLEND_MUL;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ADD;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_MUL;
-    cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ALPHA;
-
-    cfg.num_faces = 1;
-    cfg.faces = faces;
-    cfg.vertex_data = &vertices[0][0];
-    cfg.vertex_stride = num_components;
-    cfg.back_cull = false;
-
-    cfg.frame_stride = stride;
-    cfg.depth_buffer = depth;
-    cfg.frame_buffer = (lib3d::raster::ARGB*)frame;
-
-    cfg.fill_color = { 128, 128, 128, 64 };
-
-    cfg.lightmap_width = 2;
-    cfg.lightmap_height = 2;
-    cfg.lightmap = (lib3d::raster::ARGB*)lightmap;
-
-    lib3d::raster::scan_faces(&cfg);
-}
-
-void draw_test_rect2()
-{
-    constexpr int num_vertices{ 4 };
-    constexpr int num_components{ 12 }; // x y z w r g b a sr sg sb x
-
-    constexpr uint32_t lightmap[4]{ 0xFFFF0000u, 0xFF0000FFu, 0xFFFFFF00u, 0xFF00FFFFu };
-
-    float d{ 20 };
-    alignas(16) float vertices[num_vertices][num_components] =
-    {
-        { -1 * d,  1 * d, 3 * d, 1, 255,   0,   0, 255,  64,  64, 64 },
-        { -1 * d, -1 * d, 2 * d, 1, 255, 255,   0,   0, 255, 255,  0 },
-        {  1 * d, -1 * d, 2 * d, 1,   0, 255, 255,   0, 255, 255,  0 },
-        {  1 * d,  1 * d, 3 * d, 1,   0,   0, 255, 255,  64,  64, 64 },
-    };
     lib3d_renderer.set_geometry_coord(&vertices[0][0], num_components);
     lib3d_renderer.set_geometry_color(&vertices[0][4], num_components);
+    lib3d_renderer.set_geometry_tex_coord(&vertices[0][11], num_components);
     lib3d_renderer.set_geometry_light_color(&vertices[0][8], num_components);
-#if 0
-    vertices[0][4] = 0;
-    vertices[0][5] = 0;
-    vertices[1][4] = 0;
-    vertices[1][5] = 1;
-    vertices[2][4] = 1;
-    vertices[2][5] = 1;
-    vertices[3][4] = 1;
-    vertices[3][5] = 0;
-    lib3d_renderer.set_geometry_lmap_coord(&vertices[0][4], num_components);
-    lib3d_renderer.set_shade_lightmap(2, 2, (lib3d::raster::ARGB*)lightmap);
-#endif
+    lib3d_renderer.set_geometry_lmap_coord(&vertices[0][13], num_components);
+    //lib3d_renderer.set_fill_texture(brick_width, brick_height, (lib3d::raster::ARGB*)brick_lut, (uint8_t*)brick_data);
+    lib3d_renderer.set_fill_texture(brick_width, brick_height, (lib3d::raster::ARGB*)brick_lut_linear, (uint8_t*)brick_data);
+    //lib3d_renderer.set_shade_lightmap(2, 2, (lib3d::raster::ARGB*)lightmap);
+    lib3d_renderer.set_shade_lightmap(8, 8, (lib3d::raster::ARGB*)lightmap);
 
     lib3d::raster::face faces[1];
     faces[0].count = num_vertices;
@@ -472,6 +405,7 @@ void draw_test_rect2()
 
     //lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_SOLID);
     lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_VERTEX);
+    //lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_TEXTURE);
 
     //lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_NONE);
     lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_VERTEX);
@@ -482,7 +416,7 @@ void draw_test_rect2()
     //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_MUL);
     lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_ALPHA);
 
-    lib3d_renderer.set_geometry_back_cull(false);
+    lib3d_renderer.set_geometry_back_cull(true);
 
     lib3d_renderer.render_draw();
 }
@@ -776,248 +710,24 @@ void make_lib3d_model(float step, float depth)
             }
         }
     }
+    for (int n{}; n < lib3d_model_num_face; ++n)
+    {
+        uint32_t v{ lib3d_model_faces[n].index };
+        lib3d_model_vertices[v + 0][7] = 0.f;
+        lib3d_model_vertices[v + 0][8] = 1.f / 5.25f;
+        lib3d_model_vertices[v + 1][7] = 1.f / 5.25f;
+        lib3d_model_vertices[v + 1][8] = 1.f / 5.25f;
+        lib3d_model_vertices[v + 2][7] = 1.f / 5.25f;
+        lib3d_model_vertices[v + 2][8] = 0.f;
+        lib3d_model_vertices[v + 3][7] = 0.f;
+        lib3d_model_vertices[v + 3][8] = 0.f;
+    }
 }
 
 float lib3d_model_vertices_transformed[4096][lib3d_model_vert_stride];
 lib3d::raster::ARGB lib3d_model_lightmap[1024][4];
 
-void draw_lib3d_model(
-    uint32_t* frame_buffer,
-    float* depth_buffer,
-    int32_t width,
-    int32_t height,
-    int32_t stride,
-    float angle)
-{
-    lib3d::math::vec3 model_origin{ 0, 0, 25 };
-    lib3d::math::vec3 model_angle{ 0, angle, 0 };
-
-    lib3d::math::mat3x3 model_rotation;
-    lib3d::math::make_rotation(model_rotation, model_angle);
-    lib3d::math::mat4x4 model_mat
-    {
-        model_rotation[0], model_rotation[1], model_rotation[2], model_origin[0],
-        model_rotation[3], model_rotation[4], model_rotation[5], model_origin[1],
-        model_rotation[6], model_rotation[7], model_rotation[8], model_origin[2],
-        0.f, 0.f, 0.f, 1.f
-    };
-
-    // light
-    {
-        lib3d::math::vec4 light_pos{ 0, -8, 4, 1 };
-        lib3d::math::vec3 light_intensity{ 255, 183, 76 };
-
-        lib3d::math::vec4 light_pos_t;
-        {
-            lib3d::math::mat3x3 r;
-            lib3d::math::vec3 t;
-            lib3d::math::trn3x3(r, model_rotation);
-            lib3d::math::mul3x3_3(t, r, model_origin);
-            lib3d::math::mat4x4 m =
-            {
-                r[0], r[1], r[2], -t[0],
-                r[3], r[4], r[5], -t[1],
-                r[6], r[7], r[8], -t[2],
-                 0.f,  0.f,  0.f,   1.f
-            };
-            lib3d::math::mat4x4 mt;
-            lib3d::math::trn4x4(mt, m);
-            lib3d::math::mul4x4t_4(light_pos_t, mt, light_pos);
-            lib3d::math::mul4(light_pos_t, 1.f / light_pos_t[3]);
-        }
-
-        for (int nf{}; nf < lib3d_model_num_face; ++nf)
-        {
-            lib3d::raster::face f{ lib3d_model_faces[nf] };
-            uint32_t vert_index{ f.index };
-            lib3d::math::vec3 v0, v1;
-            lib3d::math::vec3 normal;
-            lib3d::math::sub3(v0, lib3d_model_vertices[vert_index + 1], lib3d_model_vertices[vert_index + 0]);
-            lib3d::math::sub3(v1, lib3d_model_vertices[vert_index + 2], lib3d_model_vertices[vert_index + 0]);
-            lib3d::math::cross3(normal, v0, v1);
-            lib3d::math::mul3(normal, lib3d::math::invsqrt(lib3d::math::dot3(normal, normal)));
-#if 0
-            for (uint32_t nv{}; nv < f.count; ++nv)
-            {
-                float* v{ lib3d_model_vertices[vert_index + nv] };
-                lib3d::math::sub3(v0, light_pos_t, v);
-                float dist2{ lib3d::math::dot3(v0, v0) };
-                float scale{ lib3d::math::dot3(v0, normal) };
-                if (scale < 0)
-                    scale = 0;
-                scale *= lib3d::math::invsqrt(dist2);
-                scale /= dist2;
-                lib3d::math::vec3 light;
-                lib3d::math::mul3(light, light_intensity, scale);
-                light[0] *= 255;
-                light[1] *= 255;
-                light[2] *= 255;
-                lib3d::math::copy3(v + 4, light);
-            }
-        }
-#else
-            for (uint32_t nv{}; nv < f.count; ++nv)
-            {
-                float* v{ lib3d_model_vertices[vert_index + nv] };
-                lib3d::math::sub3(v0, light_pos_t, v);
-                float dist2{ lib3d::math::dot3(v0, v0) };
-                float scale{ lib3d::math::dot3(v0, normal) };
-                if (scale < 0)
-                    scale = 0;
-                scale *= lib3d::math::invsqrt(dist2);
-                scale /= dist2;
-                lib3d::math::vec3 light;
-                lib3d::math::mul3(light, light_intensity, scale);
-                light[0] *= 255;
-                light[1] *= 255;
-                light[2] *= 255;
-                if (light[0] > 255)
-                    light[0] = 255;
-                if (light[1] > 255)
-                    light[1] = 255;
-                if (light[2] > 255)
-                    light[2] = 255;
-                switch (nv)
-                {
-                case 3:
-                    lib3d_model_lightmap[nf][0].r = (uint8_t)light[0];
-                    lib3d_model_lightmap[nf][0].g = (uint8_t)light[1];
-                    lib3d_model_lightmap[nf][0].b = (uint8_t)light[2];
-                    v[4] =          0.f;
-                    v[5] = nf * 2 + 0.f;
-                    break;
-                case 2:
-                    lib3d_model_lightmap[nf][1].r = (uint8_t)light[0];
-                    lib3d_model_lightmap[nf][1].g = (uint8_t)light[1];
-                    lib3d_model_lightmap[nf][1].b = (uint8_t)light[2];
-                    v[4] =          1.f;
-                    v[5] = nf * 2 + 0.f;
-                    break;
-                case 0:
-                    lib3d_model_lightmap[nf][2].r = (uint8_t)light[0];
-                    lib3d_model_lightmap[nf][2].g = (uint8_t)light[1];
-                    lib3d_model_lightmap[nf][2].b = (uint8_t)light[2];
-                    v[4] =          0.f;
-                    v[5] = nf * 2 + 1.f;
-                    break;
-                case 1:
-                    lib3d_model_lightmap[nf][3].r = (uint8_t)light[0];
-                    lib3d_model_lightmap[nf][3].g = (uint8_t)light[1];
-                    lib3d_model_lightmap[nf][3].b = (uint8_t)light[2];
-                    v[4] =          1.f;
-                    v[5] = nf * 2 + 1.f;
-                    break;
-                }
-            }
-        }
-#endif
-    }
-
-    lib3d::math::vec3 view_origin{ 0, 0, 0 };
-    lib3d::math::vec3 view_angle{ 0, 0, 0 };
-
-    lib3d::math::mat3x3 view_rotation;
-    lib3d::math::make_rotation(view_rotation, view_angle);
-    lib3d::math::mat4x4 view_proj{};
-    {
-        float wspan = lib3d::math::max(width, height) / (float)height;
-        float hspan = lib3d::math::max(width, height) / (float)width;
-        view_proj[0] = 1.f / wspan;
-        view_proj[5] = 1.f / hspan;
-        view_proj[11] = -1.f;
-        view_proj[14] = 1.f;
-    }
-    lib3d::math::mat4x4 view_pre;
-    {
-        lib3d::math::mat3x3 r;
-        lib3d::math::vec3 t;
-        lib3d::math::trn3x3(r, view_rotation);
-        lib3d::math::mul3x3_3(t, r, view_origin);
-        lib3d::math::mat4x4 m =
-        {
-            r[0], r[1], r[2], -t[0],
-            r[3], r[4], r[5], -t[1],
-            r[6], r[7], r[8], -t[2],
-             0.f,  0.f,  0.f,   1.f
-        };
-        lib3d::math::mul4x4_4x4(view_pre, view_proj, m);
-    }
-    lib3d::math::mat4x4 view_post{};
-    {
-        view_post[0] = width / 2.f;
-        view_post[3] = width / 2.f;
-        view_post[5] = -height / 2.f;
-        view_post[7] = height / 2.f;
-        view_post[10] = 1.f;
-        view_post[15] = 1.f;
-    }
-
-    {
-        lib3d::math::mat4x4 view_mat;
-        lib3d::math::mat4x4 mat;
-        lib3d::math::mul4x4_4x4(view_mat, view_post, view_pre);
-        lib3d::math::mul4x4_4x4(mat, view_mat, model_mat);
-        lib3d::math::mat4x4 mt;
-        lib3d::math::trn4x4(mt, mat);
-        for (int n{}; n < lib3d_model_num_vert; ++n)
-        {
-            lib3d::math::vec4 vert;
-            const float* vert_in{ lib3d_model_vertices[n] };
-            float* vert_out{ lib3d_model_vertices_transformed[n] };
-            lib3d::math::mul4x4t_4(vert, mt, vert_in);
-            float winv{ 1.f / vert[3] };
-            vert_out[0] = vert[0] * winv;
-            vert_out[1] = vert[1] * winv;
-            vert_out[2] = vert[2] * winv;
-            vert_out[3] = winv;
-            for (int a{ 4 }; a < lib3d_model_vert_stride; ++a)
-                vert_out[a] = vert_in[a] * winv;
-        }
-    }
-
-    lib3d::raster::config cfg;
-
-    //cfg.flags = lib3d::raster::FILL_SOLID;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::BLEND_ADD;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::BLEND_MUL;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ADD;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_MUL;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ALPHA;
-    cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_ADD;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_MUL;
-    //cfg.flags = lib3d::raster::FILL_SOLID | lib3d::raster::SHADE_LIGHTMAP | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_VERTEX;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::BLEND_ADD;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::BLEND_MUL;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::BLEND_ALPHA;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ADD;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_MUL;
-    //cfg.flags = lib3d::raster::FILL_VERTEX | lib3d::raster::SHADE_VERTEX | lib3d::raster::BLEND_ALPHA;
-
-    cfg.num_faces = lib3d_model_num_face;
-    cfg.faces = lib3d_model_faces;
-    cfg.vertex_data = &lib3d_model_vertices_transformed[0][0];
-    cfg.vertex_stride = lib3d_model_vert_stride;
-    cfg.back_cull = true;
-
-    cfg.frame_stride = stride;
-    cfg.depth_buffer = depth_buffer;
-    cfg.frame_buffer = (lib3d::raster::ARGB*)frame_buffer;
-
-    cfg.fill_color = { 255, 255, 255, 128 };
-
-    cfg.lightmap_width = 2;
-    cfg.lightmap_height = 2 * 1024;
-    cfg.lightmap = (lib3d::raster::ARGB*)lib3d_model_lightmap;
-
-    lib3d::raster::scan_faces(&cfg);
-}
-
-void draw_lib3d_model2(float angle)
+void draw_lib3d_model(float angle)
 {
     lib3d::math::vec3 model_origin{ 0, 0, 25 };
     lib3d::math::vec3 model_angle{ 0, angle, 0 };
@@ -1145,6 +855,8 @@ void draw_lib3d_model2(float angle)
     lib3d_renderer.set_geometry_light_color(&lib3d_model_vertices[0][4], lib3d_model_vert_stride);
     lib3d_renderer.set_geometry_lmap_coord(&lib3d_model_vertices[0][4], lib3d_model_vert_stride);
 
+    lib3d_renderer.set_geometry_tex_coord(&lib3d_model_vertices[0][7], lib3d_model_vert_stride);
+
     {
         lib3d::math::mat4x4 mt;
         lib3d::math::trn4x4(mt, model_mat);
@@ -1159,10 +871,12 @@ void draw_lib3d_model2(float angle)
     lib3d_renderer.set_geometry_back_cull(true);
 
     lib3d_renderer.set_fill_color({ 255, 255, 255, 128 });
+    lib3d_renderer.set_fill_texture(brick_width, brick_height, (lib3d::raster::ARGB*)brick_lut_linear, (uint8_t*)brick_data);
 
     lib3d_renderer.set_shade_lightmap(2, 2 * 1024, (lib3d::raster::ARGB*)lib3d_model_lightmap);
 
     lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_SOLID);
+    //lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_TEXTURE);
 
     //lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_NONE);
     //lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_VERTEX);
@@ -1190,12 +904,17 @@ int SDL_main(int argc, char* argv[])
     float fps{};
     float fps_count{};
 
+    correct_gamma_in_build_table();
     correct_gamma_out_build_table();
+
+    for (int i{}; i < 256; ++i)
+        brick_lut_linear[i] = correct_gamma_in(*(uint32_t*)brick_lut[i]);
+
     make_lib3d_model(1.f, 2.f);
-    //float lib3d_model_angle{ -3.1416f / 2 };
-    //float lib3d_model_angle_speed{ 3.1416f / 10.f };
-    float lib3d_model_angle{ 0 };
-    float lib3d_model_angle_speed{ 0 };
+    float lib3d_model_angle{ -3.1416f / 2 };
+    float lib3d_model_angle_speed{ 3.1416f / 10.f };
+    //float lib3d_model_angle{ 0 };
+    //float lib3d_model_angle_speed{ 0 };
 
     interval.init();
 
@@ -1259,16 +978,11 @@ int SDL_main(int argc, char* argv[])
                 lib3d_renderer.render_clear_frame();
                 lib3d_renderer.render_clear_depth();
 
-                //draw_test_rect((uint32_t*)pixels, depth_buffer, screen_width, screen_height, pitch / sizeof(uint32_t));
-
                 lib3d_renderer.set_geometry_transform(mat_proj_min);
-                draw_test_rect2();
-
-                //draw_lib3d_model((uint32_t*)pixels, depth_buffer, screen_width, screen_height, pitch / sizeof(uint32_t), lib3d_model_angle);
+                draw_test_rect();
 
                 lib3d_renderer.set_geometry_transform(mat_proj_max);
-                draw_lib3d_model2(lib3d_model_angle);
-
+                draw_lib3d_model(lib3d_model_angle);
                 lib3d_model_angle += lib3d_model_angle_speed * interval.get_s();
 
                 correct_gamma_out((uint32_t*)pixels, screen_width, screen_height, pitch / sizeof(uint32_t));

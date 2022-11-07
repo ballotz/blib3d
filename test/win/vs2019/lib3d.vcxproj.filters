@@ -17,6 +17,7 @@
     <ClCompile Include="..\..\..\src\view.cpp">
       <Filter>lib3d</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\brick.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\math.hpp">
