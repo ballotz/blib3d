@@ -500,7 +500,7 @@ void renderer::render_draw()
 
         uint32_t raster_face_buffer_free{ raster_face_buffer_size - raster_face_buffer_index };
         uint32_t raster_geometry_buffer_free{ raster_geometry_buffer_size - raster_geometry_buffer_index };
-        if (raster_face_buffer_free < 1 || raster_geometry_buffer_free < (face_in.count * component_count))
+        if (raster_face_buffer_free < 1 || raster_geometry_buffer_free < (raster::num_max_vertices * component_count))
         {
             // draw current buffer content and reset buffers
 
