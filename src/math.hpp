@@ -2,8 +2,6 @@
 #include "shared.hpp"
 #include <cmath>
 
-#define USE_SIMD
-
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
 #include <xmmintrin.h>
 #endif

@@ -23,3 +23,5 @@
 #error unknown compiler
 
 #endif
+
+#define USE_SIMD

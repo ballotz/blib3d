@@ -36,48 +36,108 @@ force_inline uint32_t alpha_8888(uint32_t b, uint32_t f)
 #endif
 }
 
+//------------------------------------------------------------------------------
+
 struct blend_none
 {
-    static force_inline uint32_t process(uint32_t /*b*/, uint32_t f)
+    static force_inline void process(uint32_t* buffer, uint32_t color)
     {
-        return f;
+        *buffer = color;
     }
 };
 
 struct blend_add
 {
-    static force_inline uint32_t process(uint32_t v0, uint32_t v1)
+    static force_inline void process(uint32_t* buffer, uint32_t color)
     {
-        return adds_X888(v0, v1);
+        *buffer = adds_X888(*buffer, color);
     }
 };
 
 struct blend_mul
 {
-    static force_inline uint32_t process(uint32_t v0, uint32_t v1)
+    static force_inline void process(uint32_t* buffer, uint32_t color)
     {
-        return mul_X888(v0, v1);
+        *buffer = mul_X888(*buffer, color);
     }
 };
 
 struct blend_alpha
 {
-    static force_inline uint32_t process(uint32_t b, uint32_t f)
+    static force_inline void process(uint32_t* buffer, uint32_t color)
     {
-        return alpha_8888(b, f);
+        *buffer = alpha_8888(*buffer, color);
     }
 };
 
-force_inline uint32_t bilinear(
+//------------------------------------------------------------------------------
+
+struct depth_off
+{
+    static force_inline bool process_test(float* /*buffer*/, float /*depth*/)
+    {
+        return true;
+    }
+
+    static force_inline void process_write(float* /*buffer*/, float /*depth*/)
+    {
+    }
+};
+
+struct depth_test
+{
+    static force_inline bool process_test(float* buffer, float depth)
+    {
+        return *buffer > depth;
+    }
+
+    static force_inline void process_write(float* /*buffer*/, float /*depth*/)
+    {
+    }
+};
+
+struct depth_test_write
+{
+    static force_inline bool process_test(float* buffer, float depth)
+    {
+        return *buffer > depth;
+    }
+
+    static force_inline void process_write(float* buffer, float depth)
+    {
+        *buffer = depth;
+    }
+};
+
+//------------------------------------------------------------------------------
+
+struct mask_texture_on
+{
+    static force_inline bool process(uint8_t index)
+    {
+        return index != 255u;
+    }
+};
+
+struct mask_texture_off
+{
+    static force_inline bool process(uint8_t /*index*/)
+    {
+        return true;
+    }
+};
+
+//------------------------------------------------------------------------------
+
+force_inline uint32_t bilinear88(
     uint32_t v0, uint32_t v1,
     uint32_t v2, uint32_t v3,
-    uint32_t a0,
-    uint32_t a1)
+    uint32_t a0, uint32_t a1)
 {
     uint32_t w3{ a0 * a1 >> 8u };
     uint32_t w2{ a1 - w3 };
     uint32_t w1{ a0 - w3 };
-    uint32_t w0{ 0x100u - a0 - w2 };
+    uint32_t w0{ 256u + w3 - a0 - a1 };
     uint32_t r0
     {
         (v0 & 0x00FF00FFu) * w0 +
@@ -85,7 +145,6 @@ force_inline uint32_t bilinear(
         (v2 & 0x00FF00FFu) * w2 +
         (v3 & 0x00FF00FFu) * w3
     };
-    r0 >>= 8u;
     v0 >>= 8u;
     v1 >>= 8u;
     v2 >>= 8u;
@@ -97,31 +156,87 @@ force_inline uint32_t bilinear(
         (v2 & 0x00FF00FFu) * w2 +
         (v3 & 0x00FF00FFu) * w3
     };
-    return (r0 & 0x00FF00FFu) + (r1 & 0xFF00FF00u);
+    return ((r0 >> 8u) & 0x00FF00FFu) + (r1 & 0xFF00FF00u);
 }
+
+force_inline uint32_t bilinear53(
+    uint32_t v0, uint32_t v1,
+    uint32_t v2, uint32_t v3,
+    uint32_t a0, uint32_t a1)
+{
+    uint32_t w3{ a0 * a1 >> 3u };
+    uint32_t w2{ a1 - w3 };
+    uint32_t w1{ a0 - w3 };
+    uint32_t w0{ 8u + w3 - a0 - a1 };
+    return 
+        ((v0 & 0xF8F8F8F8u) >> 3u) * w0 +
+        ((v1 & 0xF8F8F8F8u) >> 3u) * w1 +
+        ((v2 & 0xF8F8F8F8u) >> 3u) * w2 +
+        ((v3 & 0xF8F8F8F8u) >> 3u) * w3;
+}
+
+//------------------------------------------------------------------------------
 
 force_inline uint8_t sample_nearest(int32_t u, int32_t v, int32_t vshift, uint8_t* pt)
 {
-    return pt[(u >> 16) + (v >> vshift)];
+    return pt[(u >> 16) + (v >> 16 << vshift)];
+}
+
+force_inline uint32_t sample_nearest(int32_t u, int32_t v, int32_t vshift, uint32_t* pt)
+{
+    return pt[(u >> 16) + (v >> 16 << vshift)];
 }
 
 force_inline uint32_t sample_bilinear(int32_t u, int32_t v, int32_t vshift, uint32_t* pt)
 {
-    int32_t ua{ (u >> 8) & 0xFF };
-    int32_t va{ (v >> 8) & 0xFF };
-    int32_t u0{ u >> 16 };
-    int32_t u1{ (u + 0xFFFF) >> 16 };
-    int32_t v0{ v >> 16 };
-    int32_t v1{ (v + 0xFFFF) >> 16 };
-    v0 <<= vshift;
-    v1 <<= vshift;
-    return bilinear(
-        pt[u0 + v0],
-        pt[u1 + v0],
-        pt[u0 + v1],
-        pt[u1 + v1],
-        ua,
-        va);
+    int32_t r0{ (u >> 16) + (v >> 16 << vshift) };
+    int32_t r1{ r0 + (1 << vshift) };
+    return bilinear88(
+        pt[r0],
+        pt[r0 + 1],
+        pt[r1],
+        pt[r1 + 1],
+        (u >> 8) & 0xFF,
+        (v >> 8) & 0xFF);
 }
+
+force_inline uint32_t sample_bilinear2(int32_t u, int32_t v, int32_t vshift, uint32_t* pt)
+{
+    int32_t r0{ (u >> 16) + (v >> 16 << vshift) };
+    int32_t r1{ r0 + (1 << vshift) };
+    return bilinear53(
+        pt[r0],
+        pt[r0 + 1],
+        pt[r1],
+        pt[r1 + 1],
+        (u >> 13) & 0x7,
+        (v >> 13) & 0x7);
+}
+
+//------------------------------------------------------------------------------
+
+//constexpr uint32_t dither_size{ 2 };
+//constexpr uint32_t dither_mask{ dither_size - 1 };
+//constexpr uint32_t dither_offset[dither_size * dither_size * 2]
+//{
+//    0 << 14, 2 << 14,
+//    3 << 14, 1 << 14,
+//    0 << 14, 2 << 14,
+//    3 << 14, 1 << 14
+//};
+
+//constexpr uint32_t dither_size{ 4 };
+//constexpr uint32_t dither_mask{ dither_size - 1 };
+//constexpr uint32_t dither_offset[dither_size * dither_size * 2]
+//{
+//     0 << 12,  8 << 12,  2 << 12, 10 << 12,
+//    12 << 12,  4 << 12, 14 << 12,  6 << 12,
+//     3 << 12, 11 << 12,  1 << 12,  9 << 12,
+//    15 << 12,  7 << 12, 13 << 12,  5 << 12,
+//     0 << 12,  8 << 12,  2 << 12, 10 << 12,
+//    12 << 12,  4 << 12, 14 << 12,  6 << 12,
+//     3 << 12, 11 << 12,  1 << 12,  9 << 12,
+//    15 << 12,  7 << 12, 13 << 12,  5 << 12,
+//};
 
 } // namespace lib3d::raster
