@@ -473,40 +473,40 @@ inline void cross3(vec3 out, const vec3 a, const vec3 b)
 
 // utility matrices
 
-inline void make_rotation(mat3x3 out, const vec3 angle)
+inline void rotation_x(mat3x3 out, const float angle)
 {
-    float xc{ std::cos(angle[0]) };
-    float xs{ std::sin(angle[0]) };
-    float yc{ std::cos(angle[1]) };
-    float ys{ std::sin(angle[1]) };
-    float zc{ std::cos(angle[2]) };
-    float zs{ std::sin(angle[2]) };
-    out[0] = yc * zc;
-    out[1] = xs * ys * zc - xc * zs;
-    out[2] = xs * zs + xc * ys * zc;
-    out[3] = yc * zs;
-    out[4] = xc * zc + xs * ys * zs;
-    out[5] = xc * ys * zs - xs * zc;
-    out[6] = -ys;
-    out[7] = xs * yc;
-    out[8] = xc * yc;
+    float c{ std::cos(angle) };
+    float s{ std::sin(angle) };
+    copy3x3(out, mat3x3
+        {
+            1,  0,  0,
+            0,  c, -s,
+            0,  s,  c
+        });
 }
 
-// numerical integration
-
-template<size_t size>
-struct trap
+inline void rotation_y(mat3x3 out, const float angle)
 {
-    float yold[size];
+    float c{ std::cos(angle) };
+    float s{ std::sin(angle) };
+    copy3x3(out, mat3x3
+        {
+             c,  0,  s,
+             0,  1,  0,
+            -s,  0,  c
+        });
+}
 
-    inline void step(float out[size], const float y[size], const float dx)
-    {
-        const float k{ 0.5f * dx };
-        for (size_t n{ 0 }; n < size; ++n)
-            out[n] += k * (yold[n] + y[n]);
-        for (size_t n{ 0 }; n < size; ++n)
-            yold[n] = y[n];
-    }
-};
+inline void rotation_z(mat3x3 out, const float angle)
+{
+    float c{ std::cos(angle) };
+    float s{ std::sin(angle) };
+    copy3x3(out, mat3x3
+        {
+            c, -s,  0,
+            s,  c,  0,
+            0,  0,  1
+        });
+}
 
 } // namespace lib3d::math

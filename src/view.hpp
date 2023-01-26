@@ -4,11 +4,6 @@
 namespace lib3d::view
 {
 
-void make_translation_rotation(
-    math::mat4x4 out,
-    math::vec3 translation,
-    math::vec3 rotation_angle);
-
 enum
 {
     PROJECTION_X,

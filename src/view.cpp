@@ -3,28 +3,6 @@
 namespace lib3d::view
 {
 
-void make_translation_rotation(
-    math::mat4x4 out,
-    math::vec3 translation,
-    math::vec3 rotation_angle)
-{
-    math::mat3x3 r;
-    math::make_rotation(r, rotation_angle);
-
-    // V = R'(W - O)
-    // V = R'W - R'O
-    math::vec3 t;
-    math::mul3x3t_3(t, r, translation);
-    math::copy4x4(out,
-        math::mat4x4
-        {
-            r[0], r[1], r[2], -t[0],
-            r[3], r[4], r[5], -t[1],
-            r[6], r[7], r[8], -t[2],
-               0,    0,    0,     1
-        });
-}
-
 void make_projection_ortho(
     math::mat4x4 out,
     float screen_ratio,

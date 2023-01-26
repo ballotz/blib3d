@@ -113,6 +113,9 @@ int init(int& width, int& height)
     SDL_UnlockTexture(frame_texture);
     depth_buffer = new float[width * (pitch / sizeof(uint32_t))];
 
+    SDL_SetRelativeMouseMode(SDL_TRUE);
+    SDL_GetRelativeMouseState(0, 0); // flush first
+    
     SDL_ShowCursor(SDL_DISABLE);
 
     return 0;
@@ -365,25 +368,34 @@ void draw_test_rect()
     constexpr int num_components{ 16 }; // x y z w r g b a sr sg sb ls lt
 
     //constexpr uint32_t lightmap[4]{ 0xFF404040u, 0xFF404040u, 0xFFFFFF00u, 0xFFFFFF00u };
-    constexpr uint32_t lightmap[8][8]
+    constexpr uint32_t lightmap[16][16]
     {
-        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
-        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u, 0xFF202020u },
-        { 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u },
-        { 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u },
-        { 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u },
-        { 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u },
-        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u, 0xFF202020u },
-        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF808080u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF808080u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF808080u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF808080u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF808080u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF808080u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF808080u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF808080u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
+        { 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u, 0xFF202020u },
     };
 
     float d{ 20 };
+    float s{ 16.f / 9.f };
     alignas(16) float vertices[num_vertices][num_components] =
     {
-        { -1 * d,  1 * d, 3 * d, 1, 255,   0,   0, 255,  64,  64, 64, 0, 0, 0, 0 },
-        {  1 * d,  1 * d, 3 * d, 1,   0,   0, 255, 255,  64,  64, 64, 1, 0, 7, 0 },
-        {  1 * d, -1 * d, 2 * d, 1,   0, 255, 255,   0, 255, 255,  0, 1, 1, 7, 7 },
-        { -1 * d, -1 * d, 2 * d, 1, 255, 255,   0,   0, 255, 255,  0, 0, 1, 0, 7 },
+        { -s * d,  s * d, 3 * d, 1, 255,   0,   0, 255,  64,  64, 64, 0, 0, 0 , 0  },
+        {  s * d,  s * d, 3 * d, 1,   0,   0, 255, 255,  64,  64, 64, 1, 0, 15, 0  },
+        {  s * d, -s * d, 2 * d, 1,   0, 255, 255,   0, 255, 255,  0, 1, 1, 15, 15 },
+        { -s * d, -s * d, 2 * d, 1, 255, 255,   0,   0, 255, 255,  0, 0, 1, 0 , 15 },
     };
 
     lib3d_renderer.set_geometry_coord(&vertices[0][0], num_components);
@@ -394,7 +406,7 @@ void draw_test_rect()
     //lib3d_renderer.set_fill_texture(brick_width, brick_height, (lib3d::raster::ARGB*)brick_lut, (uint8_t*)brick_data);
     lib3d_renderer.set_fill_texture(brick_width, brick_height, (lib3d::raster::ARGB*)brick_lut_linear, (uint8_t*)brick_data);
     //lib3d_renderer.set_shade_lightmap(2, 2, (lib3d::raster::ARGB*)lightmap);
-    lib3d_renderer.set_shade_lightmap(8, 8, (lib3d::raster::ARGB*)lightmap);
+    lib3d_renderer.set_shade_lightmap(16, 16, (lib3d::raster::ARGB*)lightmap);
 
     lib3d::raster::face faces[1];
     faces[0].count = num_vertices;
@@ -404,19 +416,19 @@ void draw_test_rect()
     lib3d_renderer.set_fill_color({ 128, 128, 128, 64 });
 
     //lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_SOLID);
-    lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_VERTEX);
-    //lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_TEXTURE);
+    //lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_VERTEX);
+    lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_TEXTURE);
 
     //lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_NONE);
-    lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_VERTEX);
-    //lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_LIGHTMAP);
+    //lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_VERTEX);
+    lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_LIGHTMAP);
 
-    //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_NONE);
+    lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_NONE);
     //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_ADD);
     //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_MUL);
-    lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_ALPHA);
+    //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_ALPHA);
 
-    lib3d_renderer.set_geometry_back_cull(true);
+    lib3d_renderer.set_geometry_back_cull(false);
 
     lib3d_renderer.render_draw();
 }
@@ -472,6 +484,70 @@ void correct_gamma_out(uint32_t* frame, int32_t width, int32_t height, int32_t s
         prow += stride;
     }
 }
+
+//------------------------------------------------------------------------------
+
+//void filter_frame_2(uint32_t* data, uint32_t width, uint32_t height, uint32_t stride)
+//{
+//    // horizontal pass
+//    for (uint32_t y{}; y < height; ++y)
+//    {
+//        uint32_t* row{ &data[y * stride] };
+//        uint32_t v{ row[0] };
+//        for (uint32_t x{}; x < width; ++x)
+//        {
+//            uint32_t r{ ((v & 0x00FEFEFEu) + (row[x] & 0x00FEFEFEu)) >> 1u };
+//            v = row[x];
+//            row[x] = r;
+//        }
+//    }
+//    // vertical pass
+//    for (uint32_t x{}; x < width; ++x)
+//    {
+//        uint32_t* col{ &data[x] };
+//        uint32_t v{ col[0] };
+//        for (uint32_t y{}; y < height; ++y)
+//        {
+//            uint32_t r{ ((v & 0x00FEFEFEu) + (col[y * stride] & 0x00FEFEFEu)) >> 1u };
+//            v = col[y * stride];
+//            col[y * stride] = r;
+//        }
+//    }
+//}
+//
+//void filter_frame_4(uint32_t* data, uint32_t width, uint32_t height, uint32_t stride)
+//{
+//    // horizontal pass
+//    for (uint32_t y{}; y < height; ++y)
+//    {
+//        uint32_t* row{ &data[y * stride] };
+//        uint32_t v[3]{ row[0], row[0], row[0] };
+//        for (uint32_t x{}; x < width; ++x)
+//        {
+//            uint32_t r{ ((v[0] & 0x00FCFCFCu) + (v[1] & 0x00FCFCFCu) + (v[2] & 0x00FCFCFCu) + (row[x] & 0x00FCFCFCu)) >> 2u };
+//            v[0] = v[1];
+//            v[1] = v[2];
+//            v[2] = row[x];
+//            row[x] = r;
+//        }
+//    }
+//    // vertical pass
+//    for (uint32_t x{}; x < width; ++x)
+//    {
+//        uint32_t* col{ &data[x] };
+//        uint32_t v[3]{ col[0], col[stride], col[stride << 1u] };
+//        for (uint32_t y{}; y < height; ++y)
+//        {
+//            uint32_t r{ ((v[0] & 0x00FCFCFCu) + (v[1] & 0x00FCFCFCu) + (v[2] & 0x00FCFCFCu) + (col[y * stride] & 0x00FCFCFCu)) >> 2u };
+//            v[0] = v[1];
+//            v[1] = v[2];
+//            v[2] = col[y * stride];
+//            col[y * stride] = r;
+//        }
+//    }
+//}
+
+//------------------------------------------------------------------------------
 
 constexpr int lib3d_model_vert_stride{ 12 };
 int lib3d_model_num_vert{};
@@ -730,10 +806,9 @@ lib3d::raster::ARGB lib3d_model_lightmap[1024][4];
 void draw_lib3d_model(float angle)
 {
     lib3d::math::vec3 model_origin{ 0, 0, 25 };
-    lib3d::math::vec3 model_angle{ 0, angle, 0 };
 
     lib3d::math::mat3x3 model_rotation;
-    lib3d::math::make_rotation(model_rotation, model_angle);
+    lib3d::math::rotation_y(model_rotation, angle);
     lib3d::math::mat4x4 model_mat
     {
         model_rotation[0], model_rotation[1], model_rotation[2], model_origin[0],
@@ -903,12 +978,14 @@ int SDL_main(int argc, char* argv[])
     lib3d::timer::interval interval;
     float fps{};
     float fps_count{};
+    float ms{};
 
     correct_gamma_in_build_table();
     correct_gamma_out_build_table();
 
     for (int i{}; i < 256; ++i)
         brick_lut_linear[i] = correct_gamma_in(*(uint32_t*)brick_lut[i]);
+        //brick_lut_linear[i] = *(uint32_t*)brick_lut[i];
 
     make_lib3d_model(1.f, 2.f);
     float lib3d_model_angle{ -3.1416f / 2 };
@@ -921,37 +998,161 @@ int SDL_main(int argc, char* argv[])
     lib3d_renderer.set_frame_clear_color({ 0xC0, 0xC0, 0xC0, 0xFF });
     lib3d_renderer.set_frame_clear_depth(0);
 
-    lib3d::math::mat4x4 mat_proj_min;
-    lib3d::math::mat4x4 mat_proj_max;
+    lib3d::math::mat4x4 mat_proj;
     lib3d::math::mat4x4 mat_view;
     float screen_ratio{ (float)screen_width / (float)screen_height };
     lib3d::view::make_projection_perspective(
-        mat_proj_min,
-        screen_ratio,
-        lib3d::math::pi / 2.f,
-        lib3d::view::PROJECTION_X);
-    lib3d::view::make_projection_perspective(
-        mat_proj_max,
+        mat_proj,
         screen_ratio,
         lib3d::math::pi / 2.f,
         lib3d::view::PROJECTION_Y);
     lib3d::view::make_viewport(mat_view, (float)screen_width, (float)screen_height);
+
+    lib3d_renderer.set_geometry_transform(mat_proj);
     lib3d_renderer.set_frame_transform(mat_view);
+
+    lib3d::math::vec3 camera_pos{};
+    lib3d::math::vec3 camera_ang{};
+    lib3d::math::mat3x3 camera_A
+    {
+        1, 0, 0,
+        0, 1, 0,
+        0, 0, 1
+    };
+
+    enum
+    {
+        CONTROLLER_FORWARD,
+        CONTROLLER_BACKWARD,
+        CONTROLLER_UP,
+        CONTROLLER_DOWN,
+        CONTROLLER_LEFT,
+        CONTROLLER_RIGHT,
+        CONTROLLER_LOOK_UP,
+        CONTROLLER_LOOK_DOWN,
+        CONTROLLER_LOOK_LEFT,
+        CONTROLLER_LOOK_RIGHT,
+
+        CONTROLLER_COUNT
+    };
+    uint32_t controller{};
+    uint32_t controller_keyboard_map[CONTROLLER_COUNT]
+    {
+        SDLK_w,
+        SDLK_s,
+        SDLK_SPACE,
+        SDLK_c,
+        SDLK_a,
+        SDLK_d,
+        SDLK_UP,
+        SDLK_DOWN,
+        SDLK_LEFT,
+        SDLK_RIGHT
+    };
+    int32_t controller_move[2]{};
 
     bool running{ true };
     while (running)
     {
         SDL_Event event;
-        if (SDL_PollEvent(&event))
+        while (SDL_PollEvent(&event))
         {
             switch (event.type)
             {
             case SDL_QUIT:
+            {
                 running = false;
-                break;
-            default:
-                break;
             }
+            break;
+            case SDL_KEYDOWN:
+            {
+                for (uint32_t n{}; n < CONTROLLER_COUNT; ++n)
+                {
+                    if (event.key.keysym.sym == controller_keyboard_map[n])
+                    {
+                        controller |= 1 << n;
+                        break;
+                    }
+                }
+            }
+            break;
+            case SDL_KEYUP:
+            {
+                for (uint32_t n{}; n < CONTROLLER_COUNT; ++n)
+                {
+                    if (event.key.keysym.sym == controller_keyboard_map[n])
+                    {
+                        controller &= ~(1 << n);
+                        break;
+                    }
+                }
+            }
+            break;
+            }
+        }
+        SDL_GetRelativeMouseState(&controller_move[0], &controller_move[1]);
+
+        float dt{ interval.get_s() };
+
+        {
+            lib3d::math::vec3 camera_pos_speed{};
+            lib3d::math::vec3 camera_ang_speed{};
+
+            if (controller & (1 << CONTROLLER_FORWARD))
+                camera_pos_speed[2] += 1;
+            if (controller & (1 << CONTROLLER_BACKWARD))
+                camera_pos_speed[2] -= 1;
+            if (controller & (1 << CONTROLLER_UP))
+                camera_pos_speed[1] += 1;
+            if (controller & (1 << CONTROLLER_DOWN))
+                camera_pos_speed[1] -= 1;
+            if (controller & (1 << CONTROLLER_LEFT))
+                camera_pos_speed[0] -= 1;
+            if (controller & (1 << CONTROLLER_RIGHT))
+                camera_pos_speed[0] += 1;
+
+            if (controller & (1 << CONTROLLER_LOOK_UP))
+                camera_ang_speed[0] -= 1;
+            if (controller & (1 << CONTROLLER_LOOK_DOWN))
+                camera_ang_speed[0] += 1;
+            if (controller & (1 << CONTROLLER_LOOK_LEFT))
+                camera_ang_speed[1] -= 1;
+            if (controller & (1 << CONTROLLER_LOOK_RIGHT))
+                camera_ang_speed[1] += 1;
+
+            lib3d::math::vec3 camera_r_pos_speed;
+            lib3d::math::mul3x3_3(camera_r_pos_speed, camera_A, camera_pos_speed);
+            
+            lib3d::math::mul3(camera_r_pos_speed, dt * 16.f); // step speed
+            lib3d::math::mul3(camera_ang_speed, dt * lib3d::math::pi); // angle speed
+
+            lib3d::math::add3(camera_pos, camera_r_pos_speed);
+            lib3d::math::add3(camera_ang, camera_ang_speed);
+
+            float fx{ lib3d::math::pi / (float)screen_width };
+            float fy{ lib3d::math::pi / (float)screen_height };
+            camera_ang[1] += (float)controller_move[0] * fx;
+            camera_ang[0] += (float)controller_move[1] * fy;
+
+            lib3d::math::mat3x3 Ax, Ay;
+            lib3d::math::rotation_x(Ax, camera_ang[0]);
+            lib3d::math::rotation_y(Ay, camera_ang[1]);
+            lib3d::math::mul3x3_3x3(camera_A, Ay, Ax);
+
+            lib3d::math::vec3 h;
+            lib3d::math::mul3x3t_3(h, camera_A, camera_pos);
+            lib3d::math::mat4x4 mat_rt
+            {
+                camera_A[0], camera_A[3], camera_A[6], -h[0],
+                camera_A[1], camera_A[4], camera_A[7], -h[1],
+                camera_A[2], camera_A[5], camera_A[8], -h[2],
+                          0,           0,           0,     1,
+            };
+
+            lib3d::math::mat4x4 mat_pre;
+            lib3d::math::mul4x4_4x4(mat_pre, mat_proj, mat_rt);
+
+            lib3d_renderer.set_geometry_transform(mat_pre);
         }
 
         {
@@ -969,33 +1170,34 @@ int SDL_main(int argc, char* argv[])
                 lib3d_renderer.set_frame_data(screen_width, screen_height, pitch / sizeof(uint32_t), depth_buffer, (lib3d::raster::ARGB*)pixels);
                 lib3d_renderer.render_begin();
 
-                //draw_fill(&rect, 0xFFC0C0C0);
-
-                //for (int y{}; y < rect.height; ++y)
-                //    for (int x{}; x < rect.width; ++x)
-                //        depth_buffer[x + y * rect.stride] = 0.f;
-
                 lib3d_renderer.render_clear_frame();
                 lib3d_renderer.render_clear_depth();
 
-                lib3d_renderer.set_geometry_transform(mat_proj_min);
-                draw_test_rect();
-
-                lib3d_renderer.set_geometry_transform(mat_proj_max);
                 draw_lib3d_model(lib3d_model_angle);
-                lib3d_model_angle += lib3d_model_angle_speed * interval.get_s();
+                lib3d_model_angle += lib3d_model_angle_speed * dt;
+
+                draw_test_rect();
 
                 correct_gamma_out((uint32_t*)pixels, screen_width, screen_height, pitch / sizeof(uint32_t));
 
                 char string[128];
-                if (interval.get_s() != 0)
+                if (dt != 0)
                 {
-                    float new_fps{ 1.f / interval.get_s() };
-                    //fps = (fps * fps_count + new_fps) / (fps_count + 1);
-                    fps = 0.999f * fps + 0.001f * new_fps;
+                    float new_fps{ 1.f / dt };
+                    float new_ms{ dt * 1000.f };
+                    fps = (fps * fps_count + new_fps) / (fps_count + 1);
                     fps_count++;
+                    //fps = 0.999f * fps + 0.001f * new_fps;
+                    //{
+                    //    float k{ 1.f / (1.f + new_fps) };
+                    //    fps = (1.f - k) * fps + k * new_fps;
+                    //}
+                    {
+                        float k{ 1.f / (1.f + new_ms) };
+                        ms = (1.f - k) * ms + k * new_ms;
+                    }
                 }
-                snprintf(string, sizeof(string), "%ix%i\nFPS %i", screen_width, screen_height, (int)fps);
+                snprintf(string, sizeof(string), "%ix%i\nfps %i\nms %i", screen_width, screen_height, (int)fps, (int)ms);
 
                 draw_string(&rect, 0, 0, string, 0xFFFFFFFF);
             }
