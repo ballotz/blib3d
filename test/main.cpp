@@ -428,6 +428,8 @@ void draw_test_rect()
     //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_MUL);
     //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_ALPHA);
 
+    //lib3d_renderer.set_fill_filter_type(lib3d::render::renderer::FILL_FILTER_LINEAR);
+
     lib3d_renderer.set_geometry_back_cull(false);
 
     lib3d_renderer.render_draw();

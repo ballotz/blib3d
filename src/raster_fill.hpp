@@ -111,24 +111,6 @@ struct depth_test_write
 
 //------------------------------------------------------------------------------
 
-struct mask_texture_on
-{
-    static force_inline bool process(uint8_t index)
-    {
-        return index != 255u;
-    }
-};
-
-struct mask_texture_off
-{
-    static force_inline bool process(uint8_t /*index*/)
-    {
-        return true;
-    }
-};
-
-//------------------------------------------------------------------------------
-
 force_inline uint32_t bilinear88(
     uint32_t v0, uint32_t v1,
     uint32_t v2, uint32_t v3,
@@ -177,17 +159,7 @@ force_inline uint32_t bilinear53(
 
 //------------------------------------------------------------------------------
 
-force_inline uint8_t sample_nearest(int32_t u, int32_t v, int32_t vshift, uint8_t* pt)
-{
-    return pt[(u >> 16) + (v >> 16 << vshift)];
-}
-
-force_inline uint32_t sample_nearest(int32_t u, int32_t v, int32_t vshift, uint32_t* pt)
-{
-    return pt[(u >> 16) + (v >> 16 << vshift)];
-}
-
-force_inline uint32_t sample_bilinear(int32_t u, int32_t v, int32_t vshift, uint32_t* pt)
+force_inline uint32_t sample_lightmap(int32_t u, int32_t v, int32_t vshift, uint32_t* pt)
 {
     int32_t r0{ (u >> 16) + (v >> 16 << vshift) };
     int32_t r1{ r0 + (1 << vshift) };
@@ -200,18 +172,65 @@ force_inline uint32_t sample_bilinear(int32_t u, int32_t v, int32_t vshift, uint
         (v >> 8) & 0xFF);
 }
 
-force_inline uint32_t sample_bilinear2(int32_t u, int32_t v, int32_t vshift, uint32_t* pt)
+//------------------------------------------------------------------------------
+
+struct sample_nearest
 {
-    int32_t r0{ (u >> 16) + (v >> 16 << vshift) };
-    int32_t r1{ r0 + (1 << vshift) };
-    return bilinear53(
-        pt[r0],
-        pt[r0 + 1],
-        pt[r1],
-        pt[r1 + 1],
-        (u >> 13) & 0x7,
-        (v >> 13) & 0x7);
-}
+    static force_inline int32_t process_coord(int32_t attribute)
+    {
+        return attribute;
+    }
+
+    static force_inline uint32_t process_texel(int32_t s, int32_t t, int32_t smask, int32_t tmask, int32_t tshift, uint32_t* plut, uint8_t* pdata)
+    {
+        return plut[pdata[((s & smask) >> 16) + ((t & tmask) >> tshift)]];
+    }
+};
+
+struct sample_bilinear
+{
+    static force_inline int32_t process_coord(int32_t attribute)
+    {
+        return attribute - 0x8000;
+    }
+
+    static force_inline uint32_t process_texel(int32_t s, int32_t t, int32_t smask, int32_t tmask, int32_t tshift, uint32_t* plut, uint8_t* pdata)
+    {
+        int32_t s0{ s };
+        int32_t s1{ s + 0x10000 };
+        int32_t t0{ t };
+        int32_t t1{ t + 0x10000 };
+        s0 = (s0 & smask) >> 16;
+        s1 = (s1 & smask) >> 16;
+        t0 = (t0 & tmask) >> tshift;
+        t1 = (t1 & tmask) >> tshift;
+        return bilinear88(
+            plut[pdata[s0 + t0]],
+            plut[pdata[s1 + t0]],
+            plut[pdata[s0 + t1]],
+            plut[pdata[s1 + t1]],
+            (s >> 8) & 0xFF,
+            (t >> 8) & 0xFF);
+    }
+};
+
+//------------------------------------------------------------------------------
+
+struct mask_texture_on
+{
+    static force_inline bool process(uint32_t v)
+    {
+        return v > 0x7FFFFFFFu;
+    }
+};
+
+struct mask_texture_off
+{
+    static force_inline bool process(uint32_t /*v*/)
+    {
+        return true;
+    }
+};
 
 //------------------------------------------------------------------------------
 

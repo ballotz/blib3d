@@ -29,35 +29,36 @@ struct ARGB
 
 enum
 {
-    FILL_SHIFT    = 0,
-    FILL_BIT_MASK = 0b000000000111,
-    FILL_DEPTH    = 1,
-    FILL_SOLID    = 2,
-    FILL_VERTEX   = 3,
-    FILL_TEXTURE  = 4,
+    FILL_SHIFT              = 0,
+    FILL_BIT_MASK           = 0b000000000111,
+    SHADE_SHIFT             = 3,
+    SHADE_BIT_MASK          = 0b000000011000,
+    BLEND_SHIFT             = 5,
+    BLEND_BIT_MASK          = 0b000011100000,
+    MIP_SHIFT               = 8,
+    MIP_BIT_MASK            = 0b001100000000,
+    FILL_FILTER_SHIFT       = 10,
+    FILL_FILTER_BIT_MASK    = 0b110000000000,
 
-    SHADE_SHIFT    = 3,
-    SHADE_BIT_MASK = 0b000000011000,
-    SHADE_SOLID    = 1 << SHADE_SHIFT,
-    SHADE_VERTEX   = 2 << SHADE_SHIFT,
-    SHADE_LIGHTMAP = 3 << SHADE_SHIFT,
+    FILL_DEPTH              = 1,
+    FILL_SOLID              = 2,
+    FILL_VERTEX             = 3,
+    FILL_TEXTURE            = 4,
 
-    BLEND_SHIFT    = 5,
-    BLEND_BIT_MASK = 0b000011100000,
-    BLEND_MASK     = 1 << BLEND_SHIFT,
-    BLEND_ADD      = 2 << BLEND_SHIFT,
-    BLEND_MUL      = 3 << BLEND_SHIFT,
-    BLEND_ALPHA    = 4 << BLEND_SHIFT,
+    SHADE_SOLID             = 1 << SHADE_SHIFT,
+    SHADE_VERTEX            = 2 << SHADE_SHIFT,
+    SHADE_LIGHTMAP          = 3 << SHADE_SHIFT,
 
-    MIP_SHIFT    = 8,
-    MIP_BIT_MASK = 0b001100000000,
-    MIP_FACE     = 1 << MIP_SHIFT,
-    MIP_SUBSPAN  = 2 << MIP_SHIFT,
+    BLEND_MASK              = 1 << BLEND_SHIFT,
+    BLEND_ADD               = 2 << BLEND_SHIFT,
+    BLEND_MUL               = 3 << BLEND_SHIFT,
+    BLEND_ALPHA             = 4 << BLEND_SHIFT,
 
-    FILL_FILTER_SHIFT    = 10,
-    FILL_FILTER_BIT_MASK = 0b110000000000,
-    FILL_FILTER_DITHER   = 1 << FILL_FILTER_SHIFT,
-    FILL_FILTER_LINEAR   = 2 << FILL_FILTER_SHIFT,
+    MIP_FACE                = 1 << MIP_SHIFT,
+    MIP_SUBSPAN             = 2 << MIP_SHIFT,
+
+    FILL_FILTER_DITHER      = 1 << FILL_FILTER_SHIFT,
+    FILL_FILTER_LINEAR      = 2 << FILL_FILTER_SHIFT,
 };
 
 struct config
