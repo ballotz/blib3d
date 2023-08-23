@@ -70,7 +70,7 @@ public:
 
     enum
     {
-        FILL_DEPTH = 1,
+        FILL_DEPTH,
         FILL_SOLID,
         FILL_VERTEX,
         FILL_TEXTURE
@@ -88,7 +88,6 @@ public:
     enum
     {
         SHADE_NONE,
-        SHADE_SOLID,
         SHADE_VERTEX,
         SHADE_LIGHTMAP
     };
@@ -115,14 +114,13 @@ public:
     {
         MIP_NONE,
         MIP_FACE,
-        MIP_SUBSPAN
+        MIP_PIXEL
     };
     void set_mip_type(uint32_t setting);
 
     enum
     {
         FILL_FILTER_NONE,
-        FILL_FILTER_DITHER,
         FILL_FILTER_LINEAR
     };
     void set_fill_filter_type(uint32_t setting);
