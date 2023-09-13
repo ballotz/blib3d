@@ -1,6 +1,7 @@
 #include "raster.hpp"
 #include "raster_interp.hpp"
 #include "raster_fill.hpp"
+#include <new>
 //#include <cassert>
 
 namespace lib3d::raster
@@ -238,7 +239,7 @@ struct raster_depth : public abstract_raster
 
     // raster
 
-    interp<1> interp;
+    interpolator<1> interp;
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -302,7 +303,7 @@ struct raster_solid_shade_none : public abstract_raster
 
     // raster
 
-    interp<1> interp;
+    interpolator<1> interp;
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -377,7 +378,7 @@ struct raster_solid_shade_vertex : public abstract_raster
 
     // raster
 
-    interp<5> interp;
+    interpolator<5> interp;
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -403,9 +404,9 @@ struct raster_solid_shade_vertex : public abstract_raster
         attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
         attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
         float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), 0, 0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), 0, 0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, 0x00FFFFFF);
+        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
 
         int32_t start{ frame_stride * y + x0 };
         depth_addr = &depth_buffer[start];
@@ -425,9 +426,9 @@ struct raster_solid_shade_vertex : public abstract_raster
         attrib_int[0] = attrib_int_next[0];
         attrib_int[1] = attrib_int_next[1];
         attrib_int[2] = attrib_int_next[2];
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), 0, 0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), 0, 0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, 0x00FFFFFF);
+        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         if (count == span_block_size)
         {
             attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
@@ -502,7 +503,7 @@ struct raster_solid_shade_lightmap : public abstract_raster
 
     // raster
 
-    interp<4> interp;
+    interpolator<4> interp;
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -535,8 +536,8 @@ struct raster_solid_shade_lightmap : public abstract_raster
         attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
         attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
         float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), 0, umax);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), 0, vmax);
+        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, umax);
+        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, vmax);
 
         int32_t start{ frame_stride * y + x0 };
         depth_addr = &depth_buffer[start];
@@ -557,8 +558,8 @@ struct raster_solid_shade_lightmap : public abstract_raster
         float w{ (float)0x10000 / attrib[1] };
         attrib_int[0] = attrib_int_next[0];
         attrib_int[1] = attrib_int_next[1];
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), 0, umax);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), 0, vmax);
+        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, umax);
+        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, vmax);
         if (count == span_block_size)
         {
             attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
@@ -641,7 +642,7 @@ struct raster_vertex_shade_none : public abstract_raster
 
     // raster
 
-    interp<6> interp;
+    interpolator<6> interp;
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -667,10 +668,10 @@ struct raster_vertex_shade_none : public abstract_raster
         attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
         attrib[5] = interp.g[5].dx * x0f + interp.g[5].dy * y0f + interp.g[5].d;
         float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), 0, 0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), 0, 0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, 0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), 0, 0x00FFFFFF);
+        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
 
         int32_t start{ frame_stride * y + x0 };
         depth_addr = &depth_buffer[start];
@@ -692,10 +693,10 @@ struct raster_vertex_shade_none : public abstract_raster
         attrib_int[1] = attrib_int_next[1];
         attrib_int[2] = attrib_int_next[2];
         attrib_int[3] = attrib_int_next[3];
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), 0, 0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), 0, 0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, 0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), 0, 0x00FFFFFF);
+        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         if (count == span_block_size)
         {
             attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
@@ -765,7 +766,7 @@ struct raster_vertex_shade_vertex : public abstract_raster
 
     // raster
 
-    interp<9> interp;
+    interpolator<9> interp;
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -794,13 +795,13 @@ struct raster_vertex_shade_vertex : public abstract_raster
         attrib[7] = interp.g[7].dx * x0f + interp.g[7].dy * y0f + interp.g[7].d;
         attrib[8] = interp.g[8].dx * x0f + interp.g[8].dy * y0f + interp.g[8].d;
         float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), 0, 0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), 0, 0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, 0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), 0, 0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), 0, 0x00FFFFFF);
-        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), 0, 0x00FFFFFF);
-        attrib_int_next[6] = math::clamp((int32_t)(attrib[8] * w), 0, 0x00FFFFFF);
+        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[6] = math::clamp((int32_t)(attrib[8] * w), (int32_t)0, (int32_t)0x00FFFFFF);
 
         int32_t start{ frame_stride * y + x0 };
         depth_addr = &depth_buffer[start];
@@ -828,13 +829,13 @@ struct raster_vertex_shade_vertex : public abstract_raster
         attrib_int[4] = attrib_int_next[4];
         attrib_int[5] = attrib_int_next[5];
         attrib_int[6] = attrib_int_next[6];
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), 0, 0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), 0, 0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, 0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), 0, 0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), 0, 0x00FFFFFF);
-        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), 0, 0x00FFFFFF);
-        attrib_int_next[6] = math::clamp((int32_t)(attrib[8] * w), 0, 0x00FFFFFF);
+        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[6] = math::clamp((int32_t)(attrib[8] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         if (count == span_block_size)
         {
             attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
@@ -917,7 +918,7 @@ struct raster_vertex_shade_lightmap : public abstract_raster
 
     // raster
 
-    interp<8> interp;
+    interpolator<8> interp;
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -953,12 +954,12 @@ struct raster_vertex_shade_lightmap : public abstract_raster
         attrib[6] = interp.g[6].dx * x0f + interp.g[6].dy * y0f + interp.g[6].d;
         attrib[7] = interp.g[7].dx * x0f + interp.g[7].dy * y0f + interp.g[7].d;
         float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), 0, 0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), 0, 0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, 0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), 0, 0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), 0, umax);
-        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), 0, vmax);
+        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, umax);
+        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), (int32_t)0, vmax);
 
         int32_t start{ frame_stride * y + x0 };
         depth_addr = &depth_buffer[start];
@@ -987,12 +988,12 @@ struct raster_vertex_shade_lightmap : public abstract_raster
         attrib_int[3] = attrib_int_next[3];
         attrib_int[4] = attrib_int_next[4];
         attrib_int[5] = attrib_int_next[5];
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), 0, 0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), 0, 0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, 0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), 0, 0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), 0, umax);
-        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), 0, vmax);
+        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, umax);
+        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), (int32_t)0, vmax);
         if (count == span_block_size)
         {
             attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
@@ -1112,7 +1113,7 @@ struct raster_texture_shade_none : public abstract_raster
 
     // raster
 
-    interp<4> interp;
+    interpolator<4> interp;
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -1250,7 +1251,7 @@ struct raster_texture_shade_vertex : public abstract_raster
 
     // raster
 
-    interp<7> interp;
+    interpolator<7> interp;
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -1284,9 +1285,9 @@ struct raster_texture_shade_vertex : public abstract_raster
         float w{ (float)0x10000 / attrib[1] };
         attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
         attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, 0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), 0, 0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), 0, 0x00FFFFFF);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
 
         int32_t start{ frame_stride * y + x0 };
         depth_addr = &depth_buffer[start];
@@ -1312,9 +1313,9 @@ struct raster_texture_shade_vertex : public abstract_raster
         attrib_int[4] = attrib_int_next[4];
         attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
         attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, 0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), 0, 0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), 0, 0x00FFFFFF);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         if (count == span_block_size)
         {
             attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
@@ -1423,7 +1424,7 @@ struct raster_texture_shade_lightmap : public abstract_raster
 
     // raster
 
-    interp<6> interp;
+    interpolator<6> interp;
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -1464,8 +1465,8 @@ struct raster_texture_shade_lightmap : public abstract_raster
         float w{ (float)0x10000 / attrib[1] };
         attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
         attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, umax);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), 0, vmax);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, umax);
+        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, vmax);
 
         int32_t start{ frame_stride * y + x0 };
         depth_addr = &depth_buffer[start];
@@ -1492,8 +1493,8 @@ struct raster_texture_shade_lightmap : public abstract_raster
         attrib_int[3] = attrib_int_next[3];
         attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
         attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), 0, umax);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), 0, vmax);
+        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, umax);
+        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, vmax);
         if (count == span_block_size)
         {
             attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;

@@ -18,6 +18,11 @@
 #define ARCH_INTEL
 #endif
 
+#elif defined(__GNUC__)
+
+#define no_inline __attribute__((noinline))
+#define force_inline __attribute__((always_inline))
+
 #else
 
 #error unknown compiler

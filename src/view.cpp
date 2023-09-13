@@ -30,14 +30,25 @@ void make_projection_ortho(
     float xs{ 2.f / span_x };
     float ys{ 2.f / span_y };
 
-    math::copy4x4(out,
-        math::mat4x4
-        {
-            xs,  0,  0,  0,
-             0, ys,  0,  0,
-             0,  0,  1,  0,
-             0,  0,  0,  1
-        });
+    out[ 0] = xs;
+    out[ 1] = 0;
+    out[ 2] = 0;
+    out[ 3] = 0;
+
+    out[ 4] = 0;
+    out[ 5] = ys;
+    out[ 6] = 0;
+    out[ 7] = 0;
+
+    out[ 8] = 0;
+    out[ 9] = 0;
+    out[10] = 1;
+    out[11] = 0;
+
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
+    out[15] = 1;
 }
 
 void make_projection_perspective(
@@ -69,14 +80,25 @@ void make_projection_perspective(
     float xs{ 1.f / span_x };
     float ys{ 1.f / span_y };
 
-    math::copy4x4(out,
-        math::mat4x4
-        {
-            xs,  0,  0,  0,
-             0, ys,  0,  0,
-             0,  0,  0, -1,
-             0,  0,  1,  0
-        });
+    out[ 0] = xs;
+    out[ 1] = 0;
+    out[ 2] = 0;
+    out[ 3] = 0;
+
+    out[ 4] = 0;
+    out[ 5] = ys;
+    out[ 6] = 0;
+    out[ 7] = 0;
+
+    out[ 8] = 0;
+    out[ 9] = 0;
+    out[10] = 0;
+    out[11] = -1;
+
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 1;
+    out[15] = 0;
 }
 
 void make_viewport(
@@ -86,14 +108,26 @@ void make_viewport(
 {
     float hw{ screen_w / 2.f };
     float hh{ screen_h / 2.f };
-    math::copy4x4(out,
-        math::mat4x4
-        {
-            hw,   0,   0,  hw,
-             0, -hh,   0,  hh,
-             0,   0,   1,   0,
-             0,   0,   0,   1
-        });
+
+    out[ 0] = hw;
+    out[ 1] = 0;
+    out[ 2] = 0;
+    out[ 3] = hw;
+
+    out[ 4] = 0;
+    out[ 5] = -hh;
+    out[ 6] = 0;
+    out[ 7] = hh;
+
+    out[ 8] = 0;
+    out[ 9] = 0;
+    out[10] = 1;
+    out[11] = 0;
+
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
+    out[15] = 1;
 }
 
 } // namespace lib3d::view

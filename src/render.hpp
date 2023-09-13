@@ -1,6 +1,7 @@
 #pragma once
 #include "raster.hpp"
 #include "timer.hpp"
+#include <float.h>
 
 namespace lib3d::render
 {

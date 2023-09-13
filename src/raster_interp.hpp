@@ -4,7 +4,7 @@ namespace lib3d::raster
 {
 
 template<uint32_t size>
-struct interp
+struct interpolator
 {
     bool back_cull;
 

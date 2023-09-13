@@ -477,36 +477,45 @@ inline void rotation_x(mat3x3 out, const float angle)
 {
     float c{ std::cos(angle) };
     float s{ std::sin(angle) };
-    copy3x3(out, mat3x3
-        {
-            1,  0,  0,
-            0,  c, -s,
-            0,  s,  c
-        });
+    out[0] = 1;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = c;
+    out[5] = -s;
+    out[6] = 0;
+    out[7] = s;
+    out[8] = c;
 }
 
 inline void rotation_y(mat3x3 out, const float angle)
 {
     float c{ std::cos(angle) };
     float s{ std::sin(angle) };
-    copy3x3(out, mat3x3
-        {
-             c,  0,  s,
-             0,  1,  0,
-            -s,  0,  c
-        });
+    out[0] = c;
+    out[1] = 0;
+    out[2] = s;
+    out[3] = 0;
+    out[4] = 1;
+    out[5] = 0;
+    out[6] = -s;
+    out[7] = 0;
+    out[8] = c;
 }
 
 inline void rotation_z(mat3x3 out, const float angle)
 {
     float c{ std::cos(angle) };
     float s{ std::sin(angle) };
-    copy3x3(out, mat3x3
-        {
-            c, -s,  0,
-            s,  c,  0,
-            0,  0,  1
-        });
+    out[0] = c;
+    out[1] = -s;
+    out[2] = 0;
+    out[3] = s;
+    out[4] = c;
+    out[5] = 0;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 1;
 }
 
 } // namespace lib3d::math
