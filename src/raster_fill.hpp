@@ -141,6 +141,22 @@ force_inline uint32_t bilinear88(
     return ((r0 >> 8u) & 0x00FF00FFu) + (r1 & 0xFF00FF00u);
 }
 
+force_inline uint32_t bilinear44(
+    uint32_t v0, uint32_t v1,
+    uint32_t v2, uint32_t v3,
+    uint32_t a0, uint32_t a1)
+{
+    uint32_t w3{ a0 * a1 >> 4u };
+    uint32_t w2{ a1 - w3 };
+    uint32_t w1{ a0 - w3 };
+    uint32_t w0{ 16u + w3 - a0 - a1 };
+    return
+        ((v0 & 0xF0F0F0F0u) >> 4u) * w0 +
+        ((v1 & 0xF0F0F0F0u) >> 4u) * w1 +
+        ((v2 & 0xF0F0F0F0u) >> 4u) * w2 +
+        ((v3 & 0xF0F0F0F0u) >> 4u) * w3;
+}
+
 force_inline uint32_t bilinear53(
     uint32_t v0, uint32_t v1,
     uint32_t v2, uint32_t v3,
@@ -155,6 +171,22 @@ force_inline uint32_t bilinear53(
         ((v1 & 0xF8F8F8F8u) >> 3u) * w1 +
         ((v2 & 0xF8F8F8F8u) >> 3u) * w2 +
         ((v3 & 0xF8F8F8F8u) >> 3u) * w3;
+}
+
+force_inline uint32_t bilinear62(
+    uint32_t v0, uint32_t v1,
+    uint32_t v2, uint32_t v3,
+    uint32_t a0, uint32_t a1)
+{
+    uint32_t w3{ a0 * a1 >> 2u };
+    uint32_t w2{ a1 - w3 };
+    uint32_t w1{ a0 - w3 };
+    uint32_t w0{ 4u + w3 - a0 - a1 };
+    return
+        ((v0 & 0xFCFCFCFCu) >> 2u) * w0 +
+        ((v1 & 0xFCFCFCFCu) >> 2u) * w1 +
+        ((v2 & 0xFCFCFCFCu) >> 2u) * w2 +
+        ((v3 & 0xFCFCFCFCu) >> 2u) * w3;
 }
 
 //------------------------------------------------------------------------------
@@ -204,13 +236,34 @@ struct sample_bilinear
         s1 = (s1 & smask) >> 16;
         t0 = (t0 & tmask) >> tshift;
         t1 = (t1 & tmask) >> tshift;
-        return bilinear88(
+        //return bilinear88(
+        //    plut[pdata[s0 + t0]],
+        //    plut[pdata[s1 + t0]],
+        //    plut[pdata[s0 + t1]],
+        //    plut[pdata[s1 + t1]],
+        //    (s >> 16) & 0xFF,
+        //    (t >> 16) & 0xFF);
+        //return bilinear44(
+        //    plut[pdata[s0 + t0]],
+        //    plut[pdata[s1 + t0]],
+        //    plut[pdata[s0 + t1]],
+        //    plut[pdata[s1 + t1]],
+        //    (s >> 12) & 0xF,
+        //    (t >> 12) & 0xF);
+        //return bilinear53(
+        //    plut[pdata[s0 + t0]],
+        //    plut[pdata[s1 + t0]],
+        //    plut[pdata[s0 + t1]],
+        //    plut[pdata[s1 + t1]],
+        //    (s >> 13) & 0x7,
+        //    (t >> 13) & 0x7);
+        return bilinear62(
             plut[pdata[s0 + t0]],
             plut[pdata[s1 + t0]],
             plut[pdata[s0 + t1]],
             plut[pdata[s1 + t1]],
-            (s >> 8) & 0xFF,
-            (t >> 8) & 0xFF);
+            (s >> 14) & 0x3,
+            (t >> 14) & 0x3);
     }
 };
 
