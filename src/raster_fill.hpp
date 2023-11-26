@@ -191,7 +191,7 @@ force_inline uint32_t bilinear62(
 
 //------------------------------------------------------------------------------
 
-force_inline uint32_t sample_lightmap(int32_t u, int32_t v, int32_t vshift, uint32_t* pt)
+force_inline uint32_t sample_lightmap(int32_t u, int32_t v, int32_t vshift, const uint32_t* pt)
 {
     int32_t r0{ (u >> 16) + (v >> 16 << vshift) };
     int32_t r1{ r0 + (1 << vshift) };
@@ -213,7 +213,7 @@ struct sample_nearest
         return attribute;
     }
 
-    static force_inline uint32_t process_texel(int32_t s, int32_t t, int32_t smask, int32_t tmask, int32_t tshift, uint32_t* plut, uint8_t* pdata)
+    static force_inline uint32_t process_texel(int32_t s, int32_t t, int32_t smask, int32_t tmask, int32_t tshift, const uint32_t* plut, const uint8_t* pdata)
     {
         return plut[pdata[((s & smask) >> 16) + ((t & tmask) >> tshift)]];
     }
@@ -226,7 +226,7 @@ struct sample_bilinear
         return attribute - 0x8000;
     }
 
-    static force_inline uint32_t process_texel(int32_t s, int32_t t, int32_t smask, int32_t tmask, int32_t tshift, uint32_t* plut, uint8_t* pdata)
+    static force_inline uint32_t process_texel(int32_t s, int32_t t, int32_t smask, int32_t tmask, int32_t tshift, const uint32_t* plut, const uint8_t* pdata)
     {
         int32_t s0{ s };
         int32_t s1{ s + 0x10000 };

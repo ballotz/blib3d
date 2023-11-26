@@ -205,6 +205,7 @@ uint32_t clip_face(
 
 renderer::renderer()
 {
+    raster_config.flags = 0;
     raster_config.faces = raster_face_buffer;
     raster_config.vertex_data = raster_geometry_buffer;
     raster_config.back_cull = true;
@@ -232,6 +233,10 @@ void renderer::set_frame_data(
     raster_config.frame_stride = frame_stride;
     raster_config.depth_buffer = frame_depth;
     raster_config.frame_buffer = frame_data;
+
+    occlusion_config.frame_width = width;
+    occlusion_config.frame_height = height;
+    occlusion_config.depth_buffer = depth;
 }
 
 void renderer::set_frame_clear_color(raster::ARGB color)
@@ -328,10 +333,10 @@ void renderer::set_mip_type(uint32_t setting)
     raster_config.flags |= (setting << raster::MIP_SHIFT) & raster::MIP_BIT_MASK;
 }
 
-void renderer::set_fill_filter_type(uint32_t setting)
+void renderer::set_filter_type(uint32_t setting)
 {
-    raster_config.flags &= ~raster::FILL_FILTER_BIT_MASK;
-    raster_config.flags |= (setting << raster::FILL_FILTER_SHIFT) & raster::FILL_FILTER_BIT_MASK;
+    raster_config.flags &= ~raster::FILTER_BIT_MASK;
+    raster_config.flags |= (setting << raster::FILTER_SHIFT) & raster::FILTER_BIT_MASK;
 }
 
 void renderer::set_fill_color(raster::ARGB color)
@@ -342,8 +347,8 @@ void renderer::set_fill_color(raster::ARGB color)
 void renderer::set_fill_texture(
     int32_t texture_width,
     int32_t texture_height,
-    raster::ARGB texture_lut[256],
-    uint8_t* texture_data)
+    const raster::ARGB texture_lut[256],
+    const uint8_t* texture_data)
 {
     raster_config.texture_width = texture_width;
     raster_config.texture_height = texture_height;
@@ -416,7 +421,7 @@ void renderer::render_clear_depth()
 
 void renderer::render_draw()
 {
-    //prof_geometry.start();
+    prof_geometry.start();
 
     // config data sources
 
@@ -467,7 +472,7 @@ void renderer::render_draw()
         attribute_count += 3;
     }
     else
-    if ((raster_config.flags &  raster::SHADE_BIT_MASK) == raster::SHADE_LIGHTMAP)
+    if ((raster_config.flags & raster::SHADE_BIT_MASK) == raster::SHADE_LIGHTMAP)
     {
         assert(geometry_lmap_coord_data);
         assert(geometry_lmap_coord_stride >= 2);
@@ -506,11 +511,11 @@ void renderer::render_draw()
 
             raster_config.num_faces = raster_face_buffer_index;
 
-            //prof_geometry.stop();
-            //prof_raster.start();
+            prof_geometry.stop();
+            prof_raster.start();
             raster::scan_faces(&raster_config);
-            //prof_raster.stop();
-            //prof_geometry.start();
+            prof_raster.stop();
+            prof_geometry.start();
 
             raster_face_buffer_index = 0;
             raster_geometry_buffer_index = 0;
@@ -617,16 +622,38 @@ void renderer::render_draw()
     {
         raster_config.num_faces = raster_face_buffer_index;
 
-        //prof_geometry.stop();
-        //prof_raster.start();
+        prof_geometry.stop();
+        prof_raster.start();
         raster::scan_faces(&raster_config);
-        //prof_raster.stop();
-        //prof_geometry.start();
+        prof_raster.stop();
+        prof_geometry.start();
     }
 
-    //prof_geometry.stop();
+    prof_geometry.stop();
 }
 
 //------------------------------------------------------------------------------
+
+void renderer::occlusion_build_mipchain()
+{
+    raster::occlusion_build_mipchain(
+        occlusion_config,
+        occlusion_data);
+}
+
+bool renderer::occlusion_test_rect(float screen_min[2], float screen_max[2], float depth_min)
+{
+    return raster::occlusion_test_rect(
+        occlusion_config,
+        occlusion_data,
+        screen_min, screen_max, depth_min);
+}
+
+//------------------------------------------------------------------------------
+
+const raster::occlusion_data& renderer::debug_get_occlusion_data()
+{
+    return occlusion_data;
+}
 
 } // namespace lib3d::render

@@ -2,7 +2,8 @@
 #include "raster_interp.hpp"
 #include "raster_fill.hpp"
 #include <new>
-//#include <cassert>
+#include <cassert>
+#include <cfloat>
 
 namespace lib3d::raster
 {
@@ -212,6 +213,44 @@ constexpr float subspan_scale[span_block_size]
 
 static constexpr uint32_t shade_hold{ 4 };
 static constexpr uint32_t shade_mask{ shade_hold - 1 };
+
+//------------------------------------------------------------------------------
+
+struct raster_outline : public abstract_raster
+{
+    raster_outline(const config* c)
+    {
+        frame_stride = c->frame_stride;
+        frame_buffer = c->frame_buffer;
+    }
+
+    // abstract_raster
+
+    bool setup_face(const float* /*pv*/[], uint32_t /*vertex_count*/) override
+    {
+        is_clockwise = true;
+        return true;
+    }
+
+    void process_span(int32_t y, int32_t x0, int32_t x1) override
+    {
+        //assert(x0 < x1);
+        uint32_t* line_addr = reinterpret_cast<uint32_t*>(&frame_buffer[frame_stride * y]);
+        int32_t n = x1 - x0;
+        if (n == 1)
+            line_addr[x0] = 0xFFFFFF00u;
+        else if (n > 1)
+        {
+            line_addr[x0] = 0xFF00FF00u;
+            line_addr[x1 - 1] = 0xFFFF0000u;
+        }
+    }
+
+    // raster
+
+    int32_t frame_stride;
+    ARGB* frame_buffer;
+};
 
 //------------------------------------------------------------------------------
 
@@ -486,7 +525,7 @@ struct raster_solid_shade_lightmap : public abstract_raster
         umax = (c->lightmap_width - 1) << 16;
         vmax = (c->lightmap_height - 1) << 16;
         vshift = math::log2(c->lightmap_width);
-        lightmap = (uint32_t*)(c->lightmap);
+        lightmap = (const uint32_t*)(c->lightmap);
     }
 
     // abstract_raster
@@ -512,7 +551,7 @@ struct raster_solid_shade_lightmap : public abstract_raster
     int32_t umax;
     int32_t vmax;
     int32_t vshift;
-    uint32_t* lightmap;
+    const uint32_t* lightmap;
 
     float attrib[4];
     float depth;
@@ -901,7 +940,7 @@ struct raster_vertex_shade_lightmap : public abstract_raster
         umax = (c->lightmap_width - 1) << 16;
         vmax = (c->lightmap_height - 1) << 16;
         vshift = math::log2(c->lightmap_width);
-        lightmap = (uint32_t*)(c->lightmap);
+        lightmap = (const uint32_t*)(c->lightmap);
     }
 
     // abstract_raster
@@ -926,7 +965,7 @@ struct raster_vertex_shade_lightmap : public abstract_raster
     int32_t umax;
     int32_t vmax;
     int32_t vshift;
-    uint32_t* lightmap;
+    const uint32_t* lightmap;
 
     float attrib[8];
     float depth;
@@ -1121,8 +1160,8 @@ struct raster_texture_shade_none : public abstract_raster
     int32_t smask;
     int32_t tmask;
     int32_t tshift;
-    uint32_t* texture_lut;
-    uint8_t* texture_data;
+    const uint32_t* texture_lut;
+    const uint8_t* texture_data;
 
     float attrib[4];
     float depth;
@@ -1259,8 +1298,8 @@ struct raster_texture_shade_vertex : public abstract_raster
     int32_t smask;
     int32_t tmask;
     int32_t tshift;
-    uint32_t* texture_lut;
-    uint8_t* texture_data;
+    const uint32_t* texture_lut;
+    const uint8_t* texture_data;
 
     float attrib[7];
     float depth;
@@ -1394,7 +1433,7 @@ struct raster_texture_shade_lightmap : public abstract_raster
         umax = (c->lightmap_width - 1) << 16;
         vmax = (c->lightmap_height - 1) << 16;
         vshift = math::log2(c->lightmap_width);
-        lightmap = (uint32_t*)(c->lightmap);
+        lightmap = (const uint32_t*)(c->lightmap);
     }
 
     // abstract_raster
@@ -1432,12 +1471,12 @@ struct raster_texture_shade_lightmap : public abstract_raster
     int32_t smask;
     int32_t tmask;
     int32_t tshift;
-    uint32_t* texture_lut;
-    uint8_t* texture_data;
+    const uint32_t* texture_lut;
+    const uint8_t* texture_data;
     int32_t umax;
     int32_t vmax;
     int32_t vshift;
-    uint32_t* lightmap;
+    const uint32_t* lightmap;
 
     float attrib[6];
     float depth;
@@ -1590,6 +1629,9 @@ void scan_faces(const config* c)
     case FILL_DEPTH:
         r = new (raster) raster_depth(c);
         break;
+    case FILL_OUTLINE:
+        r = new (raster) raster_outline(c);
+        break;
     case FILL_SOLID:
         switch (c->flags & (SHADE_BIT_MASK | BLEND_BIT_MASK))
         {
@@ -1673,9 +1715,9 @@ void scan_faces(const config* c)
         }
         break;
     case FILL_TEXTURE:
-        switch (c->flags & FILL_FILTER_BIT_MASK)
+        switch (c->flags & FILTER_BIT_MASK)
         {
-        case FILL_FILTER_NONE:
+        case FILTER_NONE:
             switch (c->flags & (SHADE_BIT_MASK | BLEND_BIT_MASK))
             {
             case (SHADE_NONE | BLEND_NONE):
@@ -1725,7 +1767,7 @@ void scan_faces(const config* c)
                 break;
             }
             break;
-        case FILL_FILTER_LINEAR:
+        case FILTER_LINEAR:
             switch (c->flags & (SHADE_BIT_MASK | BLEND_BIT_MASK))
             {
             case (SHADE_NONE | BLEND_NONE):
@@ -1796,7 +1838,7 @@ void scan_faces(const config* c)
         faces++;
 
         const float* pv[num_max_vertices];
-        const float* p{ &vertex_data[vertex_stride * vertex_index ] };
+        const float* p{ &vertex_data[vertex_stride * vertex_index] };
         for (uint32_t nv{}; nv < vertex_count; ++nv)
         {
             pv[nv] = p;
@@ -1808,6 +1850,169 @@ void scan_faces(const config* c)
 
         num_faces--;
     }
+}
+
+//------------------------------------------------------------------------------
+
+void occlusion_build_mipchain(occlusion_config& cfg, occlusion_data& data)
+{
+    uint32_t depth_hi_w;
+    uint32_t depth_hi_h;
+    float* pdepth_hi;
+    uint32_t depth_lo_w;
+    uint32_t depth_lo_h;
+    float* pdepth_lo;
+
+    depth_hi_w = cfg.frame_width;
+    depth_hi_h = cfg.frame_height;
+    pdepth_hi = cfg.depth_buffer;
+    depth_lo_w = (depth_hi_w + 1) >> 1;
+    depth_lo_h = (depth_hi_h + 1) >> 1;
+    pdepth_lo = pdepth_hi + depth_hi_w * depth_hi_h;
+
+    data.level_count = 0;
+
+#if 1
+    // level 0 from depth buffer
+    // use min to ignore 1 pixel cracks
+    assert(data.level_count < data.level_max_count);
+    {
+        {
+            uint32_t count = depth_lo_w * depth_lo_h;
+            float* pdepth = pdepth_lo;
+            while (count--)
+                *pdepth++ = +FLT_MAX;
+        }
+
+        for (uint32_t y_hi = 0; y_hi < depth_hi_h; ++y_hi)
+        {
+            uint32_t index_row_hi = depth_hi_w * y_hi;
+            uint32_t index_row_lo = depth_lo_w * (y_hi >> 1);
+            for (uint32_t x_hi = 0; x_hi < depth_hi_w; ++x_hi)
+            {
+                uint32_t index_hi = index_row_hi + x_hi;
+                uint32_t index_lo = index_row_lo + (x_hi >> 1);
+                assert(index_hi >= 0);
+                assert(index_hi < depth_hi_w* depth_hi_h);
+                assert(index_lo >= 0);
+                assert(index_lo < depth_lo_w* depth_lo_h);
+                pdepth_lo[index_lo] = math::min(pdepth_lo[index_lo], pdepth_hi[index_hi]);
+            }
+        }
+
+        uint32_t level = data.level_count;
+        data.levels[level].depth = pdepth_lo;
+        data.levels[level].w = depth_lo_w;
+        data.levels[level].h = depth_lo_h;
+        data.level_count++;
+
+        depth_hi_w = depth_lo_w;
+        depth_hi_h = depth_lo_h;
+        pdepth_hi = pdepth_lo;
+        depth_lo_w = (depth_hi_w + 1) >> 1;
+        depth_lo_h = (depth_hi_h + 1) >> 1;
+        pdepth_lo = pdepth_hi + depth_hi_w * depth_hi_h;
+    }
+#endif
+
+    // other levels, use max
+    while ((depth_lo_w != 1 || depth_lo_h != 1) && data.level_count < data.level_max_count)
+    {
+        {
+            uint32_t count = depth_lo_w * depth_lo_h;
+            float* pdepth = pdepth_lo;
+            while (count--)
+                *pdepth++ = -FLT_MAX;
+        }
+
+        for (uint32_t y_hi = 0; y_hi < depth_hi_h; ++y_hi)
+        {
+            uint32_t index_row_hi = depth_hi_w * y_hi;
+            uint32_t index_row_lo = depth_lo_w * (y_hi >> 1);
+            for (uint32_t x_hi = 0; x_hi < depth_hi_w; ++x_hi)
+            {
+                uint32_t index_hi = index_row_hi + x_hi;
+                uint32_t index_lo = index_row_lo + (x_hi >> 1);
+                assert(index_hi >= 0);
+                assert(index_hi < depth_hi_w* depth_hi_h);
+                assert(index_lo >= 0);
+                assert(index_lo < depth_lo_w* depth_lo_h);
+                pdepth_lo[index_lo] = math::max(pdepth_lo[index_lo], pdepth_hi[index_hi]);
+            }
+        }
+
+        uint32_t level = data.level_count;
+        data.levels[level].depth = pdepth_lo;
+        data.levels[level].w = depth_lo_w;
+        data.levels[level].h = depth_lo_h;
+        data.level_count++;
+
+        depth_hi_w = depth_lo_w;
+        depth_hi_h = depth_lo_h;
+        pdepth_hi = pdepth_lo;
+        depth_lo_w = (depth_hi_w + 1) >> 1;
+        depth_lo_h = (depth_hi_h + 1) >> 1;
+        pdepth_lo = pdepth_hi + depth_hi_w * depth_hi_h;
+    }
+}
+
+bool occlusion_test_rect(
+    occlusion_config& cfg,
+    occlusion_data& data,
+    float screen_min[2], float screen_max[2], float depth_min)
+{
+    int32_t rect_min[2]{ real_to_raster(screen_min[0]), real_to_raster(screen_min[1]) };
+    int32_t rect_max[2]{ real_to_raster(screen_max[0]), real_to_raster(screen_max[1]) };
+    if (rect_min[0] == rect_max[0])
+        return true;
+    if (rect_min[1] == rect_max[1])
+        return true;
+    assert(rect_min[0] < rect_max[0]);
+    assert(rect_min[1] < rect_max[1]);
+    if (rect_min[0] < 0)
+        rect_min[0] = 0;
+    if (rect_min[1] < 0)
+        rect_min[1] = 0;
+    if (rect_max[0] > cfg.frame_width)
+        rect_max[0] = cfg.frame_width;
+    if (rect_max[1] > cfg.frame_height)
+        rect_max[1] = cfg.frame_height;
+    // tight bounds
+    rect_max[0]--;
+    rect_max[1]--;
+    // level zero is half size
+    rect_min[0] >>= 1;
+    rect_min[1] >>= 1;
+    rect_max[0] >>= 1;
+    rect_max[1] >>= 1;
+    uint32_t level = 0;
+    while (
+        //rect_min[0] != rect_max[0] &&
+        //rect_min[1] != rect_max[1] &&
+        rect_max[0] - rect_min[0] > 1 &&
+        rect_max[1] - rect_min[1] > 1 &&
+        level != data.level_count - 1)
+    {
+        rect_min[0] >>= 1;
+        rect_min[1] >>= 1;
+        rect_max[0] >>= 1;
+        rect_max[1] >>= 1;
+        level++;
+    }
+    float depth_max = -FLT_MAX;
+    occlusion_data::level& ol = data.levels[level];
+    for (int32_t y = rect_min[1]; y <= rect_max[1]; ++y)
+    {
+        assert(y >= 0);
+        assert(y < ol.h);
+        for (int32_t x = rect_min[0]; x <= rect_max[0]; ++x)
+        {
+            assert(x >= 0);
+            assert(x < ol.w);
+            depth_max = math::max(depth_max, ol.depth[x + ol.w * y]);
+        }
+    }
+    return depth_min > depth_max;
 }
 
 } // namespace lib3d::raster

@@ -72,6 +72,7 @@ public:
     enum
     {
         FILL_DEPTH,
+        FILL_OUTLINE,
         FILL_SOLID,
         FILL_VERTEX,
         FILL_TEXTURE
@@ -83,8 +84,8 @@ public:
     void set_fill_texture(
         int32_t texture_width,
         int32_t texture_height,
-        raster::ARGB texture_lut[256],
-        uint8_t* texture_data);
+        const raster::ARGB texture_lut[256],
+        const uint8_t* texture_data);
 
     enum
     {
@@ -121,10 +122,10 @@ public:
 
     enum
     {
-        FILL_FILTER_NONE,
-        FILL_FILTER_LINEAR
+        FILTER_NONE,
+        FILTER_LINEAR
     };
-    void set_fill_filter_type(uint32_t setting);
+    void set_filter_type(uint32_t setting);
 
     //----------------------------------
 
@@ -140,9 +141,20 @@ public:
 
     //----------------------------------
 
+    void occlusion_build_mipchain();
+
+    bool occlusion_test_rect(
+        float screen_min[2],
+        float screen_max[2],
+        float depth_min);
+
+    //----------------------------------
+
+    const raster::occlusion_data& debug_get_occlusion_data();
+
     //timer::profile prof_clear;
-    //timer::profile prof_geometry;
-    //timer::profile prof_raster;
+    timer::profile prof_geometry;
+    timer::profile prof_raster;
 
 private:
     uint32_t frame_width{};
@@ -181,6 +193,9 @@ private:
     uint32_t raster_face_buffer_index{};
     uint32_t raster_geometry_buffer_index{};
     uint32_t raster_geometry_vertex_index{};
+
+    raster::occlusion_config occlusion_config;
+    raster::occlusion_data occlusion_data;
 };
 
 } // namespace lib3d::render
