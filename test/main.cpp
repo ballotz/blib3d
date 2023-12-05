@@ -442,7 +442,7 @@ void draw_test_rect(float light_x, float light_y)
     //lib3d_renderer.set_shade_lightmap(2, 2, (lib3d::raster::ARGB*)lightmap);
     lib3d_renderer.set_shade_lightmap(16, 16, (lib3d::raster::ARGB*)lightmap);
 
-    lib3d::raster::face faces[1];
+    lib3d::render::face faces[1];
     faces[0].count = num_vertices;
     faces[0].index = 0;
     lib3d_renderer.set_geometry_face(faces, 1);
@@ -589,7 +589,7 @@ constexpr int lib3d_model_vert_stride{ 12 };
 int lib3d_model_num_vert{};
 float lib3d_model_vertices[4096][lib3d_model_vert_stride];
 int lib3d_model_num_face{};
-lib3d::raster::face lib3d_model_faces[1024];
+lib3d::render::face lib3d_model_faces[1024];
 
 void make_lib3d_model(float step, float depth)
 {
@@ -879,7 +879,7 @@ void draw_lib3d_model(float angle)
 
         for (int nf{}; nf < lib3d_model_num_face; ++nf)
         {
-            lib3d::raster::face f{ lib3d_model_faces[nf] };
+            lib3d::render::face f{ lib3d_model_faces[nf] };
             uint32_t vert_index{ f.index };
             lib3d::math::vec3 v0, v1;
             lib3d::math::vec3 normal;

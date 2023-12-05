@@ -4,12 +4,6 @@
 namespace lib3d::raster
 {
 
-struct face
-{
-    uint32_t index; // vertex index
-    uint32_t count; // vertex count
-};
-
 //------------------------------------------------------------------------------
 
 static constexpr uint32_t num_max_vertices{ 12 };
@@ -69,7 +63,7 @@ struct config
     uint32_t flags;
 
     uint32_t num_faces;
-    const face* faces;
+    uint32_t* vertex_count_data;
     const float* vertex_data;
     uint32_t vertex_stride;
 

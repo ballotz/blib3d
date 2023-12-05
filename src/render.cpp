@@ -206,7 +206,7 @@ uint32_t clip_face(
 renderer::renderer()
 {
     raster_config.flags = 0;
-    raster_config.faces = raster_face_buffer;
+    raster_config.vertex_count_data = raster_vertex_count_buffer;
     raster_config.vertex_data = raster_geometry_buffer;
     raster_config.back_cull = true;
 }
@@ -286,7 +286,7 @@ void renderer::set_geometry_lmap_coord(float* data, uint32_t vertex_stride)
     geometry_lmap_coord_stride = vertex_stride;
 }
 
-void renderer::set_geometry_face(raster::face* data, uint32_t count)
+void renderer::set_geometry_face(face* data, uint32_t count)
 {
     geometry_face = data;
     geometry_face_count = count;
@@ -385,38 +385,40 @@ void renderer::render_end()
 
 void renderer::render_clear_frame()
 {
-    //prof_clear.start();
+    prof_raster.start();
 
     raster::ARGB color{ frame_clear_color };
     raster::ARGB* p{ frame_data };
+    uint32_t width{ frame_width };
     uint32_t jump{ frame_stride - frame_width };
     for (uint32_t row{ 0 }; row < frame_height; ++row)
     {
-        uint32_t n{ frame_width };
+        uint32_t n{ width };
         while (n--)
             *p++ = color;
         p += jump;
     }
 
-    //prof_clear.stop();
+    prof_raster.stop();
 }
 
 void renderer::render_clear_depth()
 {
-    //prof_clear.start();
+    prof_raster.start();
 
     float depth{ frame_clear_depth };
     float* p{ frame_depth };
+    uint32_t width{ frame_width };
     uint32_t jump{ frame_stride - frame_width };
     for (uint32_t row{ 0 }; row < frame_height; ++row)
     {
-        uint32_t n{ frame_width };
+        uint32_t n{ width };
         while (n--)
             *p++ = depth;
         p += jump;
     }
 
-    //prof_clear.stop();
+    prof_raster.stop();
 }
 
 void renderer::render_draw()
@@ -488,18 +490,18 @@ void renderer::render_draw()
     // pre transform, clip, post transform
 
     uint32_t face_count{ geometry_face_count };
-    raster::face* face{ geometry_face };
+    face* faces{ geometry_face };
     uint32_t* face_index{ geometry_face_index };
 
     raster_config.vertex_stride = component_count;
 
     raster_face_buffer_index = 0;
     raster_geometry_buffer_index = 0;
-    raster_geometry_vertex_index = 0;
+    //raster_geometry_vertex_index = 0;
 
     for (uint32_t nf{ 0 }; nf < face_count; ++nf)
     {
-        raster::face face_in{ face[face_index ? face_index[nf] : nf] };
+        face face_in{ faces[face_index ? face_index[nf] : nf] };
 
         // check if there is enough free space in buffers
 
@@ -519,7 +521,7 @@ void renderer::render_draw()
 
             raster_face_buffer_index = 0;
             raster_geometry_buffer_index = 0;
-            raster_geometry_vertex_index = 0;
+            //raster_geometry_vertex_index = 0;
         }
 
         // pre transform face to render buffer
@@ -603,11 +605,7 @@ void renderer::render_draw()
 
         // add to raster buffer
 
-        raster::face& face_out{ raster_face_buffer[raster_face_buffer_index] };
-        face_out.index = raster_geometry_vertex_index;
-        face_out.count = num_out_vertices;
-        raster_face_buffer_index++;
-        raster_geometry_vertex_index += num_out_vertices;
+        raster_vertex_count_buffer[raster_face_buffer_index++] = num_out_vertices;
 
         float* out{ &raster_geometry_buffer[raster_geometry_buffer_index] };
         for (uint32_t nv{ 0 }; nv < num_out_vertices; ++nv)

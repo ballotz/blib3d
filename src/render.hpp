@@ -17,6 +17,12 @@ constexpr clip_interp_type clip_w_min{ (clip_interp_type)1e-2 };
 constexpr uint32_t num_max_vertices{ raster::num_max_vertices - num_clip_planes };
 constexpr uint32_t num_max_components{ 2 + raster::num_max_attributes };
 
+struct face
+{
+    uint32_t index; // vertex index
+    uint32_t count; // vertex count
+};
+
 class renderer
 {
 public:
@@ -57,7 +63,7 @@ public:
     void set_geometry_lmap_coord(float* data, uint32_t vertex_stride);
 
     // face
-    void set_geometry_face(raster::face* data, uint32_t count);
+    void set_geometry_face(face* data, uint32_t count);
 
     // face index
     // if nullptr then all faces are rendered
@@ -152,7 +158,6 @@ public:
 
     const raster::occlusion_data& debug_get_occlusion_data();
 
-    //timer::profile prof_clear;
     timer::profile prof_geometry;
     timer::profile prof_raster;
 
@@ -175,24 +180,24 @@ private:
     uint32_t geometry_light_color_stride{};
     float* geometry_lmap_coord_data{};
     uint32_t geometry_lmap_coord_stride{};
-    raster::face* geometry_face{};
+    face* geometry_face{};
     uint32_t geometry_face_count{};
     uint32_t* geometry_face_index{};
 
-    math::mat4x4 pre_matrix_t;
-    math::mat4x4 post_matrix_t;
+    math::mat4x4 pre_matrix_t{};
+    math::mat4x4 post_matrix_t{};
 
-    raster::config raster_config;
+    raster::config raster_config{};
 
     float render_buffer[2][raster::num_max_vertices][num_max_components];
 
     static constexpr uint32_t raster_face_buffer_size{ 32 };
     static constexpr uint32_t raster_geometry_buffer_size{ raster_face_buffer_size * 4 * 8 };
-    raster::face raster_face_buffer[raster_face_buffer_size];
+    uint32_t raster_vertex_count_buffer[raster_face_buffer_size];
     float raster_geometry_buffer[raster_geometry_buffer_size];
     uint32_t raster_face_buffer_index{};
     uint32_t raster_geometry_buffer_index{};
-    uint32_t raster_geometry_vertex_index{};
+    //uint32_t raster_geometry_vertex_index{};
 
     raster::occlusion_config occlusion_config;
     raster::occlusion_data occlusion_data;

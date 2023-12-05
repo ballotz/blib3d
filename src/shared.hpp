@@ -1,10 +1,7 @@
 #pragma once
 #include <cstdint>
 
-#if defined(_MSC_VER)
-
-#define no_inline __declspec(noinline)
-#define force_inline __forceinline
+// architecture
 
 #ifdef _M_IX86
 #define ARCH_X86
@@ -18,6 +15,13 @@
 #define ARCH_INTEL
 #endif
 
+// compiler
+
+#if defined(_MSC_VER)
+
+#define no_inline __declspec(noinline)
+#define force_inline __forceinline
+
 #elif defined(__GNUC__)
 
 #define no_inline __attribute__((noinline))
@@ -29,4 +33,7 @@
 
 #endif
 
+// config
+
 #define USE_SIMD
+

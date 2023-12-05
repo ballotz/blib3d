@@ -1827,28 +1827,23 @@ void scan_faces(const config* c)
         return;
 
     uint32_t num_faces{ c->num_faces };
-    const face* faces{ c->faces };
+    const uint32_t* num_vertices{ c->vertex_count_data };
     const float* vertex_data{ c->vertex_data };
     uint32_t vertex_stride{ c->vertex_stride };
 
-    while (num_faces)
+    while (num_faces--)
     {
-        uint32_t vertex_index{ faces->index };
-        uint32_t vertex_count{ faces->count };
-        faces++;
+        uint32_t vertex_count{ *num_vertices++ };
 
         const float* pv[num_max_vertices];
-        const float* p{ &vertex_data[vertex_stride * vertex_index] };
         for (uint32_t nv{}; nv < vertex_count; ++nv)
         {
-            pv[nv] = p;
-            p += vertex_stride;
+            pv[nv] = vertex_data;
+            vertex_data += vertex_stride;
         }
 
         if (r->setup_face(pv, vertex_count))
             scan_face(pv, vertex_count, r);
-
-        num_faces--;
     }
 }
 
