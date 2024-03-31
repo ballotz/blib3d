@@ -11,7 +11,7 @@ static constexpr uint32_t num_max_attributes{ 9 }; // [x y] z w cr cg cb ca sr s
 
 //------------------------------------------------------------------------------
 
-struct ARGB
+struct alignas(4) ARGB
 {
     uint8_t b;
     uint8_t g;
