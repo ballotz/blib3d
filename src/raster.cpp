@@ -175,7 +175,7 @@ template<typename raster_type>
 force_inline void span_process_algo(int32_t y, int32_t x0, int32_t x1, raster_type* r)
 {
     //assert(x0 < x1);
-    raster_type::span_data s;
+    typename raster_type::span_data s;
     r->setup_span(y, x0, s);
     int32_t n{ x1 - x0 };
     while (n)
