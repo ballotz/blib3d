@@ -258,7 +258,7 @@ struct raster_depth : public abstract_raster
 {
     raster_depth(const config* c)
     {
-        interp.setup(c);
+        back_cull = c->back_cull;
 
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -266,9 +266,12 @@ struct raster_depth : public abstract_raster
 
     // abstract_raster
 
+    bool back_cull;
+
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
-        return interp.setup_face(pv, vertex_count, is_clockwise);
+        return interp_setup_face(pv, vertex_count, back_cull,
+            is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -278,7 +281,7 @@ struct raster_depth : public abstract_raster
 
     // raster
 
-    interpolator<1> interp;
+    gradient g[1];
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -292,7 +295,7 @@ struct raster_depth : public abstract_raster
     {
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib = x0f * interp.g[0].dx + y0f * interp.g[0].dy + interp.g[0].d;
+        attrib = x0f * g[0].dx + y0f * g[0].dy + g[0].d;
 
         depth_addr = &depth_buffer[frame_stride * y + x0];
     }
@@ -300,14 +303,14 @@ struct raster_depth : public abstract_raster
     force_inline void setup_subspan(int32_t count)
     {
         depth = attrib;
-        attrib += interp.g[0].dx * (float)count;
+        attrib += g[0].dx * (float)count;
     }
 
     force_inline void fill()
     {
         *depth_addr = math::min(*depth_addr, depth);
 
-        depth += interp.g[0].dx;
+        depth += g[0].dx;
 
         depth_addr++;
     }
@@ -320,7 +323,7 @@ struct raster_solid_shade_none : public abstract_raster
 {
     raster_solid_shade_none(const config* c)
     {
-        interp.setup(c);
+        back_cull = c->back_cull;
 
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -330,9 +333,12 @@ struct raster_solid_shade_none : public abstract_raster
 
     // abstract_raster
 
+    bool back_cull;
+
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
-        return interp.setup_face(pv, vertex_count, is_clockwise);
+        return interp_setup_face(pv, vertex_count, back_cull,
+            is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -342,7 +348,7 @@ struct raster_solid_shade_none : public abstract_raster
 
     // raster
 
-    interpolator<1> interp;
+    gradient g[1];
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -359,7 +365,7 @@ struct raster_solid_shade_none : public abstract_raster
     {
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib = x0f * interp.g[0].dx + y0f * interp.g[0].dy + interp.g[0].d;
+        attrib = x0f * g[0].dx + y0f * g[0].dy + g[0].d;
 
         int32_t start{ frame_stride * y + x0 };
         depth_addr = &depth_buffer[start];
@@ -369,7 +375,7 @@ struct raster_solid_shade_none : public abstract_raster
     force_inline void setup_subspan(int32_t count)
     {
         depth = attrib;
-        attrib += interp.g[0].dx * (float)count;
+        attrib += g[0].dx * (float)count;
     }
 
     force_inline void fill()
@@ -380,7 +386,7 @@ struct raster_solid_shade_none : public abstract_raster
             depth_type::process_write(depth_addr, depth);
         }
 
-        depth += interp.g[0].dx;
+        depth += g[0].dx;
 
         depth_addr++;
         frame_addr++;
@@ -392,7 +398,7 @@ struct raster_solid_shade_vertex : public abstract_raster
 {
     raster_solid_shade_vertex(const config* c)
     {
-        interp.setup(c);
+        back_cull = c->back_cull;
 
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -405,9 +411,12 @@ struct raster_solid_shade_vertex : public abstract_raster
 
     // abstract_raster
 
+    bool back_cull;
+
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
-        return interp.setup_face(pv, vertex_count, is_clockwise);
+        return interp_setup_face(pv, vertex_count, back_cull,
+            is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -417,7 +426,7 @@ struct raster_solid_shade_vertex : public abstract_raster
 
     // raster
 
-    interpolator<5> interp;
+    gradient g[5];
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -437,11 +446,11 @@ struct raster_solid_shade_vertex : public abstract_raster
     {
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
-        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
-        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
-        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
-        attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
+        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
@@ -456,11 +465,11 @@ struct raster_solid_shade_vertex : public abstract_raster
     {
         float count_float{ (float)count };
         depth = attrib[0];
-        attrib[0] += interp.g[0].dx * count_float;
-        attrib[1] += interp.g[1].dx * count_float;
-        attrib[2] += interp.g[2].dx * count_float;
-        attrib[3] += interp.g[3].dx * count_float;
-        attrib[4] += interp.g[4].dx * count_float;
+        attrib[0] += g[0].dx * count_float;
+        attrib[1] += g[1].dx * count_float;
+        attrib[2] += g[2].dx * count_float;
+        attrib[3] += g[3].dx * count_float;
+        attrib[4] += g[4].dx * count_float;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int[0] = attrib_int_next[0];
         attrib_int[1] = attrib_int_next[1];
@@ -498,7 +507,7 @@ struct raster_solid_shade_vertex : public abstract_raster
             depth_type::process_write(depth_addr, depth);
         }
 
-        depth += interp.g[0].dx;
+        depth += g[0].dx;
         attrib_int[0] += attrib_int_dx[0];
         attrib_int[1] += attrib_int_dx[1];
         attrib_int[2] += attrib_int_dx[2];
@@ -513,7 +522,7 @@ struct raster_solid_shade_lightmap : public abstract_raster
 {
     raster_solid_shade_lightmap(const config* c)
     {
-        interp.setup(c);
+        back_cull = c->back_cull;
 
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -530,9 +539,12 @@ struct raster_solid_shade_lightmap : public abstract_raster
 
     // abstract_raster
 
+    bool back_cull;
+
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
-        return interp.setup_face(pv, vertex_count, is_clockwise);
+        return interp_setup_face(pv, vertex_count, back_cull,
+            is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -542,7 +554,7 @@ struct raster_solid_shade_lightmap : public abstract_raster
 
     // raster
 
-    interpolator<4> interp;
+    gradient g[4];
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -570,10 +582,10 @@ struct raster_solid_shade_lightmap : public abstract_raster
     {
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
-        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
-        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
-        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
+        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, umax);
         attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, vmax);
@@ -590,10 +602,10 @@ struct raster_solid_shade_lightmap : public abstract_raster
     {
         float count_float{ (float)count };
         depth = attrib[0];
-        attrib[0] += interp.g[0].dx * count_float;
-        attrib[1] += interp.g[1].dx * count_float;
-        attrib[2] += interp.g[2].dx * count_float;
-        attrib[3] += interp.g[3].dx * count_float;
+        attrib[0] += g[0].dx * count_float;
+        attrib[1] += g[1].dx * count_float;
+        attrib[2] += g[2].dx * count_float;
+        attrib[3] += g[3].dx * count_float;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int[0] = attrib_int_next[0];
         attrib_int[1] = attrib_int_next[1];
@@ -642,7 +654,7 @@ struct raster_solid_shade_lightmap : public abstract_raster
             shade_trigger = 1;
         }
 
-        depth += interp.g[0].dx;
+        depth += g[0].dx;
         attrib_int[0] += attrib_int_dx[0];
         attrib_int[1] += attrib_int_dx[1];
 
@@ -660,7 +672,7 @@ struct raster_vertex_shade_none : public abstract_raster
 {
     raster_vertex_shade_none(const config* c)
     {
-        interp.setup(c);
+        back_cull = c->back_cull;
 
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -669,9 +681,12 @@ struct raster_vertex_shade_none : public abstract_raster
 
     // abstract_raster
 
+    bool back_cull;
+
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
-        return interp.setup_face(pv, vertex_count, is_clockwise);
+        return interp_setup_face(pv, vertex_count, back_cull,
+            is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -681,7 +696,7 @@ struct raster_vertex_shade_none : public abstract_raster
 
     // raster
 
-    interpolator<6> interp;
+    gradient g[6];
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -700,12 +715,12 @@ struct raster_vertex_shade_none : public abstract_raster
     {
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
-        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
-        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
-        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
-        attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
-        attrib[5] = interp.g[5].dx * x0f + interp.g[5].dy * y0f + interp.g[5].d;
+        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
@@ -721,12 +736,12 @@ struct raster_vertex_shade_none : public abstract_raster
     {
         float count_float{ (float)count };
         depth = attrib[0];
-        attrib[0] += interp.g[0].dx * count_float;
-        attrib[1] += interp.g[1].dx * count_float;
-        attrib[2] += interp.g[2].dx * count_float;
-        attrib[3] += interp.g[3].dx * count_float;
-        attrib[4] += interp.g[4].dx * count_float;
-        attrib[5] += interp.g[5].dx * count_float;
+        attrib[0] += g[0].dx * count_float;
+        attrib[1] += g[1].dx * count_float;
+        attrib[2] += g[2].dx * count_float;
+        attrib[3] += g[3].dx * count_float;
+        attrib[4] += g[4].dx * count_float;
+        attrib[5] += g[5].dx * count_float;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int[0] = attrib_int_next[0];
         attrib_int[1] = attrib_int_next[1];
@@ -768,7 +783,7 @@ struct raster_vertex_shade_none : public abstract_raster
             depth_type::process_write(depth_addr, depth);
         }
 
-        depth += interp.g[0].dx;
+        depth += g[0].dx;
         attrib_int[0] += attrib_int_dx[0];
         attrib_int[1] += attrib_int_dx[1];
         attrib_int[2] += attrib_int_dx[2];
@@ -784,7 +799,7 @@ struct raster_vertex_shade_vertex : public abstract_raster
 {
     raster_vertex_shade_vertex(const config* c)
     {
-        interp.setup(c);
+        back_cull = c->back_cull;
 
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -793,9 +808,12 @@ struct raster_vertex_shade_vertex : public abstract_raster
 
     // abstract_raster
 
+    bool back_cull;
+
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
-        return interp.setup_face(pv, vertex_count, is_clockwise);
+        return interp_setup_face(pv, vertex_count, back_cull,
+            is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -805,7 +823,7 @@ struct raster_vertex_shade_vertex : public abstract_raster
 
     // raster
 
-    interpolator<9> interp;
+    gradient g[9];
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -824,15 +842,15 @@ struct raster_vertex_shade_vertex : public abstract_raster
     {
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
-        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
-        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
-        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
-        attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
-        attrib[5] = interp.g[5].dx * x0f + interp.g[5].dy * y0f + interp.g[5].d;
-        attrib[6] = interp.g[6].dx * x0f + interp.g[6].dy * y0f + interp.g[6].d;
-        attrib[7] = interp.g[7].dx * x0f + interp.g[7].dy * y0f + interp.g[7].d;
-        attrib[8] = interp.g[8].dx * x0f + interp.g[8].dy * y0f + interp.g[8].d;
+        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
+        attrib[6] = g[6].dx * x0f + g[6].dy * y0f + g[6].d;
+        attrib[7] = g[7].dx * x0f + g[7].dy * y0f + g[7].d;
+        attrib[8] = g[8].dx * x0f + g[8].dy * y0f + g[8].d;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
@@ -851,15 +869,15 @@ struct raster_vertex_shade_vertex : public abstract_raster
     {
         float count_float{ (float)count };
         depth = attrib[0];
-        attrib[0] += interp.g[0].dx * count_float;
-        attrib[1] += interp.g[1].dx * count_float;
-        attrib[2] += interp.g[2].dx * count_float;
-        attrib[3] += interp.g[3].dx * count_float;
-        attrib[4] += interp.g[4].dx * count_float;
-        attrib[5] += interp.g[5].dx * count_float;
-        attrib[6] += interp.g[6].dx * count_float;
-        attrib[7] += interp.g[7].dx * count_float;
-        attrib[8] += interp.g[8].dx * count_float;
+        attrib[0] += g[0].dx * count_float;
+        attrib[1] += g[1].dx * count_float;
+        attrib[2] += g[2].dx * count_float;
+        attrib[3] += g[3].dx * count_float;
+        attrib[4] += g[4].dx * count_float;
+        attrib[5] += g[5].dx * count_float;
+        attrib[6] += g[6].dx * count_float;
+        attrib[7] += g[7].dx * count_float;
+        attrib[8] += g[8].dx * count_float;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int[0] = attrib_int_next[0];
         attrib_int[1] = attrib_int_next[1];
@@ -913,7 +931,7 @@ struct raster_vertex_shade_vertex : public abstract_raster
             depth_type::process_write(depth_addr, depth);
         }
 
-        depth += interp.g[0].dx;
+        depth += g[0].dx;
         attrib_int[0] += attrib_int_dx[0];
         attrib_int[1] += attrib_int_dx[1];
         attrib_int[2] += attrib_int_dx[2];
@@ -932,7 +950,7 @@ struct raster_vertex_shade_lightmap : public abstract_raster
 {
     raster_vertex_shade_lightmap(const config* c)
     {
-        interp.setup(c);
+        back_cull = c->back_cull;
 
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -945,9 +963,12 @@ struct raster_vertex_shade_lightmap : public abstract_raster
 
     // abstract_raster
 
+    bool back_cull;
+
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
-        return interp.setup_face(pv, vertex_count, is_clockwise);
+        return interp_setup_face(pv, vertex_count, back_cull,
+            is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -957,7 +978,7 @@ struct raster_vertex_shade_lightmap : public abstract_raster
 
     // raster
 
-    interpolator<8> interp;
+    gradient g[8];
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -984,14 +1005,14 @@ struct raster_vertex_shade_lightmap : public abstract_raster
     {
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
-        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
-        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
-        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
-        attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
-        attrib[5] = interp.g[5].dx * x0f + interp.g[5].dy * y0f + interp.g[5].d;
-        attrib[6] = interp.g[6].dx * x0f + interp.g[6].dy * y0f + interp.g[6].d;
-        attrib[7] = interp.g[7].dx * x0f + interp.g[7].dy * y0f + interp.g[7].d;
+        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
+        attrib[6] = g[6].dx * x0f + g[6].dy * y0f + g[6].d;
+        attrib[7] = g[7].dx * x0f + g[7].dy * y0f + g[7].d;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
@@ -1012,14 +1033,14 @@ struct raster_vertex_shade_lightmap : public abstract_raster
     {
         float count_float{ (float)count };
         depth = attrib[0];
-        attrib[0] += interp.g[0].dx * count_float;
-        attrib[1] += interp.g[1].dx * count_float;
-        attrib[2] += interp.g[2].dx * count_float;
-        attrib[3] += interp.g[3].dx * count_float;
-        attrib[4] += interp.g[4].dx * count_float;
-        attrib[5] += interp.g[5].dx * count_float;
-        attrib[6] += interp.g[6].dx * count_float;
-        attrib[7] += interp.g[7].dx * count_float;
+        attrib[0] += g[0].dx * count_float;
+        attrib[1] += g[1].dx * count_float;
+        attrib[2] += g[2].dx * count_float;
+        attrib[3] += g[3].dx * count_float;
+        attrib[4] += g[4].dx * count_float;
+        attrib[5] += g[5].dx * count_float;
+        attrib[6] += g[6].dx * count_float;
+        attrib[7] += g[7].dx * count_float;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int[0] = attrib_int_next[0];
         attrib_int[1] = attrib_int_next[1];
@@ -1084,7 +1105,7 @@ struct raster_vertex_shade_lightmap : public abstract_raster
             shade_trigger = 1;
         }
 
-        depth += interp.g[0].dx;
+        depth += g[0].dx;
         attrib_int[0] += attrib_int_dx[0];
         attrib_int[1] += attrib_int_dx[1];
         attrib_int[2] += attrib_int_dx[2];
@@ -1110,7 +1131,7 @@ struct raster_texture_shade_none : public abstract_raster
 {
     raster_texture_shade_none(const config* c)
     {
-        interp.setup(c);
+        back_cull = c->back_cull;
 
         texture_width = (float)c->texture_width;
         texture_height = (float)c->texture_height;
@@ -1127,19 +1148,22 @@ struct raster_texture_shade_none : public abstract_raster
 
     // abstract_raster
 
+    bool back_cull;
+
     float texture_width;
     float texture_height;
 
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
-        if (interp.setup_face(pv, vertex_count, is_clockwise))
+        if (interp_setup_face(pv, vertex_count, back_cull,
+            is_clockwise, g))
         {
-            interp.g[2].dx *= texture_width;
-            interp.g[2].dy *= texture_width;
-            interp.g[2].d *= texture_width;
-            interp.g[3].dx *= texture_height;
-            interp.g[3].dy *= texture_height;
-            interp.g[3].d *= texture_height;
+            g[2].dx *= texture_width;
+            g[2].dy *= texture_width;
+            g[2].d *= texture_width;
+            g[3].dx *= texture_height;
+            g[3].dy *= texture_height;
+            g[3].d *= texture_height;
             return true;
         }
         return false;
@@ -1152,7 +1176,7 @@ struct raster_texture_shade_none : public abstract_raster
 
     // raster
 
-    interpolator<4> interp;
+    gradient g[4];
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -1176,10 +1200,10 @@ struct raster_texture_shade_none : public abstract_raster
     {
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
-        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
-        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
-        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
+        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
         attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
@@ -1193,10 +1217,10 @@ struct raster_texture_shade_none : public abstract_raster
     {
         float count_float{ (float)count };
         depth = attrib[0];
-        attrib[0] += interp.g[0].dx * count_float;
-        attrib[1] += interp.g[1].dx * count_float;
-        attrib[2] += interp.g[2].dx * count_float;
-        attrib[3] += interp.g[3].dx * count_float;
+        attrib[0] += g[0].dx * count_float;
+        attrib[1] += g[1].dx * count_float;
+        attrib[2] += g[2].dx * count_float;
+        attrib[3] += g[3].dx * count_float;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int[0] = attrib_int_next[0];
         attrib_int[1] = attrib_int_next[1];
@@ -1230,7 +1254,7 @@ struct raster_texture_shade_none : public abstract_raster
             }
         }
 
-        depth += interp.g[0].dx;
+        depth += g[0].dx;
         attrib_int[0] += attrib_int_dx[0];
         attrib_int[1] += attrib_int_dx[1];
 
@@ -1248,7 +1272,7 @@ struct raster_texture_shade_vertex : public abstract_raster
 {
     raster_texture_shade_vertex(const config* c)
     {
-        interp.setup(c);
+        back_cull = c->back_cull;
 
         texture_width = (float)c->texture_width;
         texture_height = (float)c->texture_height;
@@ -1265,19 +1289,22 @@ struct raster_texture_shade_vertex : public abstract_raster
 
     // abstract_raster
 
+    bool back_cull;
+
     float texture_width;
     float texture_height;
 
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
-        if (interp.setup_face(pv, vertex_count, is_clockwise))
+        if (interp_setup_face(pv, vertex_count, back_cull,
+            is_clockwise, g))
         {
-            interp.g[2].dx *= texture_width;
-            interp.g[2].dy *= texture_width;
-            interp.g[2].d *= texture_width;
-            interp.g[3].dx *= texture_height;
-            interp.g[3].dy *= texture_height;
-            interp.g[3].d *= texture_height;
+            g[2].dx *= texture_width;
+            g[2].dy *= texture_width;
+            g[2].d *= texture_width;
+            g[3].dx *= texture_height;
+            g[3].dy *= texture_height;
+            g[3].d *= texture_height;
             return true;
         }
         return false;
@@ -1290,7 +1317,7 @@ struct raster_texture_shade_vertex : public abstract_raster
 
     // raster
 
-    interpolator<7> interp;
+    gradient g[7];
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -1314,13 +1341,13 @@ struct raster_texture_shade_vertex : public abstract_raster
     {
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
-        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
-        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
-        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
-        attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
-        attrib[5] = interp.g[5].dx * x0f + interp.g[5].dy * y0f + interp.g[5].d;
-        attrib[6] = interp.g[6].dx * x0f + interp.g[6].dy * y0f + interp.g[6].d;
+        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
+        attrib[6] = g[6].dx * x0f + g[6].dy * y0f + g[6].d;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
         attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
@@ -1337,13 +1364,13 @@ struct raster_texture_shade_vertex : public abstract_raster
     {
         float count_float{ (float)count };
         depth = attrib[0];
-        attrib[0] += interp.g[0].dx * count_float;
-        attrib[1] += interp.g[1].dx * count_float;
-        attrib[2] += interp.g[2].dx * count_float;
-        attrib[3] += interp.g[3].dx * count_float;
-        attrib[4] += interp.g[4].dx * count_float;
-        attrib[5] += interp.g[5].dx * count_float;
-        attrib[6] += interp.g[6].dx * count_float;
+        attrib[0] += g[0].dx * count_float;
+        attrib[1] += g[1].dx * count_float;
+        attrib[2] += g[2].dx * count_float;
+        attrib[3] += g[3].dx * count_float;
+        attrib[4] += g[4].dx * count_float;
+        attrib[5] += g[5].dx * count_float;
+        attrib[6] += g[6].dx * count_float;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int[0] = attrib_int_next[0];
         attrib_int[1] = attrib_int_next[1];
@@ -1396,7 +1423,7 @@ struct raster_texture_shade_vertex : public abstract_raster
             }
         }
 
-        depth += interp.g[0].dx;
+        depth += g[0].dx;
         attrib_int[0] += attrib_int_dx[0];
         attrib_int[1] += attrib_int_dx[1];
         attrib_int[2] += attrib_int_dx[2];
@@ -1417,7 +1444,7 @@ struct raster_texture_shade_lightmap : public abstract_raster
 {
     raster_texture_shade_lightmap(const config* c)
     {
-        interp.setup(c);
+        back_cull = c->back_cull;
 
         texture_width = (float)c->texture_width;
         texture_height = (float)c->texture_height;
@@ -1438,19 +1465,22 @@ struct raster_texture_shade_lightmap : public abstract_raster
 
     // abstract_raster
 
+    bool back_cull;
+
     float texture_width;
     float texture_height;
 
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
-        if (interp.setup_face(pv, vertex_count, is_clockwise))
+        if (interp_setup_face(pv, vertex_count, back_cull,
+            is_clockwise, g))
         {
-            interp.g[2].dx *= texture_width;
-            interp.g[2].dy *= texture_width;
-            interp.g[2].d *= texture_width;
-            interp.g[3].dx *= texture_height;
-            interp.g[3].dy *= texture_height;
-            interp.g[3].d *= texture_height;
+            g[2].dx *= texture_width;
+            g[2].dy *= texture_width;
+            g[2].d *= texture_width;
+            g[3].dx *= texture_height;
+            g[3].dy *= texture_height;
+            g[3].d *= texture_height;
             return true;
         }
         return false;
@@ -1463,7 +1493,7 @@ struct raster_texture_shade_lightmap : public abstract_raster
 
     // raster
 
-    interpolator<6> interp;
+    gradient g[6];
 
     int32_t frame_stride;
     float* depth_buffer;
@@ -1495,12 +1525,12 @@ struct raster_texture_shade_lightmap : public abstract_raster
     {
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = interp.g[0].dx * x0f + interp.g[0].dy * y0f + interp.g[0].d;
-        attrib[1] = interp.g[1].dx * x0f + interp.g[1].dy * y0f + interp.g[1].d;
-        attrib[2] = interp.g[2].dx * x0f + interp.g[2].dy * y0f + interp.g[2].d;
-        attrib[3] = interp.g[3].dx * x0f + interp.g[3].dy * y0f + interp.g[3].d;
-        attrib[4] = interp.g[4].dx * x0f + interp.g[4].dy * y0f + interp.g[4].d;
-        attrib[5] = interp.g[5].dx * x0f + interp.g[5].dy * y0f + interp.g[5].d;
+        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
         attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
@@ -1519,12 +1549,12 @@ struct raster_texture_shade_lightmap : public abstract_raster
     {
         float count_float{ (float)count };
         depth = attrib[0];
-        attrib[0] += interp.g[0].dx * count_float;
-        attrib[1] += interp.g[1].dx * count_float;
-        attrib[2] += interp.g[2].dx * count_float;
-        attrib[3] += interp.g[3].dx * count_float;
-        attrib[4] += interp.g[4].dx * count_float;
-        attrib[5] += interp.g[5].dx * count_float;
+        attrib[0] += g[0].dx * count_float;
+        attrib[1] += g[1].dx * count_float;
+        attrib[2] += g[2].dx * count_float;
+        attrib[3] += g[3].dx * count_float;
+        attrib[4] += g[4].dx * count_float;
+        attrib[5] += g[5].dx * count_float;
         float w{ (float)0x10000 / attrib[1] };
         attrib_int[0] = attrib_int_next[0];
         attrib_int[1] = attrib_int_next[1];
@@ -1588,7 +1618,7 @@ struct raster_texture_shade_lightmap : public abstract_raster
             shade_trigger = 1;
         }
 
-        depth += interp.g[0].dx;
+        depth += g[0].dx;
         attrib_int[0] += attrib_int_dx[0];
         attrib_int[1] += attrib_int_dx[1];
         attrib_int[2] += attrib_int_dx[2];
@@ -1715,107 +1745,97 @@ void scan_faces(const config* c)
         }
         break;
     case FILL_TEXTURE:
-        switch (c->flags & FILTER_BIT_MASK)
+        switch (c->flags & (SHADE_BIT_MASK | BLEND_BIT_MASK | FILTER_BIT_MASK))
         {
-        case FILTER_NONE:
-            switch (c->flags & (SHADE_BIT_MASK | BLEND_BIT_MASK))
-            {
-            case (SHADE_NONE | BLEND_NONE):
-                r = new (raster) raster_texture_shade_none<sample_nearest>(c);
-                break;
-            case (SHADE_NONE | BLEND_MASK):
-                r = new (raster) raster_texture_shade_none<sample_nearest, blend_none, depth_test_write, mask_texture_on>(c);
-                break;
-            case (SHADE_NONE | BLEND_ADD):
-                r = new (raster) raster_texture_shade_none<sample_nearest, blend_add, depth_test>(c);
-                break;
-            case (SHADE_NONE | BLEND_MUL):
-                r = new (raster) raster_texture_shade_none<sample_nearest, blend_mul, depth_test>(c);
-                break;
-            case (SHADE_NONE | BLEND_ALPHA):
-                r = new (raster) raster_texture_shade_none<sample_nearest, blend_alpha, depth_test>(c);
-                break;
-            case (SHADE_VERTEX | BLEND_NONE):
-                r = new (raster) raster_texture_shade_vertex<sample_nearest>(c);
-                break;
-            case (SHADE_VERTEX | BLEND_MASK):
-                r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_none, depth_test_write, mask_texture_on>(c);
-                break;
-            case (SHADE_VERTEX | BLEND_ADD):
-                r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_add, depth_test>(c);
-                break;
-            case (SHADE_VERTEX | BLEND_MUL):
-                r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_mul, depth_test>(c);
-                break;
-            case (SHADE_VERTEX | BLEND_ALPHA):
-                r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_alpha, depth_test>(c);
-                break;
-            case (SHADE_LIGHTMAP | BLEND_NONE):
-                r = new (raster) raster_texture_shade_lightmap<sample_nearest>(c);
-                break;
-            case (SHADE_LIGHTMAP | BLEND_MASK):
-                r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_none, depth_test_write, mask_texture_on>(c);
-                break;
-            case (SHADE_LIGHTMAP | BLEND_ADD):
-                r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_add, depth_test>(c);
-                break;
-            case (SHADE_LIGHTMAP | BLEND_MUL):
-                r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_mul, depth_test>(c);
-                break;
-            case (SHADE_LIGHTMAP | BLEND_ALPHA):
-                r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_alpha, depth_test>(c);
-                break;
-            }
+        case (SHADE_NONE | BLEND_NONE | FILTER_NONE):
+            r = new (raster) raster_texture_shade_none<sample_nearest>(c);
             break;
-        case FILTER_LINEAR:
-            switch (c->flags & (SHADE_BIT_MASK | BLEND_BIT_MASK))
-            {
-            case (SHADE_NONE | BLEND_NONE):
-                r = new (raster) raster_texture_shade_none<sample_bilinear>(c);
-                break;
-            case (SHADE_NONE | BLEND_MASK):
-                r = new (raster) raster_texture_shade_none<sample_bilinear, blend_none, depth_test_write, mask_texture_on>(c);
-                break;
-            case (SHADE_NONE | BLEND_ADD):
-                r = new (raster) raster_texture_shade_none<sample_bilinear, blend_add, depth_test>(c);
-                break;
-            case (SHADE_NONE | BLEND_MUL):
-                r = new (raster) raster_texture_shade_none<sample_bilinear, blend_mul, depth_test>(c);
-                break;
-            case (SHADE_NONE | BLEND_ALPHA):
-                r = new (raster) raster_texture_shade_none<sample_bilinear, blend_alpha, depth_test>(c);
-                break;
-            case (SHADE_VERTEX | BLEND_NONE):
-                r = new (raster) raster_texture_shade_vertex<sample_bilinear>(c);
-                break;
-            case (SHADE_VERTEX | BLEND_MASK):
-                r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_none, depth_test_write, mask_texture_on>(c);
-                break;
-            case (SHADE_VERTEX | BLEND_ADD):
-                r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_add, depth_test>(c);
-                break;
-            case (SHADE_VERTEX | BLEND_MUL):
-                r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_mul, depth_test>(c);
-                break;
-            case (SHADE_VERTEX | BLEND_ALPHA):
-                r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_alpha, depth_test>(c);
-                break;
-            case (SHADE_LIGHTMAP | BLEND_NONE):
-                r = new (raster) raster_texture_shade_lightmap<sample_bilinear>(c);
-                break;
-            case (SHADE_LIGHTMAP | BLEND_MASK):
-                r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_none, depth_test_write, mask_texture_on>(c);
-                break;
-            case (SHADE_LIGHTMAP | BLEND_ADD):
-                r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_add, depth_test>(c);
-                break;
-            case (SHADE_LIGHTMAP | BLEND_MUL):
-                r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_mul, depth_test>(c);
-                break;
-            case (SHADE_LIGHTMAP | BLEND_ALPHA):
-                r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_alpha, depth_test>(c);
-                break;
-            }
+        case (SHADE_NONE | BLEND_MASK | FILTER_NONE):
+            r = new (raster) raster_texture_shade_none<sample_nearest, blend_none, depth_test_write, mask_texture_on>(c);
+            break;
+        case (SHADE_NONE | BLEND_ADD | FILTER_NONE):
+            r = new (raster) raster_texture_shade_none<sample_nearest, blend_add, depth_test>(c);
+            break;
+        case (SHADE_NONE | BLEND_MUL | FILTER_NONE):
+            r = new (raster) raster_texture_shade_none<sample_nearest, blend_mul, depth_test>(c);
+            break;
+        case (SHADE_NONE | BLEND_ALPHA | FILTER_NONE):
+            r = new (raster) raster_texture_shade_none<sample_nearest, blend_alpha, depth_test>(c);
+            break;
+        case (SHADE_VERTEX | BLEND_NONE | FILTER_NONE):
+            r = new (raster) raster_texture_shade_vertex<sample_nearest>(c);
+            break;
+        case (SHADE_VERTEX | BLEND_MASK | FILTER_NONE):
+            r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_none, depth_test_write, mask_texture_on>(c);
+            break;
+        case (SHADE_VERTEX | BLEND_ADD | FILTER_NONE):
+            r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_add, depth_test>(c);
+            break;
+        case (SHADE_VERTEX | BLEND_MUL | FILTER_NONE):
+            r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_mul, depth_test>(c);
+            break;
+        case (SHADE_VERTEX | BLEND_ALPHA | FILTER_NONE):
+            r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_alpha, depth_test>(c);
+            break;
+        case (SHADE_LIGHTMAP | BLEND_NONE | FILTER_NONE):
+            r = new (raster) raster_texture_shade_lightmap<sample_nearest>(c);
+            break;
+        case (SHADE_LIGHTMAP | BLEND_MASK | FILTER_NONE):
+            r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_none, depth_test_write, mask_texture_on>(c);
+            break;
+        case (SHADE_LIGHTMAP | BLEND_ADD | FILTER_NONE):
+            r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_add, depth_test>(c);
+            break;
+        case (SHADE_LIGHTMAP | BLEND_MUL | FILTER_NONE):
+            r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_mul, depth_test>(c);
+            break;
+        case (SHADE_LIGHTMAP | BLEND_ALPHA | FILTER_NONE):
+            r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_alpha, depth_test>(c);
+            break;
+        case (SHADE_NONE | BLEND_NONE | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_none<sample_bilinear>(c);
+            break;
+        case (SHADE_NONE | BLEND_MASK | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_none<sample_bilinear, blend_none, depth_test_write, mask_texture_on>(c);
+            break;
+        case (SHADE_NONE | BLEND_ADD | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_none<sample_bilinear, blend_add, depth_test>(c);
+            break;
+        case (SHADE_NONE | BLEND_MUL | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_none<sample_bilinear, blend_mul, depth_test>(c);
+            break;
+        case (SHADE_NONE | BLEND_ALPHA | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_none<sample_bilinear, blend_alpha, depth_test>(c);
+            break;
+        case (SHADE_VERTEX | BLEND_NONE | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_vertex<sample_bilinear>(c);
+            break;
+        case (SHADE_VERTEX | BLEND_MASK | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_none, depth_test_write, mask_texture_on>(c);
+            break;
+        case (SHADE_VERTEX | BLEND_ADD | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_add, depth_test>(c);
+            break;
+        case (SHADE_VERTEX | BLEND_MUL | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_mul, depth_test>(c);
+            break;
+        case (SHADE_VERTEX | BLEND_ALPHA | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_alpha, depth_test>(c);
+            break;
+        case (SHADE_LIGHTMAP | BLEND_NONE | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_lightmap<sample_bilinear>(c);
+            break;
+        case (SHADE_LIGHTMAP | BLEND_MASK | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_none, depth_test_write, mask_texture_on>(c);
+            break;
+        case (SHADE_LIGHTMAP | BLEND_ADD | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_add, depth_test>(c);
+            break;
+        case (SHADE_LIGHTMAP | BLEND_MUL | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_mul, depth_test>(c);
+            break;
+        case (SHADE_LIGHTMAP | BLEND_ALPHA | FILTER_LINEAR):
+            r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_alpha, depth_test>(c);
             break;
         }
         break;
