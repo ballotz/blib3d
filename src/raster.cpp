@@ -172,18 +172,19 @@ constexpr int32_t span_block_size{ 16 };
 constexpr int32_t span_block_size_shift{ 4 };
 
 template<typename raster_type>
-force_inline void span_process_algo(raster_type& raster, int32_t y, int32_t x0, int32_t x1)
+force_inline void span_process_algo(int32_t y, int32_t x0, int32_t x1, raster_type* r)
 {
     //assert(x0 < x1);
-    raster.setup_span(y, x0);
+    raster_type::span_data s;
+    r->setup_span(y, x0, s);
     int32_t n{ x1 - x0 };
     while (n)
     {
         int32_t c{ math::min(n, span_block_size) };
         n -= c;
-        raster.setup_subspan(c);
+        raster_type::setup_subspan(c, s);
         while (c--)
-            raster.fill();
+            raster_type::fill(s);
     }
 }
 
@@ -276,7 +277,7 @@ struct raster_depth : public abstract_raster
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
     {
-        span_process_algo(*this, y, x0, x1);
+        span_process_algo(y, x0, x1, this);
     }
 
     // raster
@@ -286,33 +287,40 @@ struct raster_depth : public abstract_raster
     int32_t frame_stride;
     float* depth_buffer;
 
-    float attrib;
-    float depth;
-
-    float* depth_addr;
-
-    force_inline void setup_span(int32_t y, int32_t x0)
+    struct span_data
     {
+        float gdx;
+
+        float attrib;
+        float depth;
+
+        float* depth_addr;
+    };
+
+    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    {
+        s.gdx = g[0].dx;
+
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib = x0f * g[0].dx + y0f * g[0].dy + g[0].d;
+        s.attrib = x0f * g[0].dx + y0f * g[0].dy + g[0].d;
 
-        depth_addr = &depth_buffer[frame_stride * y + x0];
+        s.depth_addr = &depth_buffer[frame_stride * y + x0];
     }
 
-    force_inline void setup_subspan(int32_t count)
+    force_inline static void setup_subspan(int32_t count, span_data& s)
     {
-        depth = attrib;
-        attrib += g[0].dx * (float)count;
+        s.depth = s.attrib;
+        s.attrib += s.gdx * (float)count;
     }
 
-    force_inline void fill()
+    force_inline static void fill(span_data& s)
     {
-        *depth_addr = math::min(*depth_addr, depth);
+        *s.depth_addr = math::min(*s.depth_addr, s.depth);
 
-        depth += g[0].dx;
+        s.depth += s.gdx;
 
-        depth_addr++;
+        s.depth_addr++;
     }
 };
 
@@ -343,7 +351,7 @@ struct raster_solid_shade_none : public abstract_raster
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
     {
-        span_process_algo(*this, y, x0, x1);
+        span_process_algo(y, x0, x1, this);
     }
 
     // raster
@@ -355,41 +363,52 @@ struct raster_solid_shade_none : public abstract_raster
     ARGB* frame_buffer;
     uint32_t fill_color;
 
-    float attrib;
-    float depth;
-
-    float* depth_addr;
-    uint32_t* frame_addr;
-
-    force_inline void setup_span(int32_t y, int32_t x0)
+    struct span_data
     {
+        float gdx;
+
+        uint32_t fill_color;
+
+        float attrib;
+        float depth;
+
+        float* depth_addr;
+        uint32_t* frame_addr;
+    };
+
+    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    {
+        s.gdx = g[0].dx;
+
+        s.fill_color = fill_color;
+
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib = x0f * g[0].dx + y0f * g[0].dy + g[0].d;
+        s.attrib = x0f * g[0].dx + y0f * g[0].dy + g[0].d;
 
         int32_t start{ frame_stride * y + x0 };
-        depth_addr = &depth_buffer[start];
-        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+        s.depth_addr = &depth_buffer[start];
+        s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline void setup_subspan(int32_t count)
+    force_inline static void setup_subspan(int32_t count, span_data& s)
     {
-        depth = attrib;
-        attrib += g[0].dx * (float)count;
+        s.depth = s.attrib;
+        s.attrib += s.gdx * (float)count;
     }
 
-    force_inline void fill()
+    force_inline static void fill(span_data& s)
     {
-        if (depth_type::process_test(depth_addr, depth))
+        if (depth_type::process_test(s.depth_addr, s.depth))
         {
-            blend_type::process(frame_addr, fill_color);
-            depth_type::process_write(depth_addr, depth);
+            blend_type::process(s.frame_addr, s.fill_color);
+            depth_type::process_write(s.depth_addr, s.depth);
         }
 
-        depth += g[0].dx;
+        s.depth += s.gdx;
 
-        depth_addr++;
-        frame_addr++;
+        s.depth_addr++;
+        s.frame_addr++;
     }
 };
 
@@ -421,7 +440,7 @@ struct raster_solid_shade_vertex : public abstract_raster
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
     {
-        span_process_algo(*this, y, x0, x1);
+        span_process_algo(y, x0, x1, this);
     }
 
     // raster
@@ -433,87 +452,105 @@ struct raster_solid_shade_vertex : public abstract_raster
     ARGB* frame_buffer;
     uint32_t fill_color[4];
 
-    float attrib[5];
-    float depth;
-
-    float* depth_addr;
-    uint32_t* frame_addr;
-    int32_t attrib_int_dx[3]; // 16.16
-    int32_t attrib_int[3]; // 16.16
-    int32_t attrib_int_next[3]; // 16.16
-
-    force_inline void setup_span(int32_t y, int32_t x0)
+    struct span_data
     {
+        float gdx[5];
+
+        uint32_t fill_color[4];
+
+        float attrib[5];
+        float depth;
+
+        float* depth_addr;
+        uint32_t* frame_addr;
+        int32_t attrib_int_dx[3]; // 16.16
+        int32_t attrib_int[3]; // 16.16
+        int32_t attrib_int_next[3]; // 16.16
+    };
+
+    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    {
+        s.gdx[0] = g[0].dx;
+        s.gdx[1] = g[1].dx;
+        s.gdx[2] = g[2].dx;
+        s.gdx[3] = g[3].dx;
+        s.gdx[4] = g[4].dx;
+
+        s.fill_color[0] = fill_color[0];
+        s.fill_color[1] = fill_color[1];
+        s.fill_color[2] = fill_color[2];
+        s.fill_color[3] = fill_color[3];
+
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
-        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
-        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
-        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
-        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        s.attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        s.attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        s.attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        s.attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int_next[0] = math::clamp((int32_t)(s.attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[1] = math::clamp((int32_t)(s.attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
 
         int32_t start{ frame_stride * y + x0 };
-        depth_addr = &depth_buffer[start];
-        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+        s.depth_addr = &depth_buffer[start];
+        s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline void setup_subspan(int32_t count)
+    force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
-        depth = attrib[0];
-        attrib[0] += g[0].dx * count_float;
-        attrib[1] += g[1].dx * count_float;
-        attrib[2] += g[2].dx * count_float;
-        attrib[3] += g[3].dx * count_float;
-        attrib[4] += g[4].dx * count_float;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int[0] = attrib_int_next[0];
-        attrib_int[1] = attrib_int_next[1];
-        attrib_int[2] = attrib_int_next[2];
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.depth = s.attrib[0];
+        s.attrib[0] += s.gdx[0] * count_float;
+        s.attrib[1] += s.gdx[1] * count_float;
+        s.attrib[2] += s.gdx[2] * count_float;
+        s.attrib[3] += s.gdx[3] * count_float;
+        s.attrib[4] += s.gdx[4] * count_float;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int[0] = s.attrib_int_next[0];
+        s.attrib_int[1] = s.attrib_int_next[1];
+        s.attrib_int[2] = s.attrib_int_next[2];
+        s.attrib_int_next[0] = math::clamp((int32_t)(s.attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[1] = math::clamp((int32_t)(s.attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         if (count == span_block_size)
         {
-            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
-            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
-            attrib_int_dx[2] = (attrib_int_next[2] - attrib_int[2]) >> span_block_size_shift;
+            s.attrib_int_dx[0] = (s.attrib_int_next[0] - s.attrib_int[0]) >> span_block_size_shift;
+            s.attrib_int_dx[1] = (s.attrib_int_next[1] - s.attrib_int[1]) >> span_block_size_shift;
+            s.attrib_int_dx[2] = (s.attrib_int_next[2] - s.attrib_int[2]) >> span_block_size_shift;
         }
         else
         {
             float scale{ subspan_scale[count] };
-            attrib_int_dx[0] = (int32_t)((float)(attrib_int_next[0] - attrib_int[0]) * scale);
-            attrib_int_dx[1] = (int32_t)((float)(attrib_int_next[1] - attrib_int[1]) * scale);
-            attrib_int_dx[2] = (int32_t)((float)(attrib_int_next[2] - attrib_int[2]) * scale);
+            s.attrib_int_dx[0] = (int32_t)((float)(s.attrib_int_next[0] - s.attrib_int[0]) * scale);
+            s.attrib_int_dx[1] = (int32_t)((float)(s.attrib_int_next[1] - s.attrib_int[1]) * scale);
+            s.attrib_int_dx[2] = (int32_t)((float)(s.attrib_int_next[2] - s.attrib_int[2]) * scale);
         }
     }
 
-    force_inline void fill()
+    force_inline static void fill(span_data& s)
     {
-        if (depth_type::process_test(depth_addr, depth))
+        if (depth_type::process_test(s.depth_addr, s.depth))
         {
             uint32_t color
             {
-                (((fill_color[0]                          )              )       ) +
-                (((fill_color[1] * (uint32_t)attrib_int[0]) & 0xFF000000u) >>  8u) +
-                (((fill_color[2] * (uint32_t)attrib_int[1]) & 0xFF000000u) >> 16u) +
-                (((fill_color[3] * (uint32_t)attrib_int[2])              ) >> 24u)
+                (((s.fill_color[0]                            )              )       ) +
+                (((s.fill_color[1] * (uint32_t)s.attrib_int[0]) & 0xFF000000u) >>  8u) +
+                (((s.fill_color[2] * (uint32_t)s.attrib_int[1]) & 0xFF000000u) >> 16u) +
+                (((s.fill_color[3] * (uint32_t)s.attrib_int[2])              ) >> 24u)
             };
-            blend_type::process(frame_addr, color);
-            depth_type::process_write(depth_addr, depth);
+            blend_type::process(s.frame_addr, color);
+            depth_type::process_write(s.depth_addr, s.depth);
         }
 
-        depth += g[0].dx;
-        attrib_int[0] += attrib_int_dx[0];
-        attrib_int[1] += attrib_int_dx[1];
-        attrib_int[2] += attrib_int_dx[2];
+        s.depth += s.gdx[0];
+        s.attrib_int[0] += s.attrib_int_dx[0];
+        s.attrib_int[1] += s.attrib_int_dx[1];
+        s.attrib_int[2] += s.attrib_int_dx[2];
 
-        depth_addr++;
-        frame_addr++;
+        s.depth_addr++;
+        s.frame_addr++;
     }
 };
 
@@ -549,7 +586,7 @@ struct raster_solid_shade_lightmap : public abstract_raster
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
     {
-        span_process_algo(*this, y, x0, x1);
+        span_process_algo(y, x0, x1, this);
     }
 
     // raster
@@ -565,103 +602,128 @@ struct raster_solid_shade_lightmap : public abstract_raster
     int32_t vshift;
     const uint32_t* lightmap;
 
-    float attrib[4];
-    float depth;
-
-    float* depth_addr;
-    uint32_t* frame_addr;
-    int32_t attrib_int_dx[2]; // 16.16
-    int32_t attrib_int[2]; // 16.16
-    int32_t attrib_int_next[2]; // 16.16
-
-    uint32_t shade_counter;
-    uint32_t shade_trigger;
-    uint32_t shade[3];
-
-    force_inline void setup_span(int32_t y, int32_t x0)
+    struct span_data
     {
+        float gdx[4];
+
+        uint32_t fill_color[4];
+        int32_t umax;
+        int32_t vmax;
+        int32_t vshift;
+        const uint32_t* lightmap;
+
+        float attrib[4];
+        float depth;
+
+        float* depth_addr;
+        uint32_t* frame_addr;
+        int32_t attrib_int_dx[2]; // 16.16
+        int32_t attrib_int[2]; // 16.16
+        int32_t attrib_int_next[2]; // 16.16
+
+        uint32_t shade_counter;
+        uint32_t shade_trigger;
+        uint32_t shade[3];
+    };
+
+    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    {
+        s.gdx[0] = g[0].dx;
+        s.gdx[1] = g[1].dx;
+        s.gdx[2] = g[2].dx;
+        s.gdx[3] = g[3].dx;
+
+        s.fill_color[0] = fill_color[0];
+        s.fill_color[1] = fill_color[1];
+        s.fill_color[2] = fill_color[2];
+        s.fill_color[3] = fill_color[3];
+        s.umax = umax;
+        s.vmax = vmax;
+        s.vshift = vshift;
+        s.lightmap = lightmap;
+
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
-        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
-        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
-        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, umax);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, vmax);
+        s.attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        s.attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        s.attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        s.attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int_next[0] = math::clamp((int32_t)(s.attrib[2] * w), (int32_t)0, umax);
+        s.attrib_int_next[1] = math::clamp((int32_t)(s.attrib[3] * w), (int32_t)0, vmax);
 
         int32_t start{ frame_stride * y + x0 };
-        depth_addr = &depth_buffer[start];
-        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+        s.depth_addr = &depth_buffer[start];
+        s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
 
-        shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
-        shade_trigger = 1;
+        s.shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
+        s.shade_trigger = 1;
     }
 
-    force_inline void setup_subspan(int32_t count)
+    force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
-        depth = attrib[0];
-        attrib[0] += g[0].dx * count_float;
-        attrib[1] += g[1].dx * count_float;
-        attrib[2] += g[2].dx * count_float;
-        attrib[3] += g[3].dx * count_float;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int[0] = attrib_int_next[0];
-        attrib_int[1] = attrib_int_next[1];
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, umax);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, vmax);
+        s.depth = s.attrib[0];
+        s.attrib[0] += s.gdx[0] * count_float;
+        s.attrib[1] += s.gdx[1] * count_float;
+        s.attrib[2] += s.gdx[2] * count_float;
+        s.attrib[3] += s.gdx[3] * count_float;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int[0] = s.attrib_int_next[0];
+        s.attrib_int[1] = s.attrib_int_next[1];
+        s.attrib_int_next[0] = math::clamp((int32_t)(s.attrib[2] * w), (int32_t)0, s.umax);
+        s.attrib_int_next[1] = math::clamp((int32_t)(s.attrib[3] * w), (int32_t)0, s.vmax);
         if (count == span_block_size)
         {
-            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
-            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
+            s.attrib_int_dx[0] = (s.attrib_int_next[0] - s.attrib_int[0]) >> span_block_size_shift;
+            s.attrib_int_dx[1] = (s.attrib_int_next[1] - s.attrib_int[1]) >> span_block_size_shift;
         }
         else
         {
             float scale{ subspan_scale[count] };
-            attrib_int_dx[0] = (int32_t)((float)(attrib_int_next[0] - attrib_int[0]) * scale);
-            attrib_int_dx[1] = (int32_t)((float)(attrib_int_next[1] - attrib_int[1]) * scale);
+            s.attrib_int_dx[0] = (int32_t)((float)(s.attrib_int_next[0] - s.attrib_int[0]) * scale);
+            s.attrib_int_dx[1] = (int32_t)((float)(s.attrib_int_next[1] - s.attrib_int[1]) * scale);
         }
     }
 
-    force_inline void fill()
+    force_inline static void fill(span_data& s)
     {
-        if (depth_type::process_test(depth_addr, depth))
+        if (depth_type::process_test(s.depth_addr, s.depth))
         {
-            if (((shade_counter & shade_mask) == 0) | shade_trigger)
+            if (((s.shade_counter & shade_mask) == 0) | s.shade_trigger)
             {
-                shade_trigger = 0;
+                s.shade_trigger = 0;
                 uint32_t shade_color{ sample_lightmap(
-                    attrib_int[0],
-                    attrib_int[1],
-                    vshift, lightmap) };
-                shade[0] = (shade_color & 0x00FF0000u) >> 16u;
-                shade[1] = (shade_color & 0x0000FF00u) >>  8u;
-                shade[2] = (shade_color & 0x000000FFu)       ;
+                    s.attrib_int[0],
+                    s.attrib_int[1],
+                    s.vshift, s.lightmap) };
+                s.shade[0] = (shade_color & 0x00FF0000u) >> 16u;
+                s.shade[1] = (shade_color & 0x0000FF00u) >>  8u;
+                s.shade[2] = (shade_color & 0x000000FFu)       ;
             }
             uint32_t color
             {
-                (((fill_color[0]           )              )      ) +
-                (((fill_color[1] * shade[0]) & 0x00FF0000u)      ) +
-                (((fill_color[2] * shade[1]) & 0x0000FF00u)      ) +
-                (((fill_color[3] * shade[2])              ) >> 8u)
+                (((s.fill_color[0]             )              )      ) +
+                (((s.fill_color[1] * s.shade[0]) & 0x00FF0000u)      ) +
+                (((s.fill_color[2] * s.shade[1]) & 0x0000FF00u)      ) +
+                (((s.fill_color[3] * s.shade[2])              ) >> 8u)
             };
-            blend_type::process(frame_addr, color);
-            depth_type::process_write(depth_addr, depth);
+            blend_type::process(s.frame_addr, color);
+            depth_type::process_write(s.depth_addr, s.depth);
         }
         else
         {
-            shade_trigger = 1;
+            s.shade_trigger = 1;
         }
 
-        depth += g[0].dx;
-        attrib_int[0] += attrib_int_dx[0];
-        attrib_int[1] += attrib_int_dx[1];
+        s.depth += s.gdx[0];
+        s.attrib_int[0] += s.attrib_int_dx[0];
+        s.attrib_int[1] += s.attrib_int_dx[1];
 
-        depth_addr++;
-        frame_addr++;
+        s.depth_addr++;
+        s.frame_addr++;
 
-        shade_counter++;
+        s.shade_counter++;
     }
 };
 
@@ -691,7 +753,7 @@ struct raster_vertex_shade_none : public abstract_raster
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
     {
-        span_process_algo(*this, y, x0, x1);
+        span_process_algo(y, x0, x1, this);
     }
 
     // raster
@@ -702,95 +764,107 @@ struct raster_vertex_shade_none : public abstract_raster
     float* depth_buffer;
     ARGB* frame_buffer;
 
-    float attrib[6];
-    float depth;
-
-    float* depth_addr;
-    uint32_t* frame_addr;
-    int32_t attrib_int_dx[4]; // 16.16
-    int32_t attrib_int[4]; // 16.16
-    int32_t attrib_int_next[4]; // 16.16
-
-    force_inline void setup_span(int32_t y, int32_t x0)
+    struct span_data
     {
+        float gdx[6];
+
+        float attrib[6];
+        float depth;
+
+        float* depth_addr;
+        uint32_t* frame_addr;
+        int32_t attrib_int_dx[4]; // 16.16
+        int32_t attrib_int[4]; // 16.16
+        int32_t attrib_int_next[4]; // 16.16
+    };
+
+    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    {
+        s.gdx[0] = g[0].dx;
+        s.gdx[1] = g[1].dx;
+        s.gdx[2] = g[2].dx;
+        s.gdx[3] = g[3].dx;
+        s.gdx[4] = g[4].dx;
+        s.gdx[5] = g[5].dx;
+
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
-        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
-        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
-        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
-        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
-        attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        s.attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        s.attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        s.attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        s.attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        s.attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int_next[0] = math::clamp((int32_t)(s.attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[1] = math::clamp((int32_t)(s.attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[3] = math::clamp((int32_t)(s.attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
 
         int32_t start{ frame_stride * y + x0 };
-        depth_addr = &depth_buffer[start];
-        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+        s.depth_addr = &depth_buffer[start];
+        s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline void setup_subspan(int32_t count)
+    force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
-        depth = attrib[0];
-        attrib[0] += g[0].dx * count_float;
-        attrib[1] += g[1].dx * count_float;
-        attrib[2] += g[2].dx * count_float;
-        attrib[3] += g[3].dx * count_float;
-        attrib[4] += g[4].dx * count_float;
-        attrib[5] += g[5].dx * count_float;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int[0] = attrib_int_next[0];
-        attrib_int[1] = attrib_int_next[1];
-        attrib_int[2] = attrib_int_next[2];
-        attrib_int[3] = attrib_int_next[3];
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.depth = s.attrib[0];
+        s.attrib[0] += s.gdx[0] * count_float;
+        s.attrib[1] += s.gdx[1] * count_float;
+        s.attrib[2] += s.gdx[2] * count_float;
+        s.attrib[3] += s.gdx[3] * count_float;
+        s.attrib[4] += s.gdx[4] * count_float;
+        s.attrib[5] += s.gdx[5] * count_float;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int[0] = s.attrib_int_next[0];
+        s.attrib_int[1] = s.attrib_int_next[1];
+        s.attrib_int[2] = s.attrib_int_next[2];
+        s.attrib_int[3] = s.attrib_int_next[3];
+        s.attrib_int_next[0] = math::clamp((int32_t)(s.attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[1] = math::clamp((int32_t)(s.attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[3] = math::clamp((int32_t)(s.attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         if (count == span_block_size)
         {
-            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
-            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
-            attrib_int_dx[2] = (attrib_int_next[2] - attrib_int[2]) >> span_block_size_shift;
-            attrib_int_dx[3] = (attrib_int_next[3] - attrib_int[3]) >> span_block_size_shift;
+            s.attrib_int_dx[0] = (s.attrib_int_next[0] - s.attrib_int[0]) >> span_block_size_shift;
+            s.attrib_int_dx[1] = (s.attrib_int_next[1] - s.attrib_int[1]) >> span_block_size_shift;
+            s.attrib_int_dx[2] = (s.attrib_int_next[2] - s.attrib_int[2]) >> span_block_size_shift;
+            s.attrib_int_dx[3] = (s.attrib_int_next[3] - s.attrib_int[3]) >> span_block_size_shift;
         }
         else
         {
             float scale{ subspan_scale[count] };
-            attrib_int_dx[0] = (int32_t)((float)(attrib_int_next[0] - attrib_int[0]) * scale);
-            attrib_int_dx[1] = (int32_t)((float)(attrib_int_next[1] - attrib_int[1]) * scale);
-            attrib_int_dx[2] = (int32_t)((float)(attrib_int_next[2] - attrib_int[2]) * scale);
-            attrib_int_dx[3] = (int32_t)((float)(attrib_int_next[3] - attrib_int[3]) * scale);
+            s.attrib_int_dx[0] = (int32_t)((float)(s.attrib_int_next[0] - s.attrib_int[0]) * scale);
+            s.attrib_int_dx[1] = (int32_t)((float)(s.attrib_int_next[1] - s.attrib_int[1]) * scale);
+            s.attrib_int_dx[2] = (int32_t)((float)(s.attrib_int_next[2] - s.attrib_int[2]) * scale);
+            s.attrib_int_dx[3] = (int32_t)((float)(s.attrib_int_next[3] - s.attrib_int[3]) * scale);
         }
     }
 
-    force_inline void fill()
+    force_inline static void fill(span_data& s)
     {
-        if (depth_type::process_test(depth_addr, depth))
+        if (depth_type::process_test(s.depth_addr, s.depth))
         {
             uint32_t color
             {
-                (((uint32_t)attrib_int[3] & 0x00FF0000u) <<  8u) +
-                (((uint32_t)attrib_int[0] & 0x00FF0000u)       ) +
-                (((uint32_t)attrib_int[1] & 0x00FF0000u) >>  8u) +
-                (((uint32_t)attrib_int[2] & 0x00FF0000u) >> 16u)
+                (((uint32_t)s.attrib_int[3] & 0x00FF0000u) <<  8u) +
+                (((uint32_t)s.attrib_int[0] & 0x00FF0000u)       ) +
+                (((uint32_t)s.attrib_int[1] & 0x00FF0000u) >>  8u) +
+                (((uint32_t)s.attrib_int[2] & 0x00FF0000u) >> 16u)
             };
-            blend_type::process(frame_addr, color);
-            depth_type::process_write(depth_addr, depth);
+            blend_type::process(s.frame_addr, color);
+            depth_type::process_write(s.depth_addr, s.depth);
         }
 
-        depth += g[0].dx;
-        attrib_int[0] += attrib_int_dx[0];
-        attrib_int[1] += attrib_int_dx[1];
-        attrib_int[2] += attrib_int_dx[2];
-        attrib_int[3] += attrib_int_dx[3];
+        s.depth += s.gdx[0];
+        s.attrib_int[0] += s.attrib_int_dx[0];
+        s.attrib_int[1] += s.attrib_int_dx[1];
+        s.attrib_int[2] += s.attrib_int_dx[2];
+        s.attrib_int[3] += s.attrib_int_dx[3];
 
-        depth_addr++;
-        frame_addr++;
+        s.depth_addr++;
+        s.frame_addr++;
     }
 };
 
@@ -818,7 +892,7 @@ struct raster_vertex_shade_vertex : public abstract_raster
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
     {
-        span_process_algo(*this, y, x0, x1);
+        span_process_algo(y, x0, x1, this);
     }
 
     // raster
@@ -829,119 +903,134 @@ struct raster_vertex_shade_vertex : public abstract_raster
     float* depth_buffer;
     ARGB* frame_buffer;
 
-    float attrib[9];
-    float depth;
-
-    float* depth_addr;
-    uint32_t* frame_addr;
-    int32_t attrib_int_dx[7]; // 16.16
-    int32_t attrib_int[7]; // 16.16
-    int32_t attrib_int_next[7]; // 16.16
-
-    force_inline void setup_span(int32_t y, int32_t x0)
+    struct span_data
     {
+        float gdx[9];
+
+        float attrib[9];
+        float depth;
+
+        float* depth_addr;
+        uint32_t* frame_addr;
+        int32_t attrib_int_dx[7]; // 16.16
+        int32_t attrib_int[7]; // 16.16
+        int32_t attrib_int_next[7]; // 16.16
+    };
+
+    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    {
+        s.gdx[0] = g[0].dx;
+        s.gdx[1] = g[1].dx;
+        s.gdx[2] = g[2].dx;
+        s.gdx[3] = g[3].dx;
+        s.gdx[4] = g[4].dx;
+        s.gdx[5] = g[5].dx;
+        s.gdx[6] = g[6].dx;
+        s.gdx[7] = g[7].dx;
+        s.gdx[8] = g[8].dx;
+
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
-        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
-        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
-        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
-        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
-        attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
-        attrib[6] = g[6].dx * x0f + g[6].dy * y0f + g[6].d;
-        attrib[7] = g[7].dx * x0f + g[7].dy * y0f + g[7].d;
-        attrib[8] = g[8].dx * x0f + g[8].dy * y0f + g[8].d;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[6] = math::clamp((int32_t)(attrib[8] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        s.attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        s.attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        s.attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        s.attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        s.attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
+        s.attrib[6] = g[6].dx * x0f + g[6].dy * y0f + g[6].d;
+        s.attrib[7] = g[7].dx * x0f + g[7].dy * y0f + g[7].d;
+        s.attrib[8] = g[8].dx * x0f + g[8].dy * y0f + g[8].d;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int_next[0] = math::clamp((int32_t)(s.attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[1] = math::clamp((int32_t)(s.attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[3] = math::clamp((int32_t)(s.attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[4] = math::clamp((int32_t)(s.attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[5] = math::clamp((int32_t)(s.attrib[7] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[6] = math::clamp((int32_t)(s.attrib[8] * w), (int32_t)0, (int32_t)0x00FFFFFF);
 
         int32_t start{ frame_stride * y + x0 };
-        depth_addr = &depth_buffer[start];
-        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+        s.depth_addr = &depth_buffer[start];
+        s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline void setup_subspan(int32_t count)
+    force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
-        depth = attrib[0];
-        attrib[0] += g[0].dx * count_float;
-        attrib[1] += g[1].dx * count_float;
-        attrib[2] += g[2].dx * count_float;
-        attrib[3] += g[3].dx * count_float;
-        attrib[4] += g[4].dx * count_float;
-        attrib[5] += g[5].dx * count_float;
-        attrib[6] += g[6].dx * count_float;
-        attrib[7] += g[7].dx * count_float;
-        attrib[8] += g[8].dx * count_float;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int[0] = attrib_int_next[0];
-        attrib_int[1] = attrib_int_next[1];
-        attrib_int[2] = attrib_int_next[2];
-        attrib_int[3] = attrib_int_next[3];
-        attrib_int[4] = attrib_int_next[4];
-        attrib_int[5] = attrib_int_next[5];
-        attrib_int[6] = attrib_int_next[6];
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[6] = math::clamp((int32_t)(attrib[8] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.depth = s.attrib[0];
+        s.attrib[0] += s.gdx[0] * count_float;
+        s.attrib[1] += s.gdx[1] * count_float;
+        s.attrib[2] += s.gdx[2] * count_float;
+        s.attrib[3] += s.gdx[3] * count_float;
+        s.attrib[4] += s.gdx[4] * count_float;
+        s.attrib[5] += s.gdx[5] * count_float;
+        s.attrib[6] += s.gdx[6] * count_float;
+        s.attrib[7] += s.gdx[7] * count_float;
+        s.attrib[8] += s.gdx[8] * count_float;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int[0] = s.attrib_int_next[0];
+        s.attrib_int[1] = s.attrib_int_next[1];
+        s.attrib_int[2] = s.attrib_int_next[2];
+        s.attrib_int[3] = s.attrib_int_next[3];
+        s.attrib_int[4] = s.attrib_int_next[4];
+        s.attrib_int[5] = s.attrib_int_next[5];
+        s.attrib_int[6] = s.attrib_int_next[6];
+        s.attrib_int_next[0] = math::clamp((int32_t)(s.attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[1] = math::clamp((int32_t)(s.attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[3] = math::clamp((int32_t)(s.attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[4] = math::clamp((int32_t)(s.attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[5] = math::clamp((int32_t)(s.attrib[7] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[6] = math::clamp((int32_t)(s.attrib[8] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         if (count == span_block_size)
         {
-            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
-            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
-            attrib_int_dx[2] = (attrib_int_next[2] - attrib_int[2]) >> span_block_size_shift;
-            attrib_int_dx[3] = (attrib_int_next[3] - attrib_int[3]) >> span_block_size_shift;
-            attrib_int_dx[4] = (attrib_int_next[4] - attrib_int[4]) >> span_block_size_shift;
-            attrib_int_dx[5] = (attrib_int_next[5] - attrib_int[5]) >> span_block_size_shift;
-            attrib_int_dx[6] = (attrib_int_next[6] - attrib_int[6]) >> span_block_size_shift;
+            s.attrib_int_dx[0] = (s.attrib_int_next[0] - s.attrib_int[0]) >> span_block_size_shift;
+            s.attrib_int_dx[1] = (s.attrib_int_next[1] - s.attrib_int[1]) >> span_block_size_shift;
+            s.attrib_int_dx[2] = (s.attrib_int_next[2] - s.attrib_int[2]) >> span_block_size_shift;
+            s.attrib_int_dx[3] = (s.attrib_int_next[3] - s.attrib_int[3]) >> span_block_size_shift;
+            s.attrib_int_dx[4] = (s.attrib_int_next[4] - s.attrib_int[4]) >> span_block_size_shift;
+            s.attrib_int_dx[5] = (s.attrib_int_next[5] - s.attrib_int[5]) >> span_block_size_shift;
+            s.attrib_int_dx[6] = (s.attrib_int_next[6] - s.attrib_int[6]) >> span_block_size_shift;
         }
         else
         {
             float scale{ subspan_scale[count] };
-            attrib_int_dx[0] = (int32_t)((float)(attrib_int_next[0] - attrib_int[0]) * scale);
-            attrib_int_dx[1] = (int32_t)((float)(attrib_int_next[1] - attrib_int[1]) * scale);
-            attrib_int_dx[2] = (int32_t)((float)(attrib_int_next[2] - attrib_int[2]) * scale);
-            attrib_int_dx[3] = (int32_t)((float)(attrib_int_next[3] - attrib_int[3]) * scale);
-            attrib_int_dx[4] = (int32_t)((float)(attrib_int_next[4] - attrib_int[4]) * scale);
-            attrib_int_dx[5] = (int32_t)((float)(attrib_int_next[5] - attrib_int[5]) * scale);
-            attrib_int_dx[6] = (int32_t)((float)(attrib_int_next[6] - attrib_int[6]) * scale);
+            s.attrib_int_dx[0] = (int32_t)((float)(s.attrib_int_next[0] - s.attrib_int[0]) * scale);
+            s.attrib_int_dx[1] = (int32_t)((float)(s.attrib_int_next[1] - s.attrib_int[1]) * scale);
+            s.attrib_int_dx[2] = (int32_t)((float)(s.attrib_int_next[2] - s.attrib_int[2]) * scale);
+            s.attrib_int_dx[3] = (int32_t)((float)(s.attrib_int_next[3] - s.attrib_int[3]) * scale);
+            s.attrib_int_dx[4] = (int32_t)((float)(s.attrib_int_next[4] - s.attrib_int[4]) * scale);
+            s.attrib_int_dx[5] = (int32_t)((float)(s.attrib_int_next[5] - s.attrib_int[5]) * scale);
+            s.attrib_int_dx[6] = (int32_t)((float)(s.attrib_int_next[6] - s.attrib_int[6]) * scale);
         }
     }
 
-    force_inline void fill()
+    force_inline static void fill(span_data& s)
     {
-        if (depth_type::process_test(depth_addr, depth))
+        if (depth_type::process_test(s.depth_addr, s.depth))
         {
             uint32_t color
             {
-                (((((uint32_t)attrib_int[3] <<  8u)                                   ) & 0xFF000000u)       ) +
-                (((((uint32_t)attrib_int[0] >> 16u) * ((uint32_t)attrib_int[4] >>  8u)) & 0x00FF0000u)       ) +
-                (((((uint32_t)attrib_int[1] >> 16u) * ((uint32_t)attrib_int[5] >> 16u)) & 0x0000FF00u)       ) +
-                (((((uint32_t)attrib_int[2] >>  8u) * ((uint32_t)attrib_int[6] >>  8u))              ) >> 24u)
+                (((((uint32_t)s.attrib_int[3] <<  8u)                                     ) & 0xFF000000u)       ) +
+                (((((uint32_t)s.attrib_int[0] >> 16u) * ((uint32_t)s.attrib_int[4] >>  8u)) & 0x00FF0000u)       ) +
+                (((((uint32_t)s.attrib_int[1] >> 16u) * ((uint32_t)s.attrib_int[5] >> 16u)) & 0x0000FF00u)       ) +
+                (((((uint32_t)s.attrib_int[2] >>  8u) * ((uint32_t)s.attrib_int[6] >>  8u))              ) >> 24u)
             };
-            blend_type::process(frame_addr, color);
-            depth_type::process_write(depth_addr, depth);
+            blend_type::process(s.frame_addr, color);
+            depth_type::process_write(s.depth_addr, s.depth);
         }
 
-        depth += g[0].dx;
-        attrib_int[0] += attrib_int_dx[0];
-        attrib_int[1] += attrib_int_dx[1];
-        attrib_int[2] += attrib_int_dx[2];
-        attrib_int[3] += attrib_int_dx[3];
-        attrib_int[4] += attrib_int_dx[4];
-        attrib_int[5] += attrib_int_dx[5];
-        attrib_int[6] += attrib_int_dx[6];
+        s.depth += s.gdx[0];
+        s.attrib_int[0] += s.attrib_int_dx[0];
+        s.attrib_int[1] += s.attrib_int_dx[1];
+        s.attrib_int[2] += s.attrib_int_dx[2];
+        s.attrib_int[3] += s.attrib_int_dx[3];
+        s.attrib_int[4] += s.attrib_int_dx[4];
+        s.attrib_int[5] += s.attrib_int_dx[5];
+        s.attrib_int[6] += s.attrib_int_dx[6];
 
-        depth_addr++;
-        frame_addr++;
+        s.depth_addr++;
+        s.frame_addr++;
     }
 };
 
@@ -973,7 +1062,7 @@ struct raster_vertex_shade_lightmap : public abstract_raster
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
     {
-        span_process_algo(*this, y, x0, x1);
+        span_process_algo(y, x0, x1, this);
     }
 
     // raster
@@ -988,135 +1077,159 @@ struct raster_vertex_shade_lightmap : public abstract_raster
     int32_t vshift;
     const uint32_t* lightmap;
 
-    float attrib[8];
-    float depth;
-
-    float* depth_addr;
-    uint32_t* frame_addr;
-    int32_t attrib_int_dx[6]; // 16.16
-    int32_t attrib_int[6]; // 16.16
-    int32_t attrib_int_next[6]; // 16.16
-
-    uint32_t shade_counter;
-    uint32_t shade_trigger;
-    uint32_t shade[3];
-
-    force_inline void setup_span(int32_t y, int32_t x0)
+    struct span_data
     {
+        float gdx[8];
+
+        int32_t umax;
+        int32_t vmax;
+        int32_t vshift;
+        const uint32_t* lightmap;
+
+        float attrib[8];
+        float depth;
+
+        float* depth_addr;
+        uint32_t* frame_addr;
+        int32_t attrib_int_dx[6]; // 16.16
+        int32_t attrib_int[6]; // 16.16
+        int32_t attrib_int_next[6]; // 16.16
+
+        uint32_t shade_counter;
+        uint32_t shade_trigger;
+        uint32_t shade[3];
+    };
+
+    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    {
+        s.gdx[0] = g[0].dx;
+        s.gdx[1] = g[1].dx;
+        s.gdx[2] = g[2].dx;
+        s.gdx[3] = g[3].dx;
+        s.gdx[4] = g[4].dx;
+        s.gdx[5] = g[5].dx;
+        s.gdx[6] = g[6].dx;
+        s.gdx[7] = g[7].dx;
+
+        s.umax = umax;
+        s.vmax = vmax;
+        s.vshift = vshift;
+        s.lightmap = lightmap;
+
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
-        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
-        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
-        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
-        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
-        attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
-        attrib[6] = g[6].dx * x0f + g[6].dy * y0f + g[6].d;
-        attrib[7] = g[7].dx * x0f + g[7].dy * y0f + g[7].d;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, umax);
-        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), (int32_t)0, vmax);
+        s.attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        s.attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        s.attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        s.attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        s.attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        s.attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
+        s.attrib[6] = g[6].dx * x0f + g[6].dy * y0f + g[6].d;
+        s.attrib[7] = g[7].dx * x0f + g[7].dy * y0f + g[7].d;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int_next[0] = math::clamp((int32_t)(s.attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[1] = math::clamp((int32_t)(s.attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[3] = math::clamp((int32_t)(s.attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[4] = math::clamp((int32_t)(s.attrib[6] * w), (int32_t)0, s.umax);
+        s.attrib_int_next[5] = math::clamp((int32_t)(s.attrib[7] * w), (int32_t)0, s.vmax);
 
         int32_t start{ frame_stride * y + x0 };
-        depth_addr = &depth_buffer[start];
-        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+        s.depth_addr = &depth_buffer[start];
+        s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
 
-        shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
-        shade_trigger = 1;
+        s.shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
+        s.shade_trigger = 1;
     }
 
-    force_inline void setup_subspan(int32_t count)
+    force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
-        depth = attrib[0];
-        attrib[0] += g[0].dx * count_float;
-        attrib[1] += g[1].dx * count_float;
-        attrib[2] += g[2].dx * count_float;
-        attrib[3] += g[3].dx * count_float;
-        attrib[4] += g[4].dx * count_float;
-        attrib[5] += g[5].dx * count_float;
-        attrib[6] += g[6].dx * count_float;
-        attrib[7] += g[7].dx * count_float;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int[0] = attrib_int_next[0];
-        attrib_int[1] = attrib_int_next[1];
-        attrib_int[2] = attrib_int_next[2];
-        attrib_int[3] = attrib_int_next[3];
-        attrib_int[4] = attrib_int_next[4];
-        attrib_int[5] = attrib_int_next[5];
-        attrib_int_next[0] = math::clamp((int32_t)(attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[1] = math::clamp((int32_t)(attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, umax);
-        attrib_int_next[5] = math::clamp((int32_t)(attrib[7] * w), (int32_t)0, vmax);
+        s.depth = s.attrib[0];
+        s.attrib[0] += s.gdx[0] * count_float;
+        s.attrib[1] += s.gdx[1] * count_float;
+        s.attrib[2] += s.gdx[2] * count_float;
+        s.attrib[3] += s.gdx[3] * count_float;
+        s.attrib[4] += s.gdx[4] * count_float;
+        s.attrib[5] += s.gdx[5] * count_float;
+        s.attrib[6] += s.gdx[6] * count_float;
+        s.attrib[7] += s.gdx[7] * count_float;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int[0] = s.attrib_int_next[0];
+        s.attrib_int[1] = s.attrib_int_next[1];
+        s.attrib_int[2] = s.attrib_int_next[2];
+        s.attrib_int[3] = s.attrib_int_next[3];
+        s.attrib_int[4] = s.attrib_int_next[4];
+        s.attrib_int[5] = s.attrib_int_next[5];
+        s.attrib_int_next[0] = math::clamp((int32_t)(s.attrib[2] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[1] = math::clamp((int32_t)(s.attrib[3] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[3] = math::clamp((int32_t)(s.attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[4] = math::clamp((int32_t)(s.attrib[6] * w), (int32_t)0, s.umax);
+        s.attrib_int_next[5] = math::clamp((int32_t)(s.attrib[7] * w), (int32_t)0, s.vmax);
         if (count == span_block_size)
         {
-            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
-            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
-            attrib_int_dx[2] = (attrib_int_next[2] - attrib_int[2]) >> span_block_size_shift;
-            attrib_int_dx[3] = (attrib_int_next[3] - attrib_int[3]) >> span_block_size_shift;
-            attrib_int_dx[4] = (attrib_int_next[4] - attrib_int[4]) >> span_block_size_shift;
-            attrib_int_dx[5] = (attrib_int_next[5] - attrib_int[5]) >> span_block_size_shift;
+            s.attrib_int_dx[0] = (s.attrib_int_next[0] - s.attrib_int[0]) >> span_block_size_shift;
+            s.attrib_int_dx[1] = (s.attrib_int_next[1] - s.attrib_int[1]) >> span_block_size_shift;
+            s.attrib_int_dx[2] = (s.attrib_int_next[2] - s.attrib_int[2]) >> span_block_size_shift;
+            s.attrib_int_dx[3] = (s.attrib_int_next[3] - s.attrib_int[3]) >> span_block_size_shift;
+            s.attrib_int_dx[4] = (s.attrib_int_next[4] - s.attrib_int[4]) >> span_block_size_shift;
+            s.attrib_int_dx[5] = (s.attrib_int_next[5] - s.attrib_int[5]) >> span_block_size_shift;
         }
         else
         {
             float scale{ subspan_scale[count] };
-            attrib_int_dx[0] = (int32_t)((float)(attrib_int_next[0] - attrib_int[0]) * scale);
-            attrib_int_dx[1] = (int32_t)((float)(attrib_int_next[1] - attrib_int[1]) * scale);
-            attrib_int_dx[2] = (int32_t)((float)(attrib_int_next[2] - attrib_int[2]) * scale);
-            attrib_int_dx[3] = (int32_t)((float)(attrib_int_next[3] - attrib_int[3]) * scale);
-            attrib_int_dx[4] = (int32_t)((float)(attrib_int_next[4] - attrib_int[4]) * scale);
-            attrib_int_dx[5] = (int32_t)((float)(attrib_int_next[5] - attrib_int[5]) * scale);
+            s.attrib_int_dx[0] = (int32_t)((float)(s.attrib_int_next[0] - s.attrib_int[0]) * scale);
+            s.attrib_int_dx[1] = (int32_t)((float)(s.attrib_int_next[1] - s.attrib_int[1]) * scale);
+            s.attrib_int_dx[2] = (int32_t)((float)(s.attrib_int_next[2] - s.attrib_int[2]) * scale);
+            s.attrib_int_dx[3] = (int32_t)((float)(s.attrib_int_next[3] - s.attrib_int[3]) * scale);
+            s.attrib_int_dx[4] = (int32_t)((float)(s.attrib_int_next[4] - s.attrib_int[4]) * scale);
+            s.attrib_int_dx[5] = (int32_t)((float)(s.attrib_int_next[5] - s.attrib_int[5]) * scale);
         }
     }
 
-    force_inline void fill()
+    force_inline static void fill(span_data& s)
     {
-        if (depth_type::process_test(depth_addr, depth))
+        if (depth_type::process_test(s.depth_addr, s.depth))
         {
-            if (((shade_counter & shade_mask) == 0) | shade_trigger)
+            if (((s.shade_counter & shade_mask) == 0) | s.shade_trigger)
             {
-                shade_trigger = 0;
+                s.shade_trigger = 0;
                 uint32_t shade_color{ sample_lightmap(
-                    attrib_int[4],
-                    attrib_int[5],
-                    vshift, lightmap) };
-                shade[0] = (shade_color & 0x00FF0000u) >> 16u;
-                shade[1] = (shade_color & 0x0000FF00u) >>  8u;
-                shade[2] = (shade_color & 0x000000FFu)       ;
+                    s.attrib_int[4],
+                    s.attrib_int[5],
+                    s.vshift, s.lightmap) };
+                s.shade[0] = (shade_color & 0x00FF0000u) >> 16u;
+                s.shade[1] = (shade_color & 0x0000FF00u) >>  8u;
+                s.shade[2] = (shade_color & 0x000000FFu)       ;
             }
             uint32_t color
             {
-                ((((uint32_t)attrib_int[3]           ) & 0x00FF0000u) <<  8u) +
-                ((((uint32_t)attrib_int[0] * shade[0]) & 0xFF000000u) >>  8u) +
-                ((((uint32_t)attrib_int[1] * shade[1]) & 0xFF000000u) >> 16u) +
-                ((((uint32_t)attrib_int[2] * shade[2])              ) >> 24u)
+                ((((uint32_t)s.attrib_int[3]             ) & 0x00FF0000u) <<  8u) +
+                ((((uint32_t)s.attrib_int[0] * s.shade[0]) & 0xFF000000u) >>  8u) +
+                ((((uint32_t)s.attrib_int[1] * s.shade[1]) & 0xFF000000u) >> 16u) +
+                ((((uint32_t)s.attrib_int[2] * s.shade[2])              ) >> 24u)
             };
-            blend_type::process(frame_addr, color);
-            depth_type::process_write(depth_addr, depth);
+            blend_type::process(s.frame_addr, color);
+            depth_type::process_write(s.depth_addr, s.depth);
         }
         else
         {
-            shade_trigger = 1;
+            s.shade_trigger = 1;
         }
 
-        depth += g[0].dx;
-        attrib_int[0] += attrib_int_dx[0];
-        attrib_int[1] += attrib_int_dx[1];
-        attrib_int[2] += attrib_int_dx[2];
-        attrib_int[3] += attrib_int_dx[3];
-        attrib_int[4] += attrib_int_dx[4];
-        attrib_int[5] += attrib_int_dx[5];
+        s.depth += s.gdx[0];
+        s.attrib_int[0] += s.attrib_int_dx[0];
+        s.attrib_int[1] += s.attrib_int_dx[1];
+        s.attrib_int[2] += s.attrib_int_dx[2];
+        s.attrib_int[3] += s.attrib_int_dx[3];
+        s.attrib_int[4] += s.attrib_int_dx[4];
+        s.attrib_int[5] += s.attrib_int_dx[5];
 
-        depth_addr++;
-        frame_addr++;
+        s.depth_addr++;
+        s.frame_addr++;
 
-        shade_counter++;
+        s.shade_counter++;
     }
 };
 
@@ -1171,7 +1284,7 @@ struct raster_texture_shade_none : public abstract_raster
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
     {
-        span_process_algo(*this, y, x0, x1);
+        span_process_algo(y, x0, x1, this);
     }
 
     // raster
@@ -1187,81 +1300,104 @@ struct raster_texture_shade_none : public abstract_raster
     const uint32_t* texture_lut;
     const uint8_t* texture_data;
 
-    float attrib[4];
-    float depth;
-
-    float* depth_addr;
-    uint32_t* frame_addr;
-    int32_t attrib_int_dx[2]; // 16.16
-    int32_t attrib_int[2]; // 16.16
-    int32_t attrib_int_next[2]; // 16.16
-
-    force_inline void setup_span(int32_t y, int32_t x0)
+    struct span_data
     {
+        float gdx[4];
+
+        int32_t smask;
+        int32_t tmask;
+        int32_t tshift;
+        const uint32_t* texture_lut;
+        const uint8_t* texture_data;
+
+        float attrib[4];
+        float depth;
+
+        float* depth_addr;
+        uint32_t* frame_addr;
+        int32_t attrib_int_dx[2]; // 16.16
+        int32_t attrib_int[2]; // 16.16
+        int32_t attrib_int_next[2]; // 16.16
+    };
+
+    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    {
+        s.gdx[0] = g[0].dx;
+        s.gdx[1] = g[1].dx;
+        s.gdx[2] = g[2].dx;
+        s.gdx[3] = g[3].dx;
+
+        s.smask = smask;
+        s.tmask = tmask;
+        s.tshift = tshift;
+        s.texture_lut = texture_lut;
+        s.texture_data = texture_data;
+
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
-        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
-        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
-        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
-        attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
+        s.attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        s.attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        s.attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        s.attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int_next[0] = sample_type::process_coord((int32_t)(s.attrib[2] * w));
+        s.attrib_int_next[1] = sample_type::process_coord((int32_t)(s.attrib[3] * w));
 
         int32_t start{ frame_stride * y + x0 };
-        depth_addr = &depth_buffer[start];
-        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+        s.depth_addr = &depth_buffer[start];
+        s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline void setup_subspan(int32_t count)
+    force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
-        depth = attrib[0];
-        attrib[0] += g[0].dx * count_float;
-        attrib[1] += g[1].dx * count_float;
-        attrib[2] += g[2].dx * count_float;
-        attrib[3] += g[3].dx * count_float;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int[0] = attrib_int_next[0];
-        attrib_int[1] = attrib_int_next[1];
-        attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
-        attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
+        s.depth = s.attrib[0];
+        s.attrib[0] += s.gdx[0] * count_float;
+        s.attrib[1] += s.gdx[1] * count_float;
+        s.attrib[2] += s.gdx[2] * count_float;
+        s.attrib[3] += s.gdx[3] * count_float;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int[0] = s.attrib_int_next[0];
+        s.attrib_int[1] = s.attrib_int_next[1];
+        s.attrib_int_next[0] = sample_type::process_coord((int32_t)(s.attrib[2] * w));
+        s.attrib_int_next[1] = sample_type::process_coord((int32_t)(s.attrib[3] * w));
         if (count == span_block_size)
         {
-            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
-            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
+            s.attrib_int_dx[0] = (s.attrib_int_next[0] - s.attrib_int[0]) >> span_block_size_shift;
+            s.attrib_int_dx[1] = (s.attrib_int_next[1] - s.attrib_int[1]) >> span_block_size_shift;
         }
         else
         {
             float scale{ subspan_scale[count] };
-            attrib_int_dx[0] = (int32_t)((float)(attrib_int_next[0] - attrib_int[0]) * scale);
-            attrib_int_dx[1] = (int32_t)((float)(attrib_int_next[1] - attrib_int[1]) * scale);
+            s.attrib_int_dx[0] = (int32_t)((float)(s.attrib_int_next[0] - s.attrib_int[0]) * scale);
+            s.attrib_int_dx[1] = (int32_t)((float)(s.attrib_int_next[1] - s.attrib_int[1]) * scale);
         }
     }
 
-    force_inline void fill()
+    force_inline static void fill(span_data& s)
     {
-        if (depth_type::process_test(depth_addr, depth))
+        if (depth_type::process_test(s.depth_addr, s.depth))
         {
             uint32_t color{ sample_type::process_texel(
-                attrib_int[0],
-                attrib_int[1],
-                smask, tmask, tshift, texture_lut, texture_data) };
+                s.attrib_int[0],
+                s.attrib_int[1],
+                s.smask, s.tmask, s.tshift, s.texture_lut, s.texture_data) };
             if (mask_type::process(color))
             {
-                blend_type::process(frame_addr, color);
-                depth_type::process_write(depth_addr, depth);
+                blend_type::process(s.frame_addr, color);
+                depth_type::process_write(s.depth_addr, s.depth);
             }
         }
 
-        depth += g[0].dx;
-        attrib_int[0] += attrib_int_dx[0];
-        attrib_int[1] += attrib_int_dx[1];
+        s.depth += s.gdx[0];
+        s.attrib_int[0] += s.attrib_int_dx[0];
+        s.attrib_int[1] += s.attrib_int_dx[1];
 
-        depth_addr++;
-        frame_addr++;
+        s.depth_addr++;
+        s.frame_addr++;
     }
 };
+
 
 template<
     typename sample_type = sample_nearest,
@@ -1312,7 +1448,7 @@ struct raster_texture_shade_vertex : public abstract_raster
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
     {
-        span_process_algo(*this, y, x0, x1);
+        span_process_algo(y, x0, x1, this);
     }
 
     // raster
@@ -1328,110 +1464,135 @@ struct raster_texture_shade_vertex : public abstract_raster
     const uint32_t* texture_lut;
     const uint8_t* texture_data;
 
-    float attrib[7];
-    float depth;
-
-    float* depth_addr;
-    uint32_t* frame_addr;
-    int32_t attrib_int_dx[5]; // 16.16
-    int32_t attrib_int[5]; // 16.16
-    int32_t attrib_int_next[5]; // 16.16
-
-    force_inline void setup_span(int32_t y, int32_t x0)
+    struct span_data
     {
+        float gdx[7];
+
+        int32_t smask;
+        int32_t tmask;
+        int32_t tshift;
+        const uint32_t* texture_lut;
+        const uint8_t* texture_data;
+
+        float attrib[7];
+        float depth;
+
+        float* depth_addr;
+        uint32_t* frame_addr;
+        int32_t attrib_int_dx[5]; // 16.16
+        int32_t attrib_int[5]; // 16.16
+        int32_t attrib_int_next[5]; // 16.16
+    };
+
+    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    {
+        s.gdx[0] = g[0].dx;
+        s.gdx[1] = g[1].dx;
+        s.gdx[2] = g[2].dx;
+        s.gdx[3] = g[3].dx;
+        s.gdx[4] = g[4].dx;
+        s.gdx[5] = g[5].dx;
+        s.gdx[6] = g[6].dx;
+
+        s.smask = smask;
+        s.tmask = tmask;
+        s.tshift = tshift;
+        s.texture_lut = texture_lut;
+        s.texture_data = texture_data;
+
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
-        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
-        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
-        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
-        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
-        attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
-        attrib[6] = g[6].dx * x0f + g[6].dy * y0f + g[6].d;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
-        attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        s.attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        s.attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        s.attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        s.attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        s.attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
+        s.attrib[6] = g[6].dx * x0f + g[6].dy * y0f + g[6].d;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int_next[0] = sample_type::process_coord((int32_t)(s.attrib[2] * w));
+        s.attrib_int_next[1] = sample_type::process_coord((int32_t)(s.attrib[3] * w));
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[3] = math::clamp((int32_t)(s.attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[4] = math::clamp((int32_t)(s.attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
 
         int32_t start{ frame_stride * y + x0 };
-        depth_addr = &depth_buffer[start];
-        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+        s.depth_addr = &depth_buffer[start];
+        s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline void setup_subspan(int32_t count)
+    force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
-        depth = attrib[0];
-        attrib[0] += g[0].dx * count_float;
-        attrib[1] += g[1].dx * count_float;
-        attrib[2] += g[2].dx * count_float;
-        attrib[3] += g[3].dx * count_float;
-        attrib[4] += g[4].dx * count_float;
-        attrib[5] += g[5].dx * count_float;
-        attrib[6] += g[6].dx * count_float;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int[0] = attrib_int_next[0];
-        attrib_int[1] = attrib_int_next[1];
-        attrib_int[2] = attrib_int_next[2];
-        attrib_int[3] = attrib_int_next[3];
-        attrib_int[4] = attrib_int_next[4];
-        attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
-        attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
-        attrib_int_next[4] = math::clamp((int32_t)(attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.depth = s.attrib[0];
+        s.attrib[0] += s.gdx[0] * count_float;
+        s.attrib[1] += s.gdx[1] * count_float;
+        s.attrib[2] += s.gdx[2] * count_float;
+        s.attrib[3] += s.gdx[3] * count_float;
+        s.attrib[4] += s.gdx[4] * count_float;
+        s.attrib[5] += s.gdx[5] * count_float;
+        s.attrib[6] += s.gdx[6] * count_float;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int[0] = s.attrib_int_next[0];
+        s.attrib_int[1] = s.attrib_int_next[1];
+        s.attrib_int[2] = s.attrib_int_next[2];
+        s.attrib_int[3] = s.attrib_int_next[3];
+        s.attrib_int[4] = s.attrib_int_next[4];
+        s.attrib_int_next[0] = sample_type::process_coord((int32_t)(s.attrib[2] * w));
+        s.attrib_int_next[1] = sample_type::process_coord((int32_t)(s.attrib[3] * w));
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[3] = math::clamp((int32_t)(s.attrib[5] * w), (int32_t)0, (int32_t)0x00FFFFFF);
+        s.attrib_int_next[4] = math::clamp((int32_t)(s.attrib[6] * w), (int32_t)0, (int32_t)0x00FFFFFF);
         if (count == span_block_size)
         {
-            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
-            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
-            attrib_int_dx[2] = (attrib_int_next[2] - attrib_int[2]) >> span_block_size_shift;
-            attrib_int_dx[3] = (attrib_int_next[3] - attrib_int[3]) >> span_block_size_shift;
-            attrib_int_dx[4] = (attrib_int_next[4] - attrib_int[4]) >> span_block_size_shift;
+            s.attrib_int_dx[0] = (s.attrib_int_next[0] - s.attrib_int[0]) >> span_block_size_shift;
+            s.attrib_int_dx[1] = (s.attrib_int_next[1] - s.attrib_int[1]) >> span_block_size_shift;
+            s.attrib_int_dx[2] = (s.attrib_int_next[2] - s.attrib_int[2]) >> span_block_size_shift;
+            s.attrib_int_dx[3] = (s.attrib_int_next[3] - s.attrib_int[3]) >> span_block_size_shift;
+            s.attrib_int_dx[4] = (s.attrib_int_next[4] - s.attrib_int[4]) >> span_block_size_shift;
         }
         else
         {
             float scale{ subspan_scale[count] };
-            attrib_int_dx[0] = (int32_t)((float)(attrib_int_next[0] - attrib_int[0]) * scale);
-            attrib_int_dx[1] = (int32_t)((float)(attrib_int_next[1] - attrib_int[1]) * scale);
-            attrib_int_dx[2] = (int32_t)((float)(attrib_int_next[2] - attrib_int[2]) * scale);
-            attrib_int_dx[3] = (int32_t)((float)(attrib_int_next[3] - attrib_int[3]) * scale);
-            attrib_int_dx[4] = (int32_t)((float)(attrib_int_next[4] - attrib_int[4]) * scale);
+            s.attrib_int_dx[0] = (int32_t)((float)(s.attrib_int_next[0] - s.attrib_int[0]) * scale);
+            s.attrib_int_dx[1] = (int32_t)((float)(s.attrib_int_next[1] - s.attrib_int[1]) * scale);
+            s.attrib_int_dx[2] = (int32_t)((float)(s.attrib_int_next[2] - s.attrib_int[2]) * scale);
+            s.attrib_int_dx[3] = (int32_t)((float)(s.attrib_int_next[3] - s.attrib_int[3]) * scale);
+            s.attrib_int_dx[4] = (int32_t)((float)(s.attrib_int_next[4] - s.attrib_int[4]) * scale);
         }
     }
 
-    force_inline void fill()
+    force_inline static void fill(span_data& s)
     {
-        if (depth_type::process_test(depth_addr, depth))
+        if (depth_type::process_test(s.depth_addr, s.depth))
         {
             uint32_t texel{ sample_type::process_texel(
-                attrib_int[0],
-                attrib_int[1],
-                smask, tmask, tshift, texture_lut, texture_data) };
+                s.attrib_int[0],
+                s.attrib_int[1],
+                s.smask, s.tmask, s.tshift, s.texture_lut, s.texture_data) };
             if (mask_type::process(texel))
             {
                 uint32_t color
                 {
-                    (((((texel & 0xFF000000u)        )                          )              )       ) +
-                    (((((texel & 0x00FF0000u) >> 16u ) * (uint32_t)attrib_int[2]) & 0xFF000000u) >>  8u) +
-                    (((((texel & 0x0000FF00u) >>  8u ) * (uint32_t)attrib_int[3]) & 0xFF000000u) >> 16u) +
-                    (((((texel & 0x000000FFu)        ) * (uint32_t)attrib_int[4])              ) >> 24u)
+                    (((((texel & 0xFF000000u)        )                            )              )       ) +
+                    (((((texel & 0x00FF0000u) >> 16u ) * (uint32_t)s.attrib_int[2]) & 0xFF000000u) >>  8u) +
+                    (((((texel & 0x0000FF00u) >>  8u ) * (uint32_t)s.attrib_int[3]) & 0xFF000000u) >> 16u) +
+                    (((((texel & 0x000000FFu)        ) * (uint32_t)s.attrib_int[4])              ) >> 24u)
                 };
-                blend_type::process(frame_addr, color);
-                depth_type::process_write(depth_addr, depth);
+                blend_type::process(s.frame_addr, color);
+                depth_type::process_write(s.depth_addr, s.depth);
             }
         }
 
-        depth += g[0].dx;
-        attrib_int[0] += attrib_int_dx[0];
-        attrib_int[1] += attrib_int_dx[1];
-        attrib_int[2] += attrib_int_dx[2];
-        attrib_int[3] += attrib_int_dx[3];
-        attrib_int[4] += attrib_int_dx[4];
+        s.depth += s.gdx[0];
+        s.attrib_int[0] += s.attrib_int_dx[0];
+        s.attrib_int[1] += s.attrib_int_dx[1];
+        s.attrib_int[2] += s.attrib_int_dx[2];
+        s.attrib_int[3] += s.attrib_int_dx[3];
+        s.attrib_int[4] += s.attrib_int_dx[4];
 
-        depth_addr++;
-        frame_addr++;
+        s.depth_addr++;
+        s.frame_addr++;
     }
 };
 
@@ -1488,7 +1649,7 @@ struct raster_texture_shade_lightmap : public abstract_raster
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
     {
-        span_process_algo(*this, y, x0, x1);
+        span_process_algo(y, x0, x1, this);
     }
 
     // raster
@@ -1508,126 +1669,158 @@ struct raster_texture_shade_lightmap : public abstract_raster
     int32_t vshift;
     const uint32_t* lightmap;
 
-    float attrib[6];
-    float depth;
-
-    float* depth_addr;
-    uint32_t* frame_addr;
-    int32_t attrib_int_dx[4]; // 16.16
-    int32_t attrib_int[4]; // 16.16
-    int32_t attrib_int_next[4]; // 16.16
-
-    uint32_t shade_counter;
-    uint32_t shade_trigger;
-    uint32_t shade[3];
-
-    force_inline void setup_span(int32_t y, int32_t x0)
+    struct span_data
     {
+        float gdx[6];
+
+        int32_t smask;
+        int32_t tmask;
+        int32_t tshift;
+        const uint32_t* texture_lut;
+        const uint8_t* texture_data;
+        int32_t umax;
+        int32_t vmax;
+        int32_t vshift;
+        const uint32_t* lightmap;
+
+        float attrib[6];
+        float depth;
+
+        float* depth_addr;
+        uint32_t* frame_addr;
+        int32_t attrib_int_dx[4]; // 16.16
+        int32_t attrib_int[4]; // 16.16
+        int32_t attrib_int_next[4]; // 16.16
+
+        uint32_t shade_counter;
+        uint32_t shade_trigger;
+        uint32_t shade[3];
+    };
+
+    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    {
+        s.gdx[0] = g[0].dx;
+        s.gdx[1] = g[1].dx;
+        s.gdx[2] = g[2].dx;
+        s.gdx[3] = g[3].dx;
+        s.gdx[4] = g[4].dx;
+        s.gdx[5] = g[5].dx;
+
+        s.smask = smask;
+        s.tmask = tmask;
+        s.tshift = tshift;
+        s.texture_lut = texture_lut;
+        s.texture_data = texture_data;
+        s.umax = umax;
+        s.vmax = vmax;
+        s.vshift = vshift;
+        s.lightmap = lightmap;
+
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
-        attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
-        attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
-        attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
-        attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
-        attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
-        attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
-        attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, umax);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, vmax);
+        s.attrib[0] = g[0].dx * x0f + g[0].dy * y0f + g[0].d;
+        s.attrib[1] = g[1].dx * x0f + g[1].dy * y0f + g[1].d;
+        s.attrib[2] = g[2].dx * x0f + g[2].dy * y0f + g[2].d;
+        s.attrib[3] = g[3].dx * x0f + g[3].dy * y0f + g[3].d;
+        s.attrib[4] = g[4].dx * x0f + g[4].dy * y0f + g[4].d;
+        s.attrib[5] = g[5].dx * x0f + g[5].dy * y0f + g[5].d;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int_next[0] = sample_type::process_coord((int32_t)(s.attrib[2] * w));
+        s.attrib_int_next[1] = sample_type::process_coord((int32_t)(s.attrib[3] * w));
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, s.umax);
+        s.attrib_int_next[3] = math::clamp((int32_t)(s.attrib[5] * w), (int32_t)0, s.vmax);
 
         int32_t start{ frame_stride * y + x0 };
-        depth_addr = &depth_buffer[start];
-        frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
+        s.depth_addr = &depth_buffer[start];
+        s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
 
-        shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
-        shade_trigger = 1;
+        s.shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
+        s.shade_trigger = 1;
     }
 
-    force_inline void setup_subspan(int32_t count)
+    force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
-        depth = attrib[0];
-        attrib[0] += g[0].dx * count_float;
-        attrib[1] += g[1].dx * count_float;
-        attrib[2] += g[2].dx * count_float;
-        attrib[3] += g[3].dx * count_float;
-        attrib[4] += g[4].dx * count_float;
-        attrib[5] += g[5].dx * count_float;
-        float w{ (float)0x10000 / attrib[1] };
-        attrib_int[0] = attrib_int_next[0];
-        attrib_int[1] = attrib_int_next[1];
-        attrib_int[2] = attrib_int_next[2];
-        attrib_int[3] = attrib_int_next[3];
-        attrib_int_next[0] = sample_type::process_coord((int32_t)(attrib[2] * w));
-        attrib_int_next[1] = sample_type::process_coord((int32_t)(attrib[3] * w));
-        attrib_int_next[2] = math::clamp((int32_t)(attrib[4] * w), (int32_t)0, umax);
-        attrib_int_next[3] = math::clamp((int32_t)(attrib[5] * w), (int32_t)0, vmax);
+        s.depth = s.attrib[0];
+        s.attrib[0] += s.gdx[0] * count_float;
+        s.attrib[1] += s.gdx[1] * count_float;
+        s.attrib[2] += s.gdx[2] * count_float;
+        s.attrib[3] += s.gdx[3] * count_float;
+        s.attrib[4] += s.gdx[4] * count_float;
+        s.attrib[5] += s.gdx[5] * count_float;
+        float w{ (float)0x10000 / s.attrib[1] };
+        s.attrib_int[0] = s.attrib_int_next[0];
+        s.attrib_int[1] = s.attrib_int_next[1];
+        s.attrib_int[2] = s.attrib_int_next[2];
+        s.attrib_int[3] = s.attrib_int_next[3];
+        s.attrib_int_next[0] = sample_type::process_coord((int32_t)(s.attrib[2] * w));
+        s.attrib_int_next[1] = sample_type::process_coord((int32_t)(s.attrib[3] * w));
+        s.attrib_int_next[2] = math::clamp((int32_t)(s.attrib[4] * w), (int32_t)0, s.umax);
+        s.attrib_int_next[3] = math::clamp((int32_t)(s.attrib[5] * w), (int32_t)0, s.vmax);
         if (count == span_block_size)
         {
-            attrib_int_dx[0] = (attrib_int_next[0] - attrib_int[0]) >> span_block_size_shift;
-            attrib_int_dx[1] = (attrib_int_next[1] - attrib_int[1]) >> span_block_size_shift;
-            attrib_int_dx[2] = (attrib_int_next[2] - attrib_int[2]) >> span_block_size_shift;
-            attrib_int_dx[3] = (attrib_int_next[3] - attrib_int[3]) >> span_block_size_shift;
+            s.attrib_int_dx[0] = (s.attrib_int_next[0] - s.attrib_int[0]) >> span_block_size_shift;
+            s.attrib_int_dx[1] = (s.attrib_int_next[1] - s.attrib_int[1]) >> span_block_size_shift;
+            s.attrib_int_dx[2] = (s.attrib_int_next[2] - s.attrib_int[2]) >> span_block_size_shift;
+            s.attrib_int_dx[3] = (s.attrib_int_next[3] - s.attrib_int[3]) >> span_block_size_shift;
         }
         else
         {
             float scale{ subspan_scale[count] };
-            attrib_int_dx[0] = (int32_t)((float)(attrib_int_next[0] - attrib_int[0]) * scale);
-            attrib_int_dx[1] = (int32_t)((float)(attrib_int_next[1] - attrib_int[1]) * scale);
-            attrib_int_dx[2] = (int32_t)((float)(attrib_int_next[2] - attrib_int[2]) * scale);
-            attrib_int_dx[3] = (int32_t)((float)(attrib_int_next[3] - attrib_int[3]) * scale);
+            s.attrib_int_dx[0] = (int32_t)((float)(s.attrib_int_next[0] - s.attrib_int[0]) * scale);
+            s.attrib_int_dx[1] = (int32_t)((float)(s.attrib_int_next[1] - s.attrib_int[1]) * scale);
+            s.attrib_int_dx[2] = (int32_t)((float)(s.attrib_int_next[2] - s.attrib_int[2]) * scale);
+            s.attrib_int_dx[3] = (int32_t)((float)(s.attrib_int_next[3] - s.attrib_int[3]) * scale);
         }
     }
 
-    force_inline void fill()
+    force_inline static void fill(span_data& s)
     {
-        if (depth_type::process_test(depth_addr, depth))
+        if (depth_type::process_test(s.depth_addr, s.depth))
         {
             uint32_t texel{ sample_type::process_texel(
-                attrib_int[0],
-                attrib_int[1],
-                smask, tmask, tshift, texture_lut, texture_data) };
+                s.attrib_int[0],
+                s.attrib_int[1],
+                s.smask, s.tmask, s.tshift, s.texture_lut, s.texture_data) };
             if (mask_type::process(texel))
             {
-                if (((shade_counter & shade_mask) == 0) | shade_trigger)
+                if (((s.shade_counter & shade_mask) == 0) | s.shade_trigger)
                 {
-                    shade_trigger = 0;
+                    s.shade_trigger = 0;
                     uint32_t shade_color{ sample_lightmap(
-                        attrib_int[2],
-                        attrib_int[3],
-                        vshift, lightmap) };
-                    shade[0] = (shade_color & 0x00FF0000u) >> 16u;
-                    shade[1] = (shade_color & 0x0000FF00u) >>  8u;
-                    shade[2] = (shade_color & 0x000000FFu)       ;
+                        s.attrib_int[2],
+                        s.attrib_int[3],
+                        s.vshift, s.lightmap) };
+                    s.shade[0] = (shade_color & 0x00FF0000u) >> 16u;
+                    s.shade[1] = (shade_color & 0x0000FF00u) >>  8u;
+                    s.shade[2] = (shade_color & 0x000000FFu)       ;
                 }
                 uint32_t color
                 {
-                    ((((texel & 0xFF000000u)           )              )      ) +
-                    ((((texel & 0x00FF0000u) * shade[0]) & 0xFF000000u) >> 8u) +
-                    ((((texel & 0x0000FF00u) * shade[1]) & 0x00FF0000u) >> 8u) +
-                    ((((texel & 0x000000FFu) * shade[2])              ) >> 8u)
+                    ((((texel & 0xFF000000u)             )              )      ) +
+                    ((((texel & 0x00FF0000u) * s.shade[0]) & 0xFF000000u) >> 8u) +
+                    ((((texel & 0x0000FF00u) * s.shade[1]) & 0x00FF0000u) >> 8u) +
+                    ((((texel & 0x000000FFu) * s.shade[2])              ) >> 8u)
                 };
-                blend_type::process(frame_addr, color);
-                depth_type::process_write(depth_addr, depth);
+                blend_type::process(s.frame_addr, color);
+                depth_type::process_write(s.depth_addr, s.depth);
             }
         }
         else
         {
-            shade_trigger = 1;
+            s.shade_trigger = 1;
         }
 
-        depth += g[0].dx;
-        attrib_int[0] += attrib_int_dx[0];
-        attrib_int[1] += attrib_int_dx[1];
-        attrib_int[2] += attrib_int_dx[2];
-        attrib_int[3] += attrib_int_dx[3];
+        s.depth += s.gdx[0];
+        s.attrib_int[0] += s.attrib_int_dx[0];
+        s.attrib_int[1] += s.attrib_int_dx[1];
+        s.attrib_int[2] += s.attrib_int_dx[2];
+        s.attrib_int[3] += s.attrib_int_dx[3];
 
-        depth_addr++;
-        frame_addr++;
+        s.depth_addr++;
+        s.frame_addr++;
 
-        shade_counter++;
+        s.shade_counter++;
     }
 };
 
