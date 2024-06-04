@@ -1,6 +1,6 @@
-﻿test/win/SDL2-2.0.22
-test/win/vs2019/.vs
-test/win/vs2019/lib3d.vcxproj.user
-test/win/vs2019/Debug
-test/win/vs2019/Release
-test/win/vs2019/x64
+﻿test/sdl/win/SDL2-2.0.22
+test/sdl/win/vs2019/.vs
+test/sdl/win/vs2019/lib3d.vcxproj.user
+test/sdl/win/vs2019/Debug
+test/sdl/win/vs2019/Release
+test/sdl/win/vs2019/x64

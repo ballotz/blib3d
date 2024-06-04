@@ -998,6 +998,8 @@ void draw_lib3d_model(float angle)
     //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_MUL);
     //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_ALPHA);
 
+    lib3d_renderer.set_filter_type(lib3d::render::renderer::FILTER_LINEAR);
+
     lib3d_renderer.render_draw();
 }
 
