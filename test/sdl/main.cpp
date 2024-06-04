@@ -2,10 +2,10 @@
 
 #include <cstdio>
 
-#include "../src/timer.hpp"
-//#include "../src/raster.hpp"
-#include "../src/render.hpp"
-#include "../src/view.hpp"
+#include "../../src/timer.hpp"
+//#include "../../src/raster.hpp"
+#include "../../src/render.hpp"
+#include "../../src/view.hpp"
 
 extern "C"
 {
