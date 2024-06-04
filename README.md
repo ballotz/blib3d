@@ -1,6 +1,6 @@
-# lib3d - very simple portable 3D rendering
+# lib3d - simple portable 3D rendering
 
-C++ platform independent 3D rendering library, data oriented, no memory allocatuon
+C++ platform independent 3D rendering library, data oriented, no memory allocation
 
 Output buffer/frame format is 32bit RGB, Z-buffer is 32bit float
 
