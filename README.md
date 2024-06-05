@@ -1,4 +1,4 @@
-# lib3d - simple portable 3D rendering
+# blib3d - simple portable 3D rendering
 
 C++ platform independent 3D rendering library, data oriented, no memory allocation
 
