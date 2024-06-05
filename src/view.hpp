@@ -1,7 +1,7 @@
 #pragma once
 #include "math.hpp"
 
-namespace lib3d::view
+namespace blib3d::view
 {
 
 enum
@@ -27,4 +27,4 @@ void make_viewport(
     float screen_w,
     float screen_h);
 
-} // namespace lib3d::view
+} // namespace blib3d::view

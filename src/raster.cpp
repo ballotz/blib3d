@@ -5,7 +5,7 @@
 #include <cassert>
 #include <cfloat>
 
-namespace lib3d::raster
+namespace blib3d::raster
 {
 
 //------------------------------------------------------------------------------
@@ -2223,4 +2223,4 @@ bool occlusion_test_rect(
     return depth_min > depth_max;
 }
 
-} // namespace lib3d::raster
+} // namespace blib3d::raster

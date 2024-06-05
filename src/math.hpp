@@ -6,7 +6,7 @@
 #include <xmmintrin.h>
 #endif
 
-namespace lib3d::math
+namespace blib3d::math
 {
 
 // constants
@@ -518,4 +518,4 @@ inline void rotation_z(mat3x3 out, const float angle)
     out[8] = 1;
 }
 
-} // namespace lib3d::math
+} // namespace blib3d::math

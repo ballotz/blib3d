@@ -1,6 +1,6 @@
 #pragma once
 
-namespace lib3d::raster
+namespace blib3d::raster
 {
 
 struct gradient
@@ -85,4 +85,4 @@ bool interp_setup_face(const float* pv[], uint32_t vertex_count, bool back_cull,
     return true;
 }
 
-} // namespace lib3d::raster
+} // namespace blib3d::raster

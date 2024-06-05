@@ -7,7 +7,7 @@
 #endif
 #include <cstdint>
 
-namespace lib3d::timer
+namespace blib3d::timer
 {
 
 #if defined(CPU_MIMXRT1176DVMAA)
@@ -84,4 +84,4 @@ private:
     uint32_t us;
 };
 
-} // namespace lib3d::timer
+} // namespace blib3d::timer

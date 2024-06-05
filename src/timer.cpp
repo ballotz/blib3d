@@ -1,6 +1,6 @@
 ﻿#include "timer.hpp"
 
-namespace lib3d::timer
+namespace blib3d::timer
 {
 
 void profile::reset()
@@ -44,4 +44,4 @@ void interval::reset()
     us = 0;
 }
 
-} // namespace lib3d::timer
+} // namespace blib3d::timer

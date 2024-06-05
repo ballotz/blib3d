@@ -3,7 +3,7 @@
 #include "timer.hpp"
 #include <float.h>
 
-namespace lib3d::render
+namespace blib3d::render
 {
 
 #if defined(CLIP_Z)
@@ -203,4 +203,4 @@ private:
     raster::occlusion_data occlusion_data;
 };
 
-} // namespace lib3d::render
+} // namespace blib3d::render

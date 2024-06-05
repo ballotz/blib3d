@@ -1,7 +1,7 @@
 ﻿#include "render.hpp"
 #include <cassert>
 
-namespace lib3d::render
+namespace blib3d::render
 {
 
 // input expected on buffer 0
@@ -654,4 +654,4 @@ const raster::occlusion_data& renderer::debug_get_occlusion_data()
     return occlusion_data;
 }
 
-} // namespace lib3d::render
+} // namespace blib3d::render

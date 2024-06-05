@@ -1,7 +1,7 @@
 #pragma once
 #include "math.hpp"
 
-namespace lib3d::raster
+namespace blib3d::raster
 {
 
 //------------------------------------------------------------------------------
@@ -121,4 +121,4 @@ bool occlusion_test_rect(
     occlusion_data& data,
     float screen_min[2], float screen_max[2], float depth_min);
 
-} // namespace lib3d::raster
+} // namespace blib3d::raster

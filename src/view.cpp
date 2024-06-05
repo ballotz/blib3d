@@ -1,6 +1,6 @@
 ﻿#include "view.hpp"
 
-namespace lib3d::view
+namespace blib3d::view
 {
 
 void make_projection_ortho(
@@ -130,4 +130,4 @@ void make_viewport(
     out[15] = 1;
 }
 
-} // namespace lib3d::view
+} // namespace blib3d::view

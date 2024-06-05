@@ -1,6 +1,6 @@
 #pragma once
 
-namespace lib3d::raster
+namespace blib3d::raster
 {
 
 force_inline uint32_t adds_X888(uint32_t v0, uint32_t v1)
@@ -311,4 +311,4 @@ struct mask_texture_off
 //    15 << 12,  7 << 12, 13 << 12,  5 << 12,
 //};
 
-} // namespace lib3d::raster
+} // namespace blib3d::raster
