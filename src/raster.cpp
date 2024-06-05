@@ -1371,7 +1371,7 @@ struct raster_texture_shade_none : public abstract_raster
             else
             {
                 int32_t mip_level{ mip_level_calc(pv, vertex_count, texture_width_f, texture_height_f) };
-                mip_level = math::clamp(mip_level, 0, mip_max_level);
+                mip_level = math::clamp(mip_level, (int32_t)0, mip_max_level);
                 int32_t mip_texture_width{ texture_width >> mip_level };
                 int32_t mip_texture_height{ texture_height >> mip_level };
                 float mip_texture_width_f{ (float)mip_texture_width };

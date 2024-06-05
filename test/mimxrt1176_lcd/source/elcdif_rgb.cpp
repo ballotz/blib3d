@@ -394,8 +394,8 @@ int main(void)
     }
     PRINTF("Display min time: %dus\r\n", (int)(tavg / SystemCoreClock * 1e6f));
 
-    extern void lib3d_demo();
-    lib3d_demo();
+    extern void blib3d_demo();
+    blib3d_demo();
 
     return 0;
 }

@@ -27,72 +27,72 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>lib3d</name>
+			<name>blib3d</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>lib3d/math.cpp</name>
+			<name>blib3d/math.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/math.cpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/math.hpp</name>
+			<name>blib3d/math.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/math.hpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/raster.cpp</name>
+			<name>blib3d/raster.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/raster.cpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/raster.hpp</name>
+			<name>blib3d/raster.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/raster.hpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/raster_fill.hpp</name>
+			<name>blib3d/raster_fill.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/raster_fill.hpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/raster_interp.hpp</name>
+			<name>blib3d/raster_interp.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/raster_interp.hpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/render.cpp</name>
+			<name>blib3d/render.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/render.cpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/render.hpp</name>
+			<name>blib3d/render.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/render.hpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/shared.hpp</name>
+			<name>blib3d/shared.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/shared.hpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/timer.cpp</name>
+			<name>blib3d/timer.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/timer.cpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/timer.hpp</name>
+			<name>blib3d/timer.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/timer.hpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/view.cpp</name>
+			<name>blib3d/view.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/view.cpp</locationURI>
 		</link>
 		<link>
-			<name>lib3d/view.hpp</name>
+			<name>blib3d/view.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/view.hpp</locationURI>
 		</link>
