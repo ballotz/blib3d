@@ -44,7 +44,7 @@
     <RootNamespace>test</RootNamespace>
     <WindowsTargetPlatformVersion>
     </WindowsTargetPlatformVersion>
-    <ProjectName>lib3d</ProjectName>
+    <ProjectName>blib3d</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

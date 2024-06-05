@@ -24,7 +24,7 @@ SDL_Renderer* renderer{};
 SDL_Texture* frame_texture{};
 float* depth_buffer{};
 
-lib3d::render::renderer lib3d_renderer;
+blib3d::render::renderer blib3d_renderer;
 
 int init(int& width, int& height)
 {
@@ -81,7 +81,7 @@ int init(int& width, int& height)
     //height = mode.h / 4;
 
     // init the window
-    window = SDL_CreateWindow("lib3d test",
+    window = SDL_CreateWindow("blib3d test",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         width,
@@ -432,41 +432,41 @@ void draw_test_rect(float light_x, float light_y)
         { -s * d, -s * d, 2 * d, 1, 255, 255,   0,   0, 255, 255,  0, 0, 1, 0 , 15 },
     };
 
-    lib3d_renderer.set_geometry_coord(&vertices[0][0], num_components);
-    lib3d_renderer.set_geometry_color(&vertices[0][4], num_components);
-    lib3d_renderer.set_geometry_tex_coord(&vertices[0][11], num_components);
-    lib3d_renderer.set_geometry_light_color(&vertices[0][8], num_components);
-    lib3d_renderer.set_geometry_lmap_coord(&vertices[0][13], num_components);
-    //lib3d_renderer.set_fill_texture(brick_width, brick_height, (lib3d::raster::ARGB*)brick_lut, (uint8_t*)brick_data);
-    lib3d_renderer.set_fill_texture(brick_width, brick_height, (lib3d::raster::ARGB*)brick_lut_linear, (uint8_t*)brick_data);
-    //lib3d_renderer.set_shade_lightmap(2, 2, (lib3d::raster::ARGB*)lightmap);
-    lib3d_renderer.set_shade_lightmap(16, 16, (lib3d::raster::ARGB*)lightmap);
+    blib3d_renderer.set_geometry_coord(&vertices[0][0], num_components);
+    blib3d_renderer.set_geometry_color(&vertices[0][4], num_components);
+    blib3d_renderer.set_geometry_tex_coord(&vertices[0][11], num_components);
+    blib3d_renderer.set_geometry_light_color(&vertices[0][8], num_components);
+    blib3d_renderer.set_geometry_lmap_coord(&vertices[0][13], num_components);
+    //blib3d_renderer.set_fill_texture(brick_width, brick_height, (blib3d::raster::ARGB*)brick_lut, (uint8_t*)brick_data);
+    blib3d_renderer.set_fill_texture(brick_width, brick_height, (blib3d::raster::ARGB*)brick_lut_linear, (uint8_t*)brick_data);
+    //blib3d_renderer.set_shade_lightmap(2, 2, (blib3d::raster::ARGB*)lightmap);
+    blib3d_renderer.set_shade_lightmap(16, 16, (blib3d::raster::ARGB*)lightmap);
 
-    lib3d::render::face faces[1];
+    blib3d::render::face faces[1];
     faces[0].count = num_vertices;
     faces[0].index = 0;
-    lib3d_renderer.set_geometry_face(faces, 1);
+    blib3d_renderer.set_geometry_face(faces, 1);
 
-    lib3d_renderer.set_fill_color({ 128, 128, 128, 64 });
+    blib3d_renderer.set_fill_color({ 128, 128, 128, 64 });
 
-    //lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_SOLID);
-    //lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_VERTEX);
-    lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_TEXTURE);
+    //blib3d_renderer.set_fill_type(blib3d::render::renderer::FILL_SOLID);
+    //blib3d_renderer.set_fill_type(blib3d::render::renderer::FILL_VERTEX);
+    blib3d_renderer.set_fill_type(blib3d::render::renderer::FILL_TEXTURE);
 
-    //lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_NONE);
-    //lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_VERTEX);
-    lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_LIGHTMAP);
+    //blib3d_renderer.set_shade_type(blib3d::render::renderer::SHADE_NONE);
+    //blib3d_renderer.set_shade_type(blib3d::render::renderer::SHADE_VERTEX);
+    blib3d_renderer.set_shade_type(blib3d::render::renderer::SHADE_LIGHTMAP);
 
-    lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_NONE);
-    //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_ADD);
-    //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_MUL);
-    //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_ALPHA);
+    blib3d_renderer.set_blend_type(blib3d::render::renderer::BLEND_NONE);
+    //blib3d_renderer.set_blend_type(blib3d::render::renderer::BLEND_ADD);
+    //blib3d_renderer.set_blend_type(blib3d::render::renderer::BLEND_MUL);
+    //blib3d_renderer.set_blend_type(blib3d::render::renderer::BLEND_ALPHA);
 
-    lib3d_renderer.set_filter_type(lib3d::render::renderer::FILTER_LINEAR);
+    //blib3d_renderer.set_filter_type(blib3d::render::renderer::FILTER_LINEAR);
 
-    lib3d_renderer.set_geometry_back_cull(false);
+    blib3d_renderer.set_geometry_back_cull(false);
 
-    lib3d_renderer.render_draw();
+    blib3d_renderer.render_draw();
 }
 
 alignas(16) uint32_t correct_gamma_in_table[256];
@@ -585,15 +585,15 @@ void correct_gamma_out(uint32_t* frame, int32_t width, int32_t height, int32_t s
 
 //------------------------------------------------------------------------------
 
-constexpr int lib3d_model_vert_stride{ 12 };
-int lib3d_model_num_vert{};
-float lib3d_model_vertices[4096][lib3d_model_vert_stride];
-int lib3d_model_num_face{};
-lib3d::render::face lib3d_model_faces[1024];
+constexpr int blib3d_model_vert_stride{ 12 };
+int blib3d_model_num_vert{};
+float blib3d_model_vertices[4096][blib3d_model_vert_stride];
+int blib3d_model_num_face{};
+blib3d::render::face blib3d_model_faces[1024];
 
-void make_lib3d_model(float step, float depth)
+void make_blib3d_model(float step, float depth)
 {
-    constexpr const char* str{ "lib3d" };
+    constexpr const char* str{ "blib3d" };
     constexpr uint32_t str_len{ 5 };
     constexpr uint32_t char_w{ 8 };
     constexpr uint32_t char_h{ 16 };
@@ -607,8 +607,8 @@ void make_lib3d_model(float step, float depth)
     rect.stride = image_w;
     draw_fill(&rect, 0);
     draw_string(&rect, 0, 0, str, 1);
-    lib3d_model_num_vert = 0;
-    lib3d_model_num_face = 0;
+    blib3d_model_num_vert = 0;
+    blib3d_model_num_face = 0;
     float x_offset{ -step * image_w / 2 };
     float y_offset{ -step * image_h / 2 };
     float z_offset{ -depth / 2 };
@@ -620,55 +620,55 @@ void make_lib3d_model(float step, float depth)
             {
                 if (image[y][x] == 1)
                 {
-                    lib3d_model_faces[lib3d_model_num_face].index = lib3d_model_num_vert;
-                    lib3d_model_faces[lib3d_model_num_face].count = 4;
-                    lib3d_model_num_face++;
+                    blib3d_model_faces[blib3d_model_num_face].index = blib3d_model_num_vert;
+                    blib3d_model_faces[blib3d_model_num_face].count = 4;
+                    blib3d_model_num_face++;
 
-                    lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                    lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                    lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                    lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                    lib3d_model_num_vert++;
-                    lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                    lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                    lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                    lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                    lib3d_model_num_vert++;
-                    lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                    lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                    lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                    lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                    lib3d_model_num_vert++;
-                    lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                    lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                    lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                    lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                    lib3d_model_num_vert++;
+                    blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                    blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                    blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                    blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                    blib3d_model_num_vert++;
+                    blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                    blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                    blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                    blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                    blib3d_model_num_vert++;
+                    blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                    blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                    blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                    blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                    blib3d_model_num_vert++;
+                    blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                    blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                    blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                    blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                    blib3d_model_num_vert++;
 
-                    lib3d_model_faces[lib3d_model_num_face].index = lib3d_model_num_vert;
-                    lib3d_model_faces[lib3d_model_num_face].count = 4;
-                    lib3d_model_num_face++;
+                    blib3d_model_faces[blib3d_model_num_face].index = blib3d_model_num_vert;
+                    blib3d_model_faces[blib3d_model_num_face].count = 4;
+                    blib3d_model_num_face++;
 
-                    lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                    lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                    lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                    lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                    lib3d_model_num_vert++;
-                    lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                    lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                    lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                    lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                    lib3d_model_num_vert++;
-                    lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                    lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                    lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                    lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                    lib3d_model_num_vert++;
-                    lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                    lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                    lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                    lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                    lib3d_model_num_vert++;
+                    blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                    blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                    blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                    blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                    blib3d_model_num_vert++;
+                    blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                    blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                    blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                    blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                    blib3d_model_num_vert++;
+                    blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                    blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                    blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                    blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                    blib3d_model_num_vert++;
+                    blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                    blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                    blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                    blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                    blib3d_model_num_vert++;
 
                     bool enclose_left{};
                     bool enclose_right{};
@@ -709,143 +709,143 @@ void make_lib3d_model(float step, float depth)
 
                     if (enclose_left)
                     {
-                        lib3d_model_faces[lib3d_model_num_face].index = lib3d_model_num_vert;
-                        lib3d_model_faces[lib3d_model_num_face].count = 4;
-                        lib3d_model_num_face++;
+                        blib3d_model_faces[blib3d_model_num_face].index = blib3d_model_num_vert;
+                        blib3d_model_faces[blib3d_model_num_face].count = 4;
+                        blib3d_model_num_face++;
 
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
                     }
 
                     if (enclose_right)
                     {
-                        lib3d_model_faces[lib3d_model_num_face].index = lib3d_model_num_vert;
-                        lib3d_model_faces[lib3d_model_num_face].count = 4;
-                        lib3d_model_num_face++;
+                        blib3d_model_faces[blib3d_model_num_face].index = blib3d_model_num_vert;
+                        blib3d_model_faces[blib3d_model_num_face].count = 4;
+                        blib3d_model_num_face++;
 
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
                     }
 
                     if (enclose_top)
                     {
-                        lib3d_model_faces[lib3d_model_num_face].index = lib3d_model_num_vert;
-                        lib3d_model_faces[lib3d_model_num_face].count = 4;
-                        lib3d_model_num_face++;
+                        blib3d_model_faces[blib3d_model_num_face].index = blib3d_model_num_vert;
+                        blib3d_model_faces[blib3d_model_num_face].count = 4;
+                        blib3d_model_num_face++;
 
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * y);
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * y);
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
                     }
 
                     if (enclose_bottom)
                     {
-                        lib3d_model_faces[lib3d_model_num_face].index = lib3d_model_num_vert;
-                        lib3d_model_faces[lib3d_model_num_face].count = 4;
-                        lib3d_model_num_face++;
+                        blib3d_model_faces[blib3d_model_num_face].index = blib3d_model_num_vert;
+                        blib3d_model_faces[blib3d_model_num_face].count = 4;
+                        blib3d_model_num_face++;
 
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * (x + 1);
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
-                        lib3d_model_vertices[lib3d_model_num_vert][0] = x_offset + step * x;
-                        lib3d_model_vertices[lib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
-                        lib3d_model_vertices[lib3d_model_num_vert][2] = z_offset + depth;
-                        lib3d_model_vertices[lib3d_model_num_vert][3] = 1.f;
-                        lib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * (x + 1);
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
+                        blib3d_model_vertices[blib3d_model_num_vert][0] = x_offset + step * x;
+                        blib3d_model_vertices[blib3d_model_num_vert][1] = -(y_offset + step * (y + 1));
+                        blib3d_model_vertices[blib3d_model_num_vert][2] = z_offset + depth;
+                        blib3d_model_vertices[blib3d_model_num_vert][3] = 1.f;
+                        blib3d_model_num_vert++;
                     }
                 }
             }
         }
     }
-    for (int n{}; n < lib3d_model_num_face; ++n)
+    for (int n{}; n < blib3d_model_num_face; ++n)
     {
-        uint32_t v{ lib3d_model_faces[n].index };
-        lib3d_model_vertices[v + 0][7] = 0.f;
-        lib3d_model_vertices[v + 0][8] = 1.f / 5.25f;
-        lib3d_model_vertices[v + 1][7] = 1.f / 5.25f;
-        lib3d_model_vertices[v + 1][8] = 1.f / 5.25f;
-        lib3d_model_vertices[v + 2][7] = 1.f / 5.25f;
-        lib3d_model_vertices[v + 2][8] = 0.f;
-        lib3d_model_vertices[v + 3][7] = 0.f;
-        lib3d_model_vertices[v + 3][8] = 0.f;
+        uint32_t v{ blib3d_model_faces[n].index };
+        blib3d_model_vertices[v + 0][7] = 0.f;
+        blib3d_model_vertices[v + 0][8] = 1.f / 5.25f;
+        blib3d_model_vertices[v + 1][7] = 1.f / 5.25f;
+        blib3d_model_vertices[v + 1][8] = 1.f / 5.25f;
+        blib3d_model_vertices[v + 2][7] = 1.f / 5.25f;
+        blib3d_model_vertices[v + 2][8] = 0.f;
+        blib3d_model_vertices[v + 3][7] = 0.f;
+        blib3d_model_vertices[v + 3][8] = 0.f;
     }
 }
 
-float lib3d_model_vertices_transformed[4096][lib3d_model_vert_stride];
-lib3d::raster::ARGB lib3d_model_lightmap[1024][4];
+float blib3d_model_vertices_transformed[4096][blib3d_model_vert_stride];
+blib3d::raster::ARGB blib3d_model_lightmap[1024][4];
 
-void draw_lib3d_model(float angle)
+void draw_blib3d_model(float angle)
 {
-    lib3d::math::vec3 model_origin{ 0, 0, 25 };
+    blib3d::math::vec3 model_origin{ 0, 0, 25 };
 
-    lib3d::math::mat3x3 model_rotation;
-    lib3d::math::rotation_y(model_rotation, angle);
-    lib3d::math::mat4x4 model_mat
+    blib3d::math::mat3x3 model_rotation;
+    blib3d::math::rotation_y(model_rotation, angle);
+    blib3d::math::mat4x4 model_mat
     {
         model_rotation[0], model_rotation[1], model_rotation[2], model_origin[0],
         model_rotation[3], model_rotation[4], model_rotation[5], model_origin[1],
@@ -855,69 +855,69 @@ void draw_lib3d_model(float angle)
 
     // light
     {
-        lib3d::math::vec4 light_pos{ 0, -8, 4, 1 };
-        lib3d::math::vec3 light_intensity{ 255, 183, 76 };
+        blib3d::math::vec4 light_pos{ 0, -8, 4, 1 };
+        blib3d::math::vec3 light_intensity{ 255, 183, 76 };
 
-        lib3d::math::vec4 light_pos_t;
+        blib3d::math::vec4 light_pos_t;
         {
-            lib3d::math::mat3x3 r;
-            lib3d::math::vec3 t;
-            lib3d::math::trn3x3(r, model_rotation);
-            lib3d::math::mul3x3_3(t, r, model_origin);
-            lib3d::math::mat4x4 m =
+            blib3d::math::mat3x3 r;
+            blib3d::math::vec3 t;
+            blib3d::math::trn3x3(r, model_rotation);
+            blib3d::math::mul3x3_3(t, r, model_origin);
+            blib3d::math::mat4x4 m =
             {
                 r[0], r[1], r[2], -t[0],
                 r[3], r[4], r[5], -t[1],
                 r[6], r[7], r[8], -t[2],
                  0.f,  0.f,  0.f,   1.f
             };
-            lib3d::math::mat4x4 mt;
-            lib3d::math::trn4x4(mt, m);
-            lib3d::math::mul4x4t_4(light_pos_t, mt, light_pos);
-            lib3d::math::mul4(light_pos_t, 1.f / light_pos_t[3]);
+            blib3d::math::mat4x4 mt;
+            blib3d::math::trn4x4(mt, m);
+            blib3d::math::mul4x4t_4(light_pos_t, mt, light_pos);
+            blib3d::math::mul4(light_pos_t, 1.f / light_pos_t[3]);
         }
 
-        for (int nf{}; nf < lib3d_model_num_face; ++nf)
+        for (int nf{}; nf < blib3d_model_num_face; ++nf)
         {
-            lib3d::render::face f{ lib3d_model_faces[nf] };
+            blib3d::render::face f{ blib3d_model_faces[nf] };
             uint32_t vert_index{ f.index };
-            lib3d::math::vec3 v0, v1;
-            lib3d::math::vec3 normal;
-            lib3d::math::sub3(v0, lib3d_model_vertices[vert_index + 1], lib3d_model_vertices[vert_index + 0]);
-            lib3d::math::sub3(v1, lib3d_model_vertices[vert_index + 2], lib3d_model_vertices[vert_index + 0]);
-            lib3d::math::cross3(normal, v0, v1);
-            lib3d::math::mul3(normal, lib3d::math::invsqrt(lib3d::math::dot3(normal, normal)));
+            blib3d::math::vec3 v0, v1;
+            blib3d::math::vec3 normal;
+            blib3d::math::sub3(v0, blib3d_model_vertices[vert_index + 1], blib3d_model_vertices[vert_index + 0]);
+            blib3d::math::sub3(v1, blib3d_model_vertices[vert_index + 2], blib3d_model_vertices[vert_index + 0]);
+            blib3d::math::cross3(normal, v0, v1);
+            blib3d::math::mul3(normal, blib3d::math::invsqrt(blib3d::math::dot3(normal, normal)));
 #if 0
             for (uint32_t nv{}; nv < f.count; ++nv)
             {
-                float* v{ lib3d_model_vertices[vert_index + nv] };
-                lib3d::math::sub3(v0, light_pos_t, v);
-                float dist2{ lib3d::math::dot3(v0, v0) };
-                float scale{ lib3d::math::dot3(v0, normal) };
+                float* v{ blib3d_model_vertices[vert_index + nv] };
+                blib3d::math::sub3(v0, light_pos_t, v);
+                float dist2{ blib3d::math::dot3(v0, v0) };
+                float scale{ blib3d::math::dot3(v0, normal) };
                 if (scale < 0)
                     scale = 0;
-                scale *= lib3d::math::invsqrt(dist2);
+                scale *= blib3d::math::invsqrt(dist2);
                 scale /= dist2;
-                lib3d::math::vec3 light;
-                lib3d::math::mul3(light, light_intensity, scale);
+                blib3d::math::vec3 light;
+                blib3d::math::mul3(light, light_intensity, scale);
                 light[0] *= 255;
                 light[1] *= 255;
                 light[2] *= 255;
-                lib3d::math::copy3(v + 4, light);
+                blib3d::math::copy3(v + 4, light);
             }
 #else
             for (uint32_t nv{}; nv < f.count; ++nv)
             {
-                float* v{ lib3d_model_vertices[vert_index + nv] };
-                lib3d::math::sub3(v0, light_pos_t, v);
-                float dist2{ lib3d::math::dot3(v0, v0) };
-                float scale{ lib3d::math::dot3(v0, normal) };
+                float* v{ blib3d_model_vertices[vert_index + nv] };
+                blib3d::math::sub3(v0, light_pos_t, v);
+                float dist2{ blib3d::math::dot3(v0, v0) };
+                float scale{ blib3d::math::dot3(v0, normal) };
                 if (scale < 0)
                     scale = 0;
-                scale *= lib3d::math::invsqrt(dist2);
+                scale *= blib3d::math::invsqrt(dist2);
                 scale /= dist2;
-                lib3d::math::vec3 light;
-                lib3d::math::mul3(light, light_intensity, scale);
+                blib3d::math::vec3 light;
+                blib3d::math::mul3(light, light_intensity, scale);
                 light[0] *= 255;
                 light[1] *= 255;
                 light[2] *= 255;
@@ -930,30 +930,30 @@ void draw_lib3d_model(float angle)
                 switch (nv)
                 {
                 case 3:
-                    lib3d_model_lightmap[nf][0].r = (uint8_t)light[0];
-                    lib3d_model_lightmap[nf][0].g = (uint8_t)light[1];
-                    lib3d_model_lightmap[nf][0].b = (uint8_t)light[2];
+                    blib3d_model_lightmap[nf][0].r = (uint8_t)light[0];
+                    blib3d_model_lightmap[nf][0].g = (uint8_t)light[1];
+                    blib3d_model_lightmap[nf][0].b = (uint8_t)light[2];
                     v[4] = 0.f;
                     v[5] = nf * 2 + 0.f;
                     break;
                 case 2:
-                    lib3d_model_lightmap[nf][1].r = (uint8_t)light[0];
-                    lib3d_model_lightmap[nf][1].g = (uint8_t)light[1];
-                    lib3d_model_lightmap[nf][1].b = (uint8_t)light[2];
+                    blib3d_model_lightmap[nf][1].r = (uint8_t)light[0];
+                    blib3d_model_lightmap[nf][1].g = (uint8_t)light[1];
+                    blib3d_model_lightmap[nf][1].b = (uint8_t)light[2];
                     v[4] = 1.f;
                     v[5] = nf * 2 + 0.f;
                     break;
                 case 0:
-                    lib3d_model_lightmap[nf][2].r = (uint8_t)light[0];
-                    lib3d_model_lightmap[nf][2].g = (uint8_t)light[1];
-                    lib3d_model_lightmap[nf][2].b = (uint8_t)light[2];
+                    blib3d_model_lightmap[nf][2].r = (uint8_t)light[0];
+                    blib3d_model_lightmap[nf][2].g = (uint8_t)light[1];
+                    blib3d_model_lightmap[nf][2].b = (uint8_t)light[2];
                     v[4] = 0.f;
                     v[5] = nf * 2 + 1.f;
                     break;
                 case 1:
-                    lib3d_model_lightmap[nf][3].r = (uint8_t)light[0];
-                    lib3d_model_lightmap[nf][3].g = (uint8_t)light[1];
-                    lib3d_model_lightmap[nf][3].b = (uint8_t)light[2];
+                    blib3d_model_lightmap[nf][3].r = (uint8_t)light[0];
+                    blib3d_model_lightmap[nf][3].g = (uint8_t)light[1];
+                    blib3d_model_lightmap[nf][3].b = (uint8_t)light[2];
                     v[4] = 1.f;
                     v[5] = nf * 2 + 1.f;
                     break;
@@ -963,44 +963,44 @@ void draw_lib3d_model(float angle)
         }
     }
 
-    lib3d_renderer.set_geometry_light_color(&lib3d_model_vertices[0][4], lib3d_model_vert_stride);
-    lib3d_renderer.set_geometry_lmap_coord(&lib3d_model_vertices[0][4], lib3d_model_vert_stride);
+    blib3d_renderer.set_geometry_light_color(&blib3d_model_vertices[0][4], blib3d_model_vert_stride);
+    blib3d_renderer.set_geometry_lmap_coord(&blib3d_model_vertices[0][4], blib3d_model_vert_stride);
 
-    lib3d_renderer.set_geometry_tex_coord(&lib3d_model_vertices[0][7], lib3d_model_vert_stride);
+    blib3d_renderer.set_geometry_tex_coord(&blib3d_model_vertices[0][7], blib3d_model_vert_stride);
 
     {
-        lib3d::math::mat4x4 mt;
-        lib3d::math::trn4x4(mt, model_mat);
-        for (int n{}; n < lib3d_model_num_vert; ++n)
-            lib3d::math::mul4x4t_4(lib3d_model_vertices_transformed[n], mt, lib3d_model_vertices[n]);
+        blib3d::math::mat4x4 mt;
+        blib3d::math::trn4x4(mt, model_mat);
+        for (int n{}; n < blib3d_model_num_vert; ++n)
+            blib3d::math::mul4x4t_4(blib3d_model_vertices_transformed[n], mt, blib3d_model_vertices[n]);
     }
 
-    lib3d_renderer.set_geometry_coord(&lib3d_model_vertices_transformed[0][0], lib3d_model_vert_stride);
+    blib3d_renderer.set_geometry_coord(&blib3d_model_vertices_transformed[0][0], blib3d_model_vert_stride);
 
-    lib3d_renderer.set_geometry_face(lib3d_model_faces, lib3d_model_num_face);
-    lib3d_renderer.set_geometry_face_index(nullptr);
-    lib3d_renderer.set_geometry_back_cull(true);
+    blib3d_renderer.set_geometry_face(blib3d_model_faces, blib3d_model_num_face);
+    blib3d_renderer.set_geometry_face_index(nullptr);
+    blib3d_renderer.set_geometry_back_cull(true);
 
-    lib3d_renderer.set_fill_color({ 255, 255, 255, 128 });
-    lib3d_renderer.set_fill_texture(brick_width, brick_height, (lib3d::raster::ARGB*)brick_lut_linear, (uint8_t*)brick_data);
+    blib3d_renderer.set_fill_color({ 255, 255, 255, 128 });
+    blib3d_renderer.set_fill_texture(brick_width, brick_height, (blib3d::raster::ARGB*)brick_lut_linear, (uint8_t*)brick_data);
 
-    lib3d_renderer.set_shade_lightmap(2, 2 * 1024, (lib3d::raster::ARGB*)lib3d_model_lightmap);
+    blib3d_renderer.set_shade_lightmap(2, 2 * 1024, (blib3d::raster::ARGB*)blib3d_model_lightmap);
 
-    lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_SOLID);
-    //lib3d_renderer.set_fill_type(lib3d::render::renderer::FILL_TEXTURE);
+    blib3d_renderer.set_fill_type(blib3d::render::renderer::FILL_SOLID);
+    //blib3d_renderer.set_fill_type(blib3d::render::renderer::FILL_TEXTURE);
 
-    //lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_NONE);
-    //lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_VERTEX);
-    lib3d_renderer.set_shade_type(lib3d::render::renderer::SHADE_LIGHTMAP);
+    //blib3d_renderer.set_shade_type(blib3d::render::renderer::SHADE_NONE);
+    //blib3d_renderer.set_shade_type(blib3d::render::renderer::SHADE_VERTEX);
+    blib3d_renderer.set_shade_type(blib3d::render::renderer::SHADE_LIGHTMAP);
 
-    lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_NONE);
-    //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_ADD);
-    //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_MUL);
-    //lib3d_renderer.set_blend_type(lib3d::render::renderer::BLEND_ALPHA);
+    blib3d_renderer.set_blend_type(blib3d::render::renderer::BLEND_NONE);
+    //blib3d_renderer.set_blend_type(blib3d::render::renderer::BLEND_ADD);
+    //blib3d_renderer.set_blend_type(blib3d::render::renderer::BLEND_MUL);
+    //blib3d_renderer.set_blend_type(blib3d::render::renderer::BLEND_ALPHA);
 
-    lib3d_renderer.set_filter_type(lib3d::render::renderer::FILTER_LINEAR);
+    blib3d_renderer.set_filter_type(blib3d::render::renderer::FILTER_LINEAR);
 
-    lib3d_renderer.render_draw();
+    blib3d_renderer.render_draw();
 }
 
 //------------------------------------------------------------------------------
@@ -1013,7 +1013,7 @@ int SDL_main(int argc, char* argv[])
     if (init(screen_width, screen_height) != 0)
         return 1;
 
-    lib3d::timer::interval interval;
+    blib3d::timer::interval interval;
     float fps{};
     float fps_count{};
     float ms{};
@@ -1025,36 +1025,36 @@ int SDL_main(int argc, char* argv[])
         brick_lut_linear[i] = correct_gamma_in(*(uint32_t*)brick_lut[i]);
         //brick_lut_linear[i] = *(uint32_t*)brick_lut[i];
 
-    make_lib3d_model(1.f, 2.f);
-    float lib3d_model_angle{ -3.1416f / 2 };
-    float lib3d_model_angle_speed{ 3.1416f / 10.f };
-    //float lib3d_model_angle{ 0 };
-    //float lib3d_model_angle_speed{ 0 };
+    make_blib3d_model(1.f, 2.f);
+    float blib3d_model_angle{ -3.1416f / 2 };
+    float blib3d_model_angle_speed{ 3.1416f / 10.f };
+    //float blib3d_model_angle{ 0 };
+    //float blib3d_model_angle_speed{ 0 };
 
     float rect_light_angle{ 0.f };
     float rect_light_angle_speed{ 3.1416f / 10.f };
 
     interval.reset();
 
-    lib3d_renderer.set_frame_clear_color({ 0xC0, 0xC0, 0xC0, 0xFF });
-    lib3d_renderer.set_frame_clear_depth(0);
+    blib3d_renderer.set_frame_clear_color({ 0xC0, 0xC0, 0xC0, 0xFF });
+    blib3d_renderer.set_frame_clear_depth(0);
 
-    lib3d::math::mat4x4 mat_proj;
-    lib3d::math::mat4x4 mat_view;
+    blib3d::math::mat4x4 mat_proj;
+    blib3d::math::mat4x4 mat_view;
     float screen_ratio{ (float)screen_width / (float)screen_height };
-    lib3d::view::make_projection_perspective(
+    blib3d::view::make_projection_perspective(
         mat_proj,
         screen_ratio,
-        lib3d::math::pi / 2.f,
-        lib3d::view::PROJECTION_Y);
-    lib3d::view::make_viewport(mat_view, (float)screen_width, (float)screen_height);
+        blib3d::math::pi / 2.f,
+        blib3d::view::PROJECTION_Y);
+    blib3d::view::make_viewport(mat_view, (float)screen_width, (float)screen_height);
 
-    lib3d_renderer.set_geometry_transform(mat_proj);
-    lib3d_renderer.set_frame_transform(mat_view);
+    blib3d_renderer.set_geometry_transform(mat_proj);
+    blib3d_renderer.set_frame_transform(mat_view);
 
-    lib3d::math::vec3 camera_pos{};
-    lib3d::math::vec3 camera_ang{};
-    lib3d::math::mat3x3 camera_A
+    blib3d::math::vec3 camera_pos{};
+    blib3d::math::vec3 camera_ang{};
+    blib3d::math::mat3x3 camera_A
     {
         1, 0, 0,
         0, 1, 0,
@@ -1140,8 +1140,8 @@ int SDL_main(int argc, char* argv[])
         float dt{ interval.get_s() };
 
         {
-            lib3d::math::vec3 camera_pos_speed{};
-            lib3d::math::vec3 camera_ang_speed{};
+            blib3d::math::vec3 camera_pos_speed{};
+            blib3d::math::vec3 camera_ang_speed{};
 
             if (controller & (1 << CONTROLLER_FORWARD))
                 camera_pos_speed[2] += 1;
@@ -1165,28 +1165,28 @@ int SDL_main(int argc, char* argv[])
             if (controller & (1 << CONTROLLER_LOOK_RIGHT))
                 camera_ang_speed[1] += 1;
 
-            lib3d::math::vec3 camera_r_pos_speed;
-            lib3d::math::mul3x3_3(camera_r_pos_speed, camera_A, camera_pos_speed);
+            blib3d::math::vec3 camera_r_pos_speed;
+            blib3d::math::mul3x3_3(camera_r_pos_speed, camera_A, camera_pos_speed);
             
-            lib3d::math::mul3(camera_r_pos_speed, dt * 16.f); // step speed
-            lib3d::math::mul3(camera_ang_speed, dt * lib3d::math::pi); // angle speed
+            blib3d::math::mul3(camera_r_pos_speed, dt * 16.f); // step speed
+            blib3d::math::mul3(camera_ang_speed, dt * blib3d::math::pi); // angle speed
 
-            lib3d::math::add3(camera_pos, camera_r_pos_speed);
-            lib3d::math::add3(camera_ang, camera_ang_speed);
+            blib3d::math::add3(camera_pos, camera_r_pos_speed);
+            blib3d::math::add3(camera_ang, camera_ang_speed);
 
-            float fx{ lib3d::math::pi / (float)screen_width };
-            float fy{ lib3d::math::pi / (float)screen_height };
+            float fx{ blib3d::math::pi / (float)screen_width };
+            float fy{ blib3d::math::pi / (float)screen_height };
             camera_ang[1] += (float)controller_move[0] * fx;
             camera_ang[0] += (float)controller_move[1] * fy;
 
-            lib3d::math::mat3x3 Ax, Ay;
-            lib3d::math::rotation_x(Ax, camera_ang[0]);
-            lib3d::math::rotation_y(Ay, camera_ang[1]);
-            lib3d::math::mul3x3_3x3(camera_A, Ay, Ax);
+            blib3d::math::mat3x3 Ax, Ay;
+            blib3d::math::rotation_x(Ax, camera_ang[0]);
+            blib3d::math::rotation_y(Ay, camera_ang[1]);
+            blib3d::math::mul3x3_3x3(camera_A, Ay, Ax);
 
-            lib3d::math::vec3 h;
-            lib3d::math::mul3x3t_3(h, camera_A, camera_pos);
-            lib3d::math::mat4x4 mat_rt
+            blib3d::math::vec3 h;
+            blib3d::math::mul3x3t_3(h, camera_A, camera_pos);
+            blib3d::math::mat4x4 mat_rt
             {
                 camera_A[0], camera_A[3], camera_A[6], -h[0],
                 camera_A[1], camera_A[4], camera_A[7], -h[1],
@@ -1194,10 +1194,10 @@ int SDL_main(int argc, char* argv[])
                           0,           0,           0,     1,
             };
 
-            lib3d::math::mat4x4 mat_pre;
-            lib3d::math::mul4x4_4x4(mat_pre, mat_proj, mat_rt);
+            blib3d::math::mat4x4 mat_pre;
+            blib3d::math::mul4x4_4x4(mat_pre, mat_proj, mat_rt);
 
-            lib3d_renderer.set_geometry_transform(mat_pre);
+            blib3d_renderer.set_geometry_transform(mat_pre);
         }
 
         {
@@ -1212,14 +1212,14 @@ int SDL_main(int argc, char* argv[])
                 rect.width = screen_width;
                 rect.stride = pitch / sizeof(uint32_t);
 
-                lib3d_renderer.set_frame_data(screen_width, screen_height, pitch / sizeof(uint32_t), depth_buffer, (lib3d::raster::ARGB*)pixels);
-                lib3d_renderer.render_begin();
+                blib3d_renderer.set_frame_data(screen_width, screen_height, pitch / sizeof(uint32_t), depth_buffer, (blib3d::raster::ARGB*)pixels);
+                blib3d_renderer.render_begin();
 
-                lib3d_renderer.render_clear_frame();
-                lib3d_renderer.render_clear_depth();
+                blib3d_renderer.render_clear_frame();
+                blib3d_renderer.render_clear_depth();
 
-                draw_lib3d_model(lib3d_model_angle);
-                lib3d_model_angle += lib3d_model_angle_speed * dt;
+                draw_blib3d_model(blib3d_model_angle);
+                blib3d_model_angle += blib3d_model_angle_speed * dt;
 
                 float rect_light_x{ std::cos(rect_light_angle) * 0.25f + 0.5f };
                 float rect_light_y{ std::sin(rect_light_angle) * -0.25f + 0.5f };
