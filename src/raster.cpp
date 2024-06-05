@@ -1235,6 +1235,78 @@ struct raster_vertex_shade_lightmap : public abstract_raster
 
 //------------------------------------------------------------------------------
 
+int32_t mip_level_calc(const float* v[], uint32_t num_vertices, float texture_width, float texture_height)
+{
+    enum { x, y, zdivw, winv, udivw, vdivw };
+
+    float xy[2][2]; // v0->v1, v0->v2
+    float uv[2][2]; // v0->v1, v0->v2
+    float w0{ 1.f / v[0][winv] };
+    float w1{ 1.f / v[1][winv] };
+    float x0{ v[0][x] };
+    float y0{ v[0][y] };
+    float u0{ v[0][udivw] * w0 };
+    float v0{ v[0][vdivw] * w0 };
+    xy[0][0] = v[1][x] - x0;
+    xy[0][1] = v[1][y] - y0;
+    uv[0][0] = v[1][udivw] * w1 - u0;
+    uv[0][1] = v[1][vdivw] * w1 - v0;
+
+    float a2xy{ 0.f };
+    float a2uv{ 0.f };
+
+    for (uint32_t nv2{ 2 }; nv2 < num_vertices; ++nv2)
+    {
+        float w2{ 1.f / v[nv2][winv] };
+        xy[1][0] = v[nv2][x] - x0;
+        xy[1][1] = v[nv2][y] - y0;
+        uv[1][0] = v[nv2][udivw] * w2 - u0;
+        uv[1][1] = v[nv2][vdivw] * w2 - v0;
+
+        a2xy += math::cross2(xy[0][0], xy[0][1], xy[1][0], xy[1][1]);
+        a2uv += math::cross2(uv[0][0], uv[0][1], uv[1][0], uv[1][1]);
+
+        xy[0][0] = xy[1][0];
+        xy[0][1] = xy[1][1];
+        uv[0][0] = uv[1][0];
+        uv[0][1] = uv[1][1];
+    }
+
+    a2uv *= texture_width * texture_height;
+
+    float l{ math::sqrt(std::abs(a2uv / a2xy)) };
+
+    return math::log2ceil(l);
+}
+
+constexpr int32_t mip_table_max_size{ 16 };
+
+static int32_t mip_table_build(
+    const uint8_t* texture,
+    int32_t texture_width,
+    int32_t texture_height,
+    uint8_t const* mip_table[])
+{
+    int32_t n{ 0 };
+    for (;;)
+    {
+        mip_table[n++] = texture;
+        if (texture_width != 1 && texture_height != 1 && n < mip_table_max_size)
+        {
+            texture += texture_width * texture_height;
+            texture_width >>= 1;
+            texture_height >>= 1;
+        }
+        else
+            break;
+    }
+    for (int32_t i{ n }; i < mip_table_max_size; ++i)
+        mip_table[i] = nullptr;
+    return n;
+}
+
+//------------------------------------------------------------------------------
+
 template<
     typename sample_type = sample_nearest,
     typename blend_type = blend_none,
@@ -1245,38 +1317,76 @@ struct raster_texture_shade_none : public abstract_raster
     raster_texture_shade_none(const config* c)
     {
         back_cull = c->back_cull;
+        mip_enable = (c->flags & MIP_FACE) != 0;
 
-        texture_width = (float)c->texture_width;
-        texture_height = (float)c->texture_height;
+        texture_width = c->texture_width;
+        texture_height = c->texture_height;
 
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
-        smask = (c->texture_width - 1) << 16;
-        tmask = (c->texture_height - 1) << 16;
-        tshift = 16 - math::log2(c->texture_width);
-        texture_lut = (uint32_t*)(c->texture_lut);
-        texture_data = c->texture_data;
+
+        if (!mip_enable)
+        {
+            smask = (c->texture_width - 1) << 16;
+            tmask = (c->texture_height - 1) << 16;
+            tshift = 16 - math::log2(c->texture_width);
+            texture_lut = (uint32_t*)(c->texture_lut);
+            texture_data = c->texture_data;
+        }
+        else
+        {
+            texture_lut = (uint32_t*)(c->texture_lut);
+            mip_max_level = mip_table_build(c->texture_data, c->texture_width, c->texture_height, mip_table) - 1;
+        }
     }
 
     // abstract_raster
 
     bool back_cull;
+    bool mip_enable;
 
-    float texture_width;
-    float texture_height;
+    int32_t texture_width;
+    int32_t texture_height;
+
+    const uint8_t* mip_table[mip_table_max_size];
+    int32_t mip_max_level;
 
     bool setup_face(const float* pv[], uint32_t vertex_count) override
     {
         if (interp_setup_face(pv, vertex_count, back_cull,
             is_clockwise, g))
         {
-            g[2].dx *= texture_width;
-            g[2].dy *= texture_width;
-            g[2].d *= texture_width;
-            g[3].dx *= texture_height;
-            g[3].dy *= texture_height;
-            g[3].d *= texture_height;
+            float texture_width_f{ (float)texture_width };
+            float texture_height_f{ (float)texture_height };
+            if (!mip_enable)
+            {
+                g[2].dx *= texture_width_f;
+                g[2].dy *= texture_width_f;
+                g[2].d *= texture_width_f;
+                g[3].dx *= texture_height_f;
+                g[3].dy *= texture_height_f;
+                g[3].d *= texture_height_f;
+            }
+            else
+            {
+                int32_t mip_level{ mip_level_calc(pv, vertex_count, texture_width_f, texture_height_f) };
+                mip_level = math::clamp(mip_level, 0, mip_max_level);
+                int32_t mip_texture_width{ texture_width >> mip_level };
+                int32_t mip_texture_height{ texture_height >> mip_level };
+                float mip_texture_width_f{ (float)mip_texture_width };
+                float mip_texture_height_f{ (float)mip_texture_height };
+                g[2].dx *= mip_texture_width_f;
+                g[2].dy *= mip_texture_width_f;
+                g[2].d *= mip_texture_width_f;
+                g[3].dx *= mip_texture_height_f;
+                g[3].dy *= mip_texture_height_f;
+                g[3].d *= mip_texture_height_f;
+                smask = (mip_texture_width - 1) << 16;
+                tmask = (mip_texture_height - 1) << 16;
+                tshift = 16 - math::log2(mip_texture_width);
+                texture_data = mip_table[mip_level];
+            }
             return true;
         }
         return false;
