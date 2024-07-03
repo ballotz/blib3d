@@ -292,9 +292,10 @@ void renderer::set_geometry_face(face* data, uint32_t count)
     geometry_face_count = count;
 }
 
-void renderer::set_geometry_face_index(uint32_t* data)
+void renderer::set_geometry_face_index(uint32_t* data, uint32_t count)
 {
     geometry_face_index = data;
+    geometry_face_index_count = count;
 }
 
 void renderer::set_geometry_transform(math::mat4x4 matrix)
@@ -489,9 +490,9 @@ void renderer::render_draw()
 
     // pre transform, clip, post transform
 
-    uint32_t face_count{ geometry_face_count };
     face* faces{ geometry_face };
     uint32_t* face_index{ geometry_face_index };
+    uint32_t face_count{ face_index ? geometry_face_index_count : geometry_face_count };
 
     raster_config.vertex_stride = component_count;
 

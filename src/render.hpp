@@ -67,7 +67,7 @@ public:
 
     // face index
     // if nullptr then all faces are rendered
-    void set_geometry_face_index(uint32_t* data);
+    void set_geometry_face_index(uint32_t* data, uint32_t count);
 
     void set_geometry_transform(math::mat4x4 matrix); // 4x4
 
@@ -183,6 +183,7 @@ private:
     face* geometry_face{};
     uint32_t geometry_face_count{};
     uint32_t* geometry_face_index{};
+    uint32_t geometry_face_index_count{};
 
     math::mat4x4 pre_matrix_t{};
     math::mat4x4 post_matrix_t{};
