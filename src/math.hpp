@@ -16,6 +16,7 @@ constexpr float pi2{ (float)6.283185307179586476925286766559 };
 
 // types
 
+typedef float vec2[2];
 typedef float vec3[3];
 typedef float vec4[4];
 
@@ -241,6 +242,12 @@ inline void add3(vec3 inout, const vec3 a)
 
 // sub
 
+inline void sub2(vec2 out, const vec2 a, const vec2 b)
+{
+    out[0] = a[0] - b[0];
+    out[1] = a[1] - b[1];
+}
+
 inline void sub3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = a[0] - b[0];
@@ -464,6 +471,11 @@ inline float cross2(float ax, float ay, float bx, float by)
     return ax * by - ay * bx;
 };
 
+inline float cross2(const vec2 a, const vec2 b)
+{
+    return a[0] * b[1] - a[1] * b[0];
+};
+
 inline void cross3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = a[1] * b[2] - a[2] * b[1];
@@ -517,5 +529,20 @@ inline void rotation_z(mat3x3 out, const float angle)
     out[7] = 0;
     out[8] = 1;
 }
+
+// geometry test
+
+enum
+{
+    test_outside,
+    test_inside,
+    test_intersect,
+};
+
+// test an axis aligned box against a plane
+int32_t test3_aab_plane(vec3 box_min, vec3 box_max, vec4 plane);
+
+// test a segment against a line
+int32_t test2_segment_line(vec2 sa, vec2 sb, vec2 la, vec2 lb);
 
 } // namespace blib3d::math
