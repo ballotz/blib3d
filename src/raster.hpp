@@ -121,4 +121,16 @@ bool occlusion_test_rect(
     occlusion_data& data,
     float screen_min[2], float screen_max[2], float depth_min);
 
+//------------------------------------------------------------------------------
+
+struct gamma_table
+{
+    alignas(16) uint32_t decode[256];
+    alignas(16) uint32_t encode[256];
+};
+
+void gamma_build_table(gamma_table* table, float gamma);
+
+void gamma_process(const uint32_t* table, ARGB* data, int32_t width, int32_t height, int32_t stride);
+
 } // namespace blib3d::raster

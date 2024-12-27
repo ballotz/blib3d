@@ -381,7 +381,7 @@ void renderer::render_begin()
 
 void renderer::render_end()
 {
-
+    gamma_process_frame();
 }
 
 void renderer::render_clear_frame()
@@ -646,6 +646,46 @@ bool renderer::occlusion_test_rect(float screen_min[2], float screen_max[2], flo
         occlusion_config,
         occlusion_data,
         screen_min, screen_max, depth_min);
+}
+
+//------------------------------------------------------------------------------
+
+void renderer::gamma_set(float gamma)
+{
+    gamma_value = gamma;
+    if (gamma_value != 1.f)
+        raster::gamma_build_table(&gamma_table, gamma_value);
+}
+
+float renderer::gamma_get()
+{
+    return gamma_value;
+}
+
+uint8_t renderer::gamma_decode(uint8_t nonlin)
+{
+    if (gamma_value == 1.f)
+        return nonlin;
+    return gamma_table.decode[nonlin];
+}
+
+uint8_t renderer::gamma_encode(uint8_t linear)
+{
+    if (gamma_value == 1.f)
+        return linear;
+    return gamma_table.encode[linear];
+}
+
+void renderer::gamma_process(raster::ARGB* data, int32_t width, int32_t height, int32_t stride)
+{
+    if (gamma_value != 1.f)
+        raster::gamma_process(gamma_table.decode, data, width, height, stride);
+}
+
+void renderer::gamma_process_frame()
+{
+    if (gamma_value != 1.f)
+        raster::gamma_process(gamma_table.encode, frame_data, frame_width, frame_height, frame_stride);
 }
 
 //------------------------------------------------------------------------------
