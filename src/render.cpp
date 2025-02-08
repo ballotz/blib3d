@@ -381,7 +381,7 @@ void renderer::render_begin()
 
 void renderer::render_end()
 {
-    gamma_process_frame();
+
 }
 
 void renderer::render_clear_frame()
@@ -653,8 +653,6 @@ bool renderer::occlusion_test_rect(float screen_min[2], float screen_max[2], flo
 void renderer::gamma_set(float gamma)
 {
     gamma_value = gamma;
-    if (gamma_value != 1.f)
-        raster::gamma_build_table(&gamma_table, gamma_value);
 }
 
 float renderer::gamma_get()
@@ -662,30 +660,18 @@ float renderer::gamma_get()
     return gamma_value;
 }
 
-uint8_t renderer::gamma_decode(uint8_t nonlin)
+float renderer::gamma_decode(float nonlin)
 {
     if (gamma_value == 1.f)
         return nonlin;
-    return gamma_table.decode[nonlin];
+    return std::pow(nonlin / 255.f, gamma_value) * 255.f;
 }
 
-uint8_t renderer::gamma_encode(uint8_t linear)
+float renderer::gamma_encode(float linear)
 {
     if (gamma_value == 1.f)
         return linear;
-    return gamma_table.encode[linear];
-}
-
-void renderer::gamma_process(raster::ARGB* data, int32_t width, int32_t height, int32_t stride)
-{
-    if (gamma_value != 1.f)
-        raster::gamma_process(gamma_table.decode, data, width, height, stride);
-}
-
-void renderer::gamma_process_frame()
-{
-    if (gamma_value != 1.f)
-        raster::gamma_process(gamma_table.encode, frame_data, frame_width, frame_height, frame_stride);
+    return std::pow(linear / 255.f, 1.f / gamma_value) * 255.f;
 }
 
 //------------------------------------------------------------------------------

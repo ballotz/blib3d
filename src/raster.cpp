@@ -2411,35 +2411,4 @@ bool occlusion_test_rect(
 
 //------------------------------------------------------------------------------
 
-void gamma_build_table(gamma_table* table, float gamma)
-{
-    for (uint32_t n{ 0 }; n < 256; ++n)
-        table->decode[n] = (uint32_t)(std::pow((float)n / (float)0xFF, gamma) * (float)0xFF + 0.5f);
-    for (uint32_t n{ 0 }; n < 256; ++n)
-        table->encode[n] = (uint32_t)(std::pow((float)n / (float)0xFF, 1.f / gamma) * (float)0xFF + 0.5f);
-}
-
-force_inline uint32_t gamma_process(const uint32_t* table, uint32_t v)
-{
-    return     (v & 0xFF000000)                 +
-        (table[(v & 0x00FF0000) >> 16u] << 16u) +
-        (table[(v & 0x0000FF00) >>  8u] <<  8u) +
-        (table[(v & 0x000000FF)       ]       );
-}
-
-void gamma_process(const uint32_t* table, ARGB* data, int32_t width, int32_t height, int32_t stride)
-{
-    uint32_t* prow{ (uint32_t*)data };
-    for (int y{}; y < height; ++y)
-    {
-        uint32_t* p{ prow };
-        for (int x{}; x < width; ++x)
-        {
-            *p = gamma_process(table, *p);
-            p++;
-        }
-        prow += stride;
-    }
-}
-
 } // namespace blib3d::raster

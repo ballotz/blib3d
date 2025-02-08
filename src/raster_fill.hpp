@@ -287,28 +287,4 @@ struct mask_texture_off
 
 //------------------------------------------------------------------------------
 
-//constexpr uint32_t dither_size{ 2 };
-//constexpr uint32_t dither_mask{ dither_size - 1 };
-//constexpr uint32_t dither_offset[dither_size * dither_size * 2]
-//{
-//    0 << 14, 2 << 14,
-//    3 << 14, 1 << 14,
-//    0 << 14, 2 << 14,
-//    3 << 14, 1 << 14
-//};
-
-//constexpr uint32_t dither_size{ 4 };
-//constexpr uint32_t dither_mask{ dither_size - 1 };
-//constexpr uint32_t dither_offset[dither_size * dither_size * 2]
-//{
-//     0 << 12,  8 << 12,  2 << 12, 10 << 12,
-//    12 << 12,  4 << 12, 14 << 12,  6 << 12,
-//     3 << 12, 11 << 12,  1 << 12,  9 << 12,
-//    15 << 12,  7 << 12, 13 << 12,  5 << 12,
-//     0 << 12,  8 << 12,  2 << 12, 10 << 12,
-//    12 << 12,  4 << 12, 14 << 12,  6 << 12,
-//     3 << 12, 11 << 12,  1 << 12,  9 << 12,
-//    15 << 12,  7 << 12, 13 << 12,  5 << 12,
-//};
-
 } // namespace blib3d::raster

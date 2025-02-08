@@ -160,13 +160,9 @@ public:
 
     float gamma_get();
 
-    uint8_t gamma_decode(uint8_t nonlin);
+    float gamma_decode(float nonlin);
 
-    uint8_t gamma_encode(uint8_t linear);
-
-    void gamma_process(raster::ARGB* data, int32_t width, int32_t height, int32_t stride);
-
-    void gamma_process_frame();
+    float gamma_encode(float linear);
 
     //----------------------------------
 
@@ -218,7 +214,6 @@ private:
     raster::occlusion_data occlusion_data;
 
     float gamma_value{ 1.f };
-    raster::gamma_table gamma_table;
 };
 
 } // namespace blib3d::render
