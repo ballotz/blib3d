@@ -25,6 +25,22 @@ int32_t test3_aab_plane(vec3 box_min, vec3 box_max, vec4 plane)
         return test_intersect;
 }
 
+int32_t test3_sphere_aab(vec3 pos, float radius, vec3 box_min, vec3 box_max)
+{
+    int32_t test[3]
+    {
+        test1_segment_segment(pos[0] - radius, pos[0] + radius, box_min[0], box_max[0]),
+        test1_segment_segment(pos[1] - radius, pos[1] + radius, box_min[1], box_max[1]),
+        test1_segment_segment(pos[2] - radius, pos[2] + radius, box_min[2], box_max[2])
+    };
+    if (test[0] == test_outside || test[1] == test_outside || test[2] == test_outside)
+        return test_outside;
+    else if (test[0] == test_inside && test[1] == test_inside && test[2] == test_inside)
+        return test_inside;
+    else
+        return test_intersect;
+}
+
 int32_t test2_segment_line(vec2 sa, vec2 sb, vec2 la, vec2 lb)
 {
     vec2 v0, v1, v2;
