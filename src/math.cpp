@@ -57,4 +57,14 @@ int32_t test2_segment_line(vec2 sa, vec2 sb, vec2 la, vec2 lb)
         return test_intersect;
 }
 
+int32_t test1_segment_segment(float s1min, float s1max, float s2min, float s2max)
+{
+    if (s1min > s2max || s1max < s2min)
+        return test_outside;
+    else if (s1min > s2min && s1max < s2max)
+        return test_inside;
+    else
+        return test_intersect;
+}
+
 } // namespace blib3d::math

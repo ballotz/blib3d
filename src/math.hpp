@@ -542,7 +542,13 @@ enum
 // test an axis aligned box against a plane
 int32_t test3_aab_plane(vec3 box_min, vec3 box_max, vec4 plane);
 
+// test a sphere against an axis aligned box
+int32_t test3_sphere_aab(vec3 pos, float radius, vec3 box_min, vec3 box_max);
+
 // test a segment against a line
 int32_t test2_segment_line(vec2 sa, vec2 sb, vec2 la, vec2 lb);
+
+// test a segment against a segment
+int32_t test1_segment_segment(float s1min, float s1max, float s2min, float s2max);
 
 } // namespace blib3d::math
