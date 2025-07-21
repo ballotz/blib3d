@@ -542,6 +542,9 @@ enum
 // test an axis aligned box against a plane
 int32_t test3_aab_plane(vec3 box_min, vec3 box_max, vec4 plane);
 
+// test a sphere against a plane
+int32_t test3_sphere_plane(vec3 pos, float radius, vec4 plane);
+
 // test a sphere against an axis aligned box
 int32_t test3_sphere_aab(vec3 pos, float radius, vec3 box_min, vec3 box_max);
 
