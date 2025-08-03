@@ -18,6 +18,7 @@
     </ClCompile>
     <ClCompile Include="..\..\brick.c" />
     <ClCompile Include="..\..\main.cpp" />
+    <ClCompile Include="..\..\draw.c" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="blib3d">
@@ -49,5 +50,6 @@
     <ClInclude Include="..\..\..\..\src\view.hpp">
       <Filter>blib3d</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\draw.h" />
   </ItemGroup>
 </Project>

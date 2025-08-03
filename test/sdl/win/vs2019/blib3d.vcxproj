@@ -25,6 +25,7 @@
     <ClCompile Include="..\..\..\..\src\timer.cpp" />
     <ClCompile Include="..\..\..\..\src\view.cpp" />
     <ClCompile Include="..\..\brick.c" />
+    <ClCompile Include="..\..\draw.c" />
     <ClCompile Include="..\..\main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -36,6 +37,7 @@
     <ClInclude Include="..\..\..\..\src\shared.hpp" />
     <ClInclude Include="..\..\..\..\src\timer.hpp" />
     <ClInclude Include="..\..\..\..\src\view.hpp" />
+    <ClInclude Include="..\..\draw.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
