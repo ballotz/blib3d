@@ -50,6 +50,9 @@ public:
     // vertex x y z coordinate
     void set_geometry_coord(float* data, uint32_t vertex_stride);
 
+    // vertex normal
+    void set_geometry_norm(float* data, uint32_t vertex_stride);
+
     // vertex r g b a color
     void set_geometry_color(float* data, uint32_t vertex_stride);
 
@@ -97,7 +100,8 @@ public:
     {
         SHADE_NONE,
         SHADE_VERTEX,
-        SHADE_LIGHTMAP
+        SHADE_LIGHTMAP,
+        SHADE_LIGHT
     };
     void set_shade_type(uint32_t setting);
 
@@ -107,6 +111,10 @@ public:
         int32_t lightmap_width,
         int32_t lightmap_height,
         raster::ARGB* lightmap);
+
+    void set_shade_lights(
+        const raster::light* data,
+        uint32_t count);
 
     enum
     {
@@ -182,6 +190,8 @@ private:
 
     float* geometry_coord_data{};
     uint32_t geometry_coord_stride{};
+    float* geometry_norm_data{};
+    uint32_t geometry_norm_stride{};
     float* geometry_color_data{};
     uint32_t geometry_color_stride{};
     float* geometry_tex_coord_data{};

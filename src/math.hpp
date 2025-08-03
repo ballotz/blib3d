@@ -26,24 +26,24 @@ typedef float mat4x4[16]; // 00, 01, 02, 03, 10, 11, 12, 13, 20, 21, 22, 23, 30,
 // common
 
 template<typename data_type>
-inline data_type min(data_type v0, data_type v1)
+force_inline data_type min(data_type v0, data_type v1)
 {
     return v0 < v1 ? v0 : v1;
 }
 
 template<typename data_type>
-inline data_type max(data_type v0, data_type v1)
+force_inline data_type max(data_type v0, data_type v1)
 {
     return v0 > v1 ? v0 : v1;
 }
 
 template<typename data_type>
-inline data_type clamp(data_type v, data_type vmin, data_type vmax)
+force_inline data_type clamp(data_type v, data_type vmin, data_type vmax)
 {
     return min(max(v, vmin), vmax);
 }
 
-inline int32_t floor(float v)
+force_inline int32_t floor(float v)
 {
     int32_t r{ (int32_t)v };
     if ((float)r > v)
@@ -51,7 +51,7 @@ inline int32_t floor(float v)
     return r;
 }
 
-inline int32_t ceil(float v)
+force_inline int32_t ceil(float v)
 {
     int32_t r{ (int32_t)v };
     if ((float)r < v)
@@ -62,12 +62,12 @@ inline int32_t ceil(float v)
 // bits
 
 // is_power_of_2(0) = false
-inline uint32_t is_power_of_2(uint32_t v)
+force_inline uint32_t is_power_of_2(uint32_t v)
 {
     return v && !(v & (v - 1u));
 }
 
-inline uint32_t next_power_of_2(uint32_t v)
+force_inline uint32_t next_power_of_2(uint32_t v)
 {
     v--;
     v |= v >> 1u;
@@ -79,7 +79,7 @@ inline uint32_t next_power_of_2(uint32_t v)
     return v;
 }
 
-inline uint32_t prev_power_of_2(uint32_t v)
+force_inline uint32_t prev_power_of_2(uint32_t v)
 {
     v |= v >> 1u;
     v |= v >> 2u;
@@ -91,13 +91,13 @@ inline uint32_t prev_power_of_2(uint32_t v)
 }
 
 // assume v is positive
-inline int32_t log2floor(float v)
+force_inline int32_t log2floor(float v)
 {
     return (reinterpret_cast<int32_t&>(v) >> 23) - 127;
 }
 
 // assume v is positive
-inline int32_t log2ceil(float v)
+force_inline int32_t log2ceil(float v)
 {
     int32_t i{ reinterpret_cast<int32_t&>(v) };
     int32_t r{ (i >> 23) - 127 };
@@ -106,7 +106,7 @@ inline int32_t log2ceil(float v)
 }
 
 // assume v is positive
-inline int32_t log2round(float v)
+force_inline int32_t log2round(float v)
 {
     int32_t i{ reinterpret_cast<int32_t&>(v) };
     int32_t r{ (i >> 23) - 127 };
@@ -114,67 +114,94 @@ inline int32_t log2round(float v)
     return r;
 }
 
+// force_inline float recipfast(float v)
+// {
+//     int32_t r{ 0x7F000000 - reinterpret_cast<int32_t&>(v) };
+//     return reinterpret_cast<float&>(r);
+// }
+
 // assume v is positive
-inline float log2fast(float v)
+force_inline float log2fast(float v)
 {
     constexpr float scale{ 1.f / (1 << 23) };
     return (float)reinterpret_cast<int32_t&>(v) * scale - 127.f;
 }
 
-// assume v is positive
-inline float sqrtfast(float v)
+// // assume v is positive
+// force_inline float sqrtfast(float v)
+// {
+//     int32_t r{ (reinterpret_cast<int32_t&>(v) >> 1) + 0x1FC00000 };
+//     return reinterpret_cast<float&>(r);
+// }
+
+// force_inline float recipiter(float v, float r)
+// {
+//     return r * (2.f - r * v);
+// }
+
+// force_inline float sqrtiter(float v, float r)
+// {
+//     return 0.5f * (r + v / r);
+// }
+
+force_inline float recip(float v)
 {
-    int32_t r{ (reinterpret_cast<int32_t&>(v) >> 1) + 0x1FC00000 };
-    return reinterpret_cast<float&>(r);
+#if 0
+    float r{ recipfast(v) };
+    r = recipiter(v, r);
+    r = recipiter(v, r);
+    // r = recipiter(v, r);
+    return r;
+#else
+    return 1.f / v;
+#endif
 }
 
-inline float sqrt(float v)
+force_inline float sqrt(float v)
 {
-#if 1
-    return std::sqrt(v);
-#endif
 #if 0
     float r{ sqrtfast(v) };
-    r = 0.5f * (r + v / r);
-    r = 0.5f * (r + v / r);
+    r = sqrtiter(v, r);
+    // r = sqrtiter(v, r);
     return r;
+#else
+    return std::sqrt(v);
 #endif
 }
 
-inline float log2(float v)
+force_inline float log2(float v)
 {
     return std::log2(v);
 }
 
-inline int32_t log2(int32_t v)
+force_inline int32_t log2(int32_t v)
 {
     return log2floor((float)v);
 }
 
-inline float invsqrt(float v)
+force_inline float invsqrt(float v)
 {
-#if 1
-    return 1.f / std::sqrt(v);
-#endif
 #if 0
     float vh{ v * 0.5f };
     reinterpret_cast<uint32_t&>(v) = 0x5F3759DFu - (reinterpret_cast<uint32_t&>(v) >> 1u);
     v *= 1.5f - vh * v * v;
     v *= 1.5f - vh * v * v;
     return v;
+#else
+    return 1.f / sqrt(v);
 #endif
 }
 
 // copy
 
-inline void copy3(vec3 out, const vec3 in)
+force_inline void copy3(vec3 out, const vec3 in)
 {
     out[0] = in[0];
     out[1] = in[1];
     out[2] = in[2];
 }
 
-inline void copy4(vec3 out, const vec3 in)
+force_inline void copy4(vec3 out, const vec3 in)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
     _mm_storeu_ps(out, _mm_loadu_ps(in));
@@ -186,7 +213,7 @@ inline void copy4(vec3 out, const vec3 in)
 #endif
 }
 
-inline void copy3x3(mat3x3 out, const mat3x3 in)
+force_inline void copy3x3(mat3x3 out, const mat3x3 in)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
     _mm_storeu_ps(out + 0, _mm_loadu_ps(in + 0));
@@ -204,7 +231,7 @@ inline void copy3x3(mat3x3 out, const mat3x3 in)
     out[8] = in[8];
 }
 
-inline void copy4x4(mat4x4 out, const mat4x4 in)
+force_inline void copy4x4(mat4x4 out, const mat4x4 in)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
     _mm_storeu_ps(out +  0, _mm_loadu_ps(in +  0));
@@ -233,7 +260,7 @@ inline void copy4x4(mat4x4 out, const mat4x4 in)
 
 // add
 
-inline void add3(vec3 inout, const vec3 a)
+force_inline void add3(vec3 inout, const vec3 a)
 {
     inout[0] += a[0];
     inout[1] += a[1];
@@ -242,13 +269,13 @@ inline void add3(vec3 inout, const vec3 a)
 
 // sub
 
-inline void sub2(vec2 out, const vec2 a, const vec2 b)
+force_inline void sub2(vec2 out, const vec2 a, const vec2 b)
 {
     out[0] = a[0] - b[0];
     out[1] = a[1] - b[1];
 }
 
-inline void sub3(vec3 out, const vec3 a, const vec3 b)
+force_inline void sub3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = a[0] - b[0];
     out[1] = a[1] - b[1];
@@ -257,14 +284,14 @@ inline void sub3(vec3 out, const vec3 a, const vec3 b)
 
 // mul
 
-inline void mul3(vec3 inout, const float a)
+force_inline void mul3(vec3 inout, const float a)
 {
     inout[0] *= a;
     inout[1] *= a;
     inout[2] *= a;
 }
 
-inline void mul4(vec4 inout, const float a)
+force_inline void mul4(vec4 inout, const float a)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
     _mm_storeu_ps(inout, _mm_mul_ps(_mm_loadu_ps(inout), _mm_load1_ps(&a)));
@@ -276,28 +303,28 @@ inline void mul4(vec4 inout, const float a)
 #endif
 }
 
-inline void mul3(vec3 out, const vec3 a, const float b)
+force_inline void mul3(vec3 out, const vec3 a, const float b)
 {
     out[0] = a[0] * b;
     out[1] = a[1] * b;
     out[2] = a[2] * b;
 }
 
-inline void mul3x3_3(vec3 out, const mat3x3 a, const vec3 b)
+force_inline void mul3x3_3(vec3 out, const mat3x3 a, const vec3 b)
 {
     out[0] = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     out[1] = a[3] * b[0] + a[4] * b[1] + a[5] * b[2];
     out[2] = a[6] * b[0] + a[7] * b[1] + a[8] * b[2];
 }
 
-inline void mul3x3t_3(vec3 out, const mat3x3 a, const vec3 b)
+force_inline void mul3x3t_3(vec3 out, const mat3x3 a, const vec3 b)
 {
     out[0] = a[0] * b[0] + a[3] * b[1] + a[6] * b[2];
     out[1] = a[1] * b[0] + a[4] * b[1] + a[7] * b[2];
     out[2] = a[2] * b[0] + a[5] * b[1] + a[8] * b[2];
 }
 
-inline void mul3x3_3x3(mat3x3 out, const mat3x3 a, const mat3x3 b)
+force_inline void mul3x3_3x3(mat3x3 out, const mat3x3 a, const mat3x3 b)
 {
     out[0] = a[0] * b[0] + a[1] * b[3] + a[2] * b[6];
     out[1] = a[0] * b[1] + a[1] * b[4] + a[2] * b[7];
@@ -310,7 +337,7 @@ inline void mul3x3_3x3(mat3x3 out, const mat3x3 a, const mat3x3 b)
     out[8] = a[6] * b[2] + a[7] * b[5] + a[8] * b[8];
 }
 
-inline void mul4x4t_3(vec4 out, const mat4x4 a, const vec3 b)
+force_inline void mul4x4t_3(vec4 out, const mat4x4 a, const vec3 b)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
     __m128 t0{ _mm_mul_ps(_mm_loadu_ps(a + 0), _mm_load_ps1(b + 0)) };
@@ -328,7 +355,7 @@ inline void mul4x4t_3(vec4 out, const mat4x4 a, const vec3 b)
 #endif
 }
 
-inline void mul4x4t_4(vec4 out, const mat4x4 a, const vec4 b)
+force_inline void mul4x4t_4(vec4 out, const mat4x4 a, const vec4 b)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
     __m128 t0{ _mm_mul_ps(_mm_loadu_ps(a +  0), _mm_load_ps1(b + 0)) };
@@ -347,7 +374,7 @@ inline void mul4x4t_4(vec4 out, const mat4x4 a, const vec4 b)
 #endif
 }
 
-inline void mul4x4_4x4(mat4x4 out, const mat4x4 a, const mat4x4 b)
+force_inline void mul4x4_4x4(mat4x4 out, const mat4x4 a, const mat4x4 b)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
     __m128 t0, t1, t2, t3, t4, t5, t6;
@@ -407,9 +434,18 @@ inline void mul4x4_4x4(mat4x4 out, const mat4x4 a, const mat4x4 b)
 #endif
 }
 
+// muladd
+
+force_inline void muladd3(vec3 inout, const vec3 a, const float b)
+{
+    inout[0] += a[0] * b;
+    inout[1] += a[1] * b;
+    inout[2] += a[2] * b;
+}
+
 // transpose
 
-inline void trn3x3(mat3x3 out, const mat3x3 in)
+force_inline void trn3x3(mat3x3 out, const mat3x3 in)
 {
     out[0] = in[0];
     out[1] = in[3];
@@ -422,7 +458,7 @@ inline void trn3x3(mat3x3 out, const mat3x3 in)
     out[8] = in[8];
 }
 
-inline void trn4x4(mat4x4 out, const mat4x4 in)
+force_inline void trn4x4(mat4x4 out, const mat4x4 in)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
     __m128 a0{ _mm_loadu_ps(in +  0) };
@@ -459,24 +495,24 @@ inline void trn4x4(mat4x4 out, const mat4x4 in)
 
 // dot
 
-inline float dot3(const vec3 a, const vec3 b)
+force_inline float dot3(const vec3 a, const vec3 b)
 {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
 // cross
 
-inline float cross2(float ax, float ay, float bx, float by)
+force_inline float cross2(float ax, float ay, float bx, float by)
 {
     return ax * by - ay * bx;
 };
 
-inline float cross2(const vec2 a, const vec2 b)
+force_inline float cross2(const vec2 a, const vec2 b)
 {
     return a[0] * b[1] - a[1] * b[0];
 };
 
-inline void cross3(vec3 out, const vec3 a, const vec3 b)
+force_inline void cross3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = a[1] * b[2] - a[2] * b[1];
     out[1] = a[2] * b[0] - a[0] * b[2];
@@ -485,7 +521,7 @@ inline void cross3(vec3 out, const vec3 a, const vec3 b)
 
 // utility matrices
 
-inline void rotation_x(mat3x3 out, const float angle)
+force_inline void rotation_x(mat3x3 out, const float angle)
 {
     float c{ std::cos(angle) };
     float s{ std::sin(angle) };
@@ -500,7 +536,7 @@ inline void rotation_x(mat3x3 out, const float angle)
     out[8] = c;
 }
 
-inline void rotation_y(mat3x3 out, const float angle)
+force_inline void rotation_y(mat3x3 out, const float angle)
 {
     float c{ std::cos(angle) };
     float s{ std::sin(angle) };
@@ -515,7 +551,7 @@ inline void rotation_y(mat3x3 out, const float angle)
     out[8] = c;
 }
 
-inline void rotation_z(mat3x3 out, const float angle)
+force_inline void rotation_z(mat3x3 out, const float angle)
 {
     float c{ std::cos(angle) };
     float s{ std::sin(angle) };
@@ -540,18 +576,19 @@ enum
 };
 
 // test an axis aligned box against a plane
-int32_t test3_aab_plane(vec3 box_min, vec3 box_max, vec4 plane);
+int32_t test3_aab_plane(const vec3 box_min, const vec3 box_max, const vec4 plane);
 
 // test a sphere against a plane
-int32_t test3_sphere_plane(vec3 pos, float radius, vec4 plane);
+// plane must be normalized
+int32_t test3_sphere_plane(const vec3 pos, const float radius, vec4 const plane);
 
 // test a sphere against an axis aligned box
-int32_t test3_sphere_aab(vec3 pos, float radius, vec3 box_min, vec3 box_max);
+int32_t test3_sphere_aab(const vec3 pos, const float radius, const vec3 box_min, const vec3 box_max);
 
 // test a segment against a line
-int32_t test2_segment_line(vec2 sa, vec2 sb, vec2 la, vec2 lb);
+int32_t test2_segment_line(const vec2 sa, const vec2 sb, const vec2 la, const vec2 lb);
 
 // test a segment against a segment
-int32_t test1_segment_segment(float s1min, float s1max, float s2min, float s2max);
+int32_t test1_segment_segment(const float s1min, const float s1max, const float s2min, const float s2max);
 
 } // namespace blib3d::math

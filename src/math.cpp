@@ -4,7 +4,7 @@
 namespace blib3d::math
 {
 
-int32_t test3_aab_plane(vec3 box_min, vec3 box_max, vec4 plane)
+int32_t test3_aab_plane(const vec3 box_min, const vec3 box_max, const vec4 plane)
 {
     vec3 v0, v1;
     copy3(v0, box_min);
@@ -25,7 +25,7 @@ int32_t test3_aab_plane(vec3 box_min, vec3 box_max, vec4 plane)
         return test_intersect;
 }
 
-int32_t test3_sphere_plane(vec3 pos, float radius, vec4 plane)
+int32_t test3_sphere_plane(const vec3 pos, const float radius, const vec4 plane)
 {
     float d{ pos[0] * plane[0] + pos[1] * plane[1] + pos[2] * plane[2] + plane[3] };
     if (d < -radius)
@@ -36,7 +36,7 @@ int32_t test3_sphere_plane(vec3 pos, float radius, vec4 plane)
         return test_intersect;
 }
 
-int32_t test3_sphere_aab(vec3 pos, float radius, vec3 box_min, vec3 box_max)
+int32_t test3_sphere_aab(const vec3 pos, const float radius, const vec3 box_min, const vec3 box_max)
 {
     int32_t test[3]
     {
@@ -49,10 +49,19 @@ int32_t test3_sphere_aab(vec3 pos, float radius, vec3 box_min, vec3 box_max)
     else if (test[0] == test_inside && test[1] == test_inside && test[2] == test_inside)
         return test_inside;
     else
-        return test_intersect;
+    {
+        vec3 mindist;
+        clamp3(mindist, pos, box_min, box_max);
+        sub3(mindist, pos);
+        float dist2{ dot3(mindist, mindist) };
+        if (dist2 > radius * radius)
+            return test_outside;
+        else
+            return test_intersect;
+    }
 }
 
-int32_t test2_segment_line(vec2 sa, vec2 sb, vec2 la, vec2 lb)
+int32_t test2_segment_line(const vec2 sa, const vec2 sb, const vec2 la, const vec2 lb)
 {
     vec2 v0, v1, v2;
     sub2(v0, lb, la); // la -> lb
@@ -68,7 +77,7 @@ int32_t test2_segment_line(vec2 sa, vec2 sb, vec2 la, vec2 lb)
         return test_intersect;
 }
 
-int32_t test1_segment_segment(float s1min, float s1max, float s2min, float s2max)
+int32_t test1_segment_segment(const float s1min, const float s1max, const float s2min, const float s2max)
 {
     if (s1min > s2max || s1max < s2min)
         return test_outside;

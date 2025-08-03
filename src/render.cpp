@@ -262,6 +262,12 @@ void renderer::set_geometry_coord(float* data, uint32_t vertex_stride)
     geometry_coord_stride = vertex_stride;
 }
 
+void renderer::set_geometry_norm(float* data, uint32_t vertex_stride)
+{
+    geometry_norm_data = data;
+    geometry_norm_stride = vertex_stride;
+}
+
 void renderer::set_geometry_color(float* data, uint32_t vertex_stride)
 {
     geometry_color_data = data;
@@ -372,6 +378,14 @@ void renderer::set_shade_lightmap(
     raster_config.lightmap = lightmap;
 }
 
+void renderer::set_shade_lights(
+    const raster::light* data,
+    uint32_t count)
+{
+    raster_config.num_lights = count;
+    raster_config.light_data = data;
+}
+
 //------------------------------------------------------------------------------
 
 void renderer::render_begin()
@@ -428,16 +442,19 @@ void renderer::render_draw()
 
     // config data sources
 
+    constexpr uint32_t max_num_geometry_sources{ 4 };
     struct data_source
     {
         float* data; // counter
         uint32_t count; // sequential elements to read
         uint32_t stride; // stride
     };
-    data_source geometry_source[3];
+    data_source geometry_source[max_num_geometry_sources];
     uint32_t geometry_source_count{ 1 };
     uint32_t attribute_count{ 0 };
 
+    assert(geometry_coord_data);
+    assert(geometry_coord_stride >= 3);
     geometry_source[0].data = geometry_coord_data;
     geometry_source[0].count = 3;
     geometry_source[0].stride = geometry_coord_stride;
@@ -485,6 +502,23 @@ void renderer::render_draw()
         source.stride = geometry_lmap_coord_stride;
         attribute_count += 2;
     }
+    else
+    if ((raster_config.flags & raster::SHADE_BIT_MASK) == raster::SHADE_LIGHT)
+    {
+        assert(geometry_norm_data);
+        assert(geometry_norm_stride >= 3);
+        data_source& source1{ geometry_source[geometry_source_count++] };
+        data_source& source2{ geometry_source[geometry_source_count++] };
+        source1.data = geometry_coord_data;
+        source1.count = 3;
+        source1.stride = geometry_coord_stride;
+        source2.data = geometry_norm_data;
+        source2.count = 3;
+        source2.stride = geometry_norm_stride;
+        attribute_count += 6;
+    }
+    
+    assert(geometry_source_count <= max_num_geometry_sources);
 
     uint32_t component_count{ 4 + attribute_count };
 
@@ -556,12 +590,9 @@ void renderer::render_draw()
             nc += source.count;
         }
 #else
-        float* in[3]
-        {
-            &geometry_source[0].data[geometry_source[0].stride * face_in.index],
-            &geometry_source[1].data[geometry_source[1].stride * face_in.index],
-            &geometry_source[2].data[geometry_source[2].stride * face_in.index],
-        };
+        float* in[max_num_geometry_sources];
+        for (uint32_t ns{ 0 }; ns < max_num_geometry_sources; ++ns)
+            in[ns] = &geometry_source[ns].data[geometry_source[ns].stride * face_in.index];
         for (uint32_t nv{ 0 }; nv < face_in.count; ++nv)
         {
             float* out{ render_buffer[0][nv] };
@@ -664,14 +695,14 @@ float renderer::gamma_decode(float nonlin)
 {
     if (gamma_value == 1.f)
         return nonlin;
-    return std::pow(nonlin / 255.f, gamma_value) * 255.f;
+    return std::pow(nonlin, gamma_value);
 }
 
 float renderer::gamma_encode(float linear)
 {
     if (gamma_value == 1.f)
         return linear;
-    return std::pow(linear / 255.f, 1.f / gamma_value) * 255.f;
+    return std::pow(linear, 1.f / gamma_value);
 }
 
 //------------------------------------------------------------------------------

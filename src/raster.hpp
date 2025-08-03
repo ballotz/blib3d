@@ -7,7 +7,21 @@ namespace blib3d::raster
 //------------------------------------------------------------------------------
 
 static constexpr uint32_t num_max_vertices{ 12 };
-static constexpr uint32_t num_max_attributes{ 9 }; // [x y] z w cr cg cb ca sr sg sb
+
+// [x y] z w
+// [x y] z w sr sg sb
+// [x y] z w su sv
+// [x y] z w px py pz nx ny nz
+// [x y] z w fr fg fb fa
+// [x y] z w fr fg fb fa sr sg sb
+// [x y] z w fr fg fb fa su sv
+// [x y] z w fr fg fb fa px py pz nx ny nz
+// [x y] z w fs ft
+// [x y] z w fr fg sr sg sb
+// [x y] z w fr fg su sv
+// [x y] z w fr fg px py pz nx ny nz
+
+static constexpr uint32_t num_max_attributes{ 12 };
 
 //------------------------------------------------------------------------------
 
@@ -17,6 +31,27 @@ struct alignas(4) ARGB
     uint8_t g;
     uint8_t r;
     uint8_t a;
+};
+
+//------------------------------------------------------------------------------
+
+struct light
+{
+    enum
+    {
+        type_off,
+        type_ambient,
+        type_directional,
+        type_point,
+        type_spot
+    };
+    uint32_t type;
+    math::vec3 pos; // point, spot
+    math::vec3 dir; // directional, spot
+    math::vec3 intensity; // all
+    float damp[3]; // point, spot
+    float radius; // point, spot
+    float spotcosth[2]; // spot
 };
 
 //------------------------------------------------------------------------------
@@ -43,6 +78,7 @@ enum
     SHADE_NONE      = 0 << SHADE_SHIFT,
     SHADE_VERTEX    = 1 << SHADE_SHIFT,
     SHADE_LIGHTMAP  = 2 << SHADE_SHIFT,
+    SHADE_LIGHT     = 3 << SHADE_SHIFT,
 
     BLEND_NONE      = 0 << BLEND_SHIFT,
     BLEND_MASK      = 1 << BLEND_SHIFT,
@@ -84,6 +120,9 @@ struct config
     int32_t lightmap_width;
     int32_t lightmap_height;
     const ARGB* lightmap;
+
+    uint32_t num_lights;
+    const light* light_data;
 };
 
 void scan_faces(const config* c);
