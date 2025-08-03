@@ -1,3 +1,5 @@
+/* Copyright 2019 Alessio Ballotti <alessioballotti@tiscali.it> */
+
 #pragma once
 #if defined(CPU_MIMXRT1176DVMAA_cm7)
 #include "MIMXRT1176_cm7.h"

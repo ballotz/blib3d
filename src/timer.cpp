@@ -1,4 +1,6 @@
-﻿#include "timer.hpp"
+﻿/* Copyright 2019 Alessio Ballotti <alessioballotti@tiscali.it> */
+
+#include "timer.hpp"
 
 namespace blib3d::timer
 {

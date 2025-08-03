@@ -1,4 +1,6 @@
-﻿#include "view.hpp"
+﻿/* Copyright 2019 Alessio Ballotti <alessioballotti@tiscali.it> */
+
+#include "view.hpp"
 
 namespace blib3d::view
 {

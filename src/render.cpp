@@ -1,4 +1,6 @@
-﻿#include "render.hpp"
+﻿/* Copyright 2019 Alessio Ballotti <alessioballotti@tiscali.it> */
+
+#include "render.hpp"
 #include <cassert>
 
 namespace blib3d::render

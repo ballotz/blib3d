@@ -1,3 +1,5 @@
+/* Copyright 2019 Alessio Ballotti <alessioballotti@tiscali.it> */
+
 #include "math.hpp"
 #include <algorithm>
 

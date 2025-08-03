@@ -1,3 +1,5 @@
+/* Copyright 2019 Alessio Ballotti <alessioballotti@tiscali.it> */
+
 #include "raster.hpp"
 #include "raster_interp.hpp"
 #include "raster_fill.hpp"

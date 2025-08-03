@@ -1,3 +1,5 @@
+/* Copyright 2019 Alessio Ballotti <alessioballotti@tiscali.it> */
+
 #pragma once
 #include "raster.hpp"
 #include "timer.hpp"
