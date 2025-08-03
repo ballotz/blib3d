@@ -277,6 +277,13 @@ force_inline void sub2(vec2 out, const vec2 a, const vec2 b)
     out[1] = a[1] - b[1];
 }
 
+force_inline void sub3(vec3 out, const vec3 a)
+{
+    out[0] -= a[0];
+    out[1] -= a[1];
+    out[2] -= a[2];
+}
+
 force_inline void sub3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = a[0] - b[0];
@@ -493,6 +500,15 @@ force_inline void trn4x4(mat4x4 out, const mat4x4 in)
     out[14] = in[11];
     out[15] = in[15];
 #endif
+}
+
+// clamp
+
+force_inline void clamp3(vec3 out, const vec3 v, const vec3 min, const vec3 max)
+{
+    out[0] = clamp(v[0], min[0], max[0]);
+    out[1] = clamp(v[1], min[1], max[1]);
+    out[2] = clamp(v[2], min[2], max[2]);
 }
 
 // dot
