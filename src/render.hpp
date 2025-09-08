@@ -131,8 +131,7 @@ public:
     enum
     {
         MIP_NONE,
-        MIP_FACE,
-        MIP_PIXEL
+        MIP_FACE
     };
     void set_mip_type(uint32_t setting);
 

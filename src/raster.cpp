@@ -231,16 +231,16 @@ void sample_light(
         switch (l.type)
         {
         case light::type_ambient:
-            math::add3(resf, l.intensity);
+            light_ambient(l, resf);
             break;
         case light::type_directional:
-            light_directional(l.dir, l.intensity, norm, resf);
+            light_directional(l, norm, resf);
             break;
         case light::type_point:
-            light_point(l.pos, l.intensity, l.damp, l.radius, pos, norm, resf);
+            light_point(l, pos, norm, resf);
             break;
         case light::type_spot:
-            light_spot(l.pos, l.dir, l.intensity, l.damp, l.spotcosth, l.radius, pos, norm, resf);
+            light_spot(l, pos, norm, resf);
             break;
         }
     }
@@ -578,7 +578,7 @@ struct raster_solid_shade_vertex : public abstract_raster
                 (((s.fill_color[0]                            )              )       ) +
                 (((s.fill_color[1] * (uint32_t)s.attrib_int[0]) & 0xFF000000u) >>  8u) +
                 (((s.fill_color[2] * (uint32_t)s.attrib_int[1]) & 0xFF000000u) >> 16u) +
-                (((s.fill_color[3] * (uint32_t)s.attrib_int[2])              ) >> 24u)
+                (((s.fill_color[3] * (uint32_t)s.attrib_int[2])              ) >> 24u) + 0x00010101u
             };
             blend_type::process(s.frame_addr, color);
             depth_type::process_write(s.depth_addr, s.depth);
@@ -746,7 +746,7 @@ struct raster_solid_shade_lightmap : public abstract_raster
                 (((s.fill_color[0]             )              )      ) +
                 (((s.fill_color[1] * s.shade[0]) & 0x00FF0000u)      ) +
                 (((s.fill_color[2] * s.shade[1]) & 0x0000FF00u)      ) +
-                (((s.fill_color[3] * s.shade[2])              ) >> 8u)
+                (((s.fill_color[3] * s.shade[2])              ) >> 8u) + 0x00010101u
             };
             blend_type::process(s.frame_addr, color);
             depth_type::process_write(s.depth_addr, s.depth);
@@ -928,7 +928,7 @@ struct raster_solid_shade_light : public abstract_raster
                 (((s.fill_color[0]             )              )      ) +
                 (((s.fill_color[1] * s.shade[0]) & 0x00FF0000u)      ) +
                 (((s.fill_color[2] * s.shade[1]) & 0x0000FF00u)      ) +
-                (((s.fill_color[3] * s.shade[2])              ) >> 8u)
+                (((s.fill_color[3] * s.shade[2])              ) >> 8u) + 0x00010101u
             };
             blend_type::process(s.frame_addr, color);
             depth_type::process_write(s.depth_addr, s.depth);
@@ -1240,7 +1240,7 @@ struct raster_vertex_shade_vertex : public abstract_raster
                 (((((uint32_t)s.attrib_int[3] <<  8u)                                     ) & 0xFF000000u)       ) +
                 (((((uint32_t)s.attrib_int[0] >> 16u) * ((uint32_t)s.attrib_int[4] >>  8u)) & 0x00FF0000u)       ) +
                 (((((uint32_t)s.attrib_int[1] >> 16u) * ((uint32_t)s.attrib_int[5] >> 16u)) & 0x0000FF00u)       ) +
-                (((((uint32_t)s.attrib_int[2] >>  8u) * ((uint32_t)s.attrib_int[6] >>  8u))              ) >> 24u)
+                (((((uint32_t)s.attrib_int[2] >>  8u) * ((uint32_t)s.attrib_int[6] >>  8u))              ) >> 24u) + 0x00010101u
             };
             blend_type::process(s.frame_addr, color);
             depth_type::process_write(s.depth_addr, s.depth);
@@ -1434,7 +1434,7 @@ struct raster_vertex_shade_lightmap : public abstract_raster
                 ((((uint32_t)s.attrib_int[3]             ) & 0x00FF0000u) <<  8u) +
                 ((((uint32_t)s.attrib_int[0] * s.shade[0]) & 0xFF000000u) >>  8u) +
                 ((((uint32_t)s.attrib_int[1] * s.shade[1]) & 0xFF000000u) >> 16u) +
-                ((((uint32_t)s.attrib_int[2] * s.shade[2])              ) >> 24u)
+                ((((uint32_t)s.attrib_int[2] * s.shade[2])              ) >> 24u) + 0x00010101u
             };
             blend_type::process(s.frame_addr, color);
             depth_type::process_write(s.depth_addr, s.depth);
@@ -1654,7 +1654,7 @@ struct raster_vertex_shade_light : public abstract_raster
                 ((((uint32_t)s.attrib_inti[3]             ) & 0x00FF0000u) <<  8u) +
                 ((((uint32_t)s.attrib_inti[0] * s.shade[0]) & 0xFF000000u) >>  8u) +
                 ((((uint32_t)s.attrib_inti[1] * s.shade[1]) & 0xFF000000u) >> 16u) +
-                ((((uint32_t)s.attrib_inti[2] * s.shade[2])              ) >> 24u)
+                ((((uint32_t)s.attrib_inti[2] * s.shade[2])              ) >> 24u) + 0x00010101u
             };
             blend_type::process(s.frame_addr, color);
             depth_type::process_write(s.depth_addr, s.depth);
@@ -2178,7 +2178,7 @@ struct raster_texture_shade_vertex : public abstract_raster
                     (((((texel & 0xFF000000u)        )                            )              )       ) +
                     (((((texel & 0x00FF0000u) >> 16u ) * (uint32_t)s.attrib_int[2]) & 0xFF000000u) >>  8u) +
                     (((((texel & 0x0000FF00u) >>  8u ) * (uint32_t)s.attrib_int[3]) & 0xFF000000u) >> 16u) +
-                    (((((texel & 0x000000FFu)        ) * (uint32_t)s.attrib_int[4])              ) >> 24u)
+                    (((((texel & 0x000000FFu)        ) * (uint32_t)s.attrib_int[4])              ) >> 24u) + 0x00010101u
                 };
                 blend_type::process(s.frame_addr, color);
                 depth_type::process_write(s.depth_addr, s.depth);
@@ -2440,7 +2440,7 @@ struct raster_texture_shade_lightmap : public abstract_raster
                     ((((texel & 0xFF000000u)             )              )      ) +
                     ((((texel & 0x00FF0000u) * s.shade[0]) & 0xFF000000u) >> 8u) +
                     ((((texel & 0x0000FF00u) * s.shade[1]) & 0x00FF0000u) >> 8u) +
-                    ((((texel & 0x000000FFu) * s.shade[2])              ) >> 8u)
+                    ((((texel & 0x000000FFu) * s.shade[2])              ) >> 8u) + 0x00010101u
                 };
                 blend_type::process(s.frame_addr, color);
                 depth_type::process_write(s.depth_addr, s.depth);
@@ -2728,7 +2728,7 @@ struct raster_texture_shade_light : public abstract_raster
                     ((((texel & 0xFF000000u)             )              )      ) +
                     ((((texel & 0x00FF0000u) * s.shade[0]) & 0xFF000000u) >> 8u) +
                     ((((texel & 0x0000FF00u) * s.shade[1]) & 0x00FF0000u) >> 8u) +
-                    ((((texel & 0x000000FFu) * s.shade[2])              ) >> 8u)
+                    ((((texel & 0x000000FFu) * s.shade[2])              ) >> 8u) + 0x00010101u
                 };
                 blend_type::process(s.frame_addr, color);
                 depth_type::process_write(s.depth_addr, s.depth);

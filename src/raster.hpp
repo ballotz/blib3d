@@ -48,12 +48,13 @@ struct light
         type_spot
     };
     uint32_t type;
-    math::vec3 pos; // point, spot
-    math::vec3 dir; // directional, spot
-    math::vec3 intensity; // all
-    float damp[3]; // point, spot
     float radius; // point, spot
-    float spotcosth[2]; // spot
+    math::vec3 position; // point, spot
+    math::vec3 direction; // directional, spot
+    math::vec3 intensity; // all
+    float damping[3]; // point, spot
+    float spot_costh_min; // spot
+    float spot_costh_range_inv; // spot
 };
 
 //------------------------------------------------------------------------------
@@ -61,15 +62,15 @@ struct light
 enum
 {
     FILL_SHIFT      = 0,
-    FILL_BIT_MASK   = 0b00000000111,
+    FILL_BIT_MASK   = 0b0000000111,
     SHADE_SHIFT     = 3,
-    SHADE_BIT_MASK  = 0b00000011000,
+    SHADE_BIT_MASK  = 0b0000011000,
     BLEND_SHIFT     = 5,
-    BLEND_BIT_MASK  = 0b00011100000,
+    BLEND_BIT_MASK  = 0b0011100000,
     MIP_SHIFT       = 8,
-    MIP_BIT_MASK    = 0b01100000000,
-    FILTER_SHIFT    = 10,
-    FILTER_BIT_MASK = 0b10000000000,
+    MIP_BIT_MASK    = 0b0100000000,
+    FILTER_SHIFT    = 9,
+    FILTER_BIT_MASK = 0b1000000000,
 
     FILL_DEPTH      = 0,
     FILL_OUTLINE    = 1,
@@ -90,7 +91,6 @@ enum
 
     MIP_NONE        = 0 << MIP_SHIFT,
     MIP_FACE        = 1 << MIP_SHIFT,
-    MIP_PIXEL       = 2 << MIP_SHIFT,
 
     FILTER_NONE     = 0 << FILTER_SHIFT,
     FILTER_LINEAR   = 1 << FILTER_SHIFT,

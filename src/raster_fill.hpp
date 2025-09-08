@@ -18,7 +18,7 @@ force_inline uint32_t mul_X888(uint32_t v0, uint32_t v1)
     uint32_t r0{ (v0 & 0x000000FFu) *  (v1 & 0x000000FFu)         };
     uint32_t r1{ (v0 & 0x0000FF00u) * ((v1 & 0x0000FF00u) >>  8u) };
     uint32_t r2{ (v0 & 0x00FF0000u) * ((v1 & 0x00FF0000u) >> 16u) };
-    return ((r0 + (r1 & 0x00FF0000u) + (r2 & 0xFF000000u)) >> 8u) + 0xFF000000u;
+    return ((r0 + (r1 & 0x00FF0000u) + (r2 & 0xFF000000u)) >> 8u) + 0xFF010101u;
 }
 
 force_inline uint32_t alpha_8888(uint32_t b, uint32_t f)
@@ -28,12 +28,12 @@ force_inline uint32_t alpha_8888(uint32_t b, uint32_t f)
     uint32_t a0{ 0x100u - a1 };
     uint32_t v0{ (b & 0x00FF00FFu) * a0 + (f & 0x00FF00FFu) * a1 };
     uint32_t v1{ (b & 0x0000FF00u) * a0 + (f & 0x0000FF00u) * a1 };
-    return (((v0 & 0xFF00FF00u) + (v1 & 0x00FF0000u)) >> 8u) + 0xFF000000u;
+    return (((v0 & 0xFF00FF00u) + (v1 & 0x00FF0000u)) >> 8u) + 0xFF010101u;
 #else
     uint32_t a{ 0xFFu - (f >> 24u) };
     uint32_t v0{ (b & 0x00FF00FFu) * a };
     uint32_t v1{ (b & 0x0000FF00u) * a };
-    uint32_t r{ (a << 24u) + (((v0 & 0xFF00FF00u) + (v1 & 0x00FF0000u)) >> 8u) };
+    uint32_t r{ (a << 24u) + (((v0 & 0xFF00FF00u) + (v1 & 0x00FF0000u)) >> 8u) + 0x00010101u };
     return r + f;
 #endif
 }
@@ -208,70 +208,69 @@ force_inline uint32_t sample_lightmap(int32_t u, int32_t v, int32_t vshift, cons
 
 //------------------------------------------------------------------------------
 
+force_inline void light_ambient(
+    const light& l,
+    math::vec3 res)
+{
+    math::add3(res, l.intensity);
+}
+
 force_inline void light_directional(
-    const math::vec3 light_direction,
-    const math::vec3 light_intensity,
+    const light& l,
     const math::vec3 surf_normal,
     math::vec3 res)
 {
-    float scale{ math::dot3(light_direction, surf_normal) };
-    scale = math::max(scale, 0.f);
-    math::muladd3(res, light_intensity, scale);
+    float scale{ math::dot3(l.direction, surf_normal) };
+    if (scale > 0.f)
+        math::muladd3(res, l.intensity, scale);
 }
 
 force_inline void light_point(
-    const math::vec3 light_position,
-    const math::vec3 light_intensity,
-    const float light_damp[3],
-    const float light_radius,
+    const light& l,
     const math::vec3 surf_position,
     const math::vec3 surf_normal,
     math::vec3 res)
 {
     math::vec3 ray;
-    math::sub3(ray, light_position, surf_position); // R = L - P
+    math::sub3(ray, l.position, surf_position); // R = Lp - Sp
     float dist2{ math::dot3(ray, ray) }; // d2 = |R|^2
-    if (dist2 < light_radius * light_radius)
+    if (dist2 < l.radius * l.radius)
     {
-        float dist1{ math::sqrt(dist2) }; // d1 = |R|
-        float invdist{ 1.f / dist1 };
-        math::mul3(ray, invdist); // R = R / |R|
-        float scale{ math::dot3(ray, surf_normal) }; // s = R . N
-        scale = math::max(scale, 0.f); // s = max(s, 0)
-        scale /= light_damp[0] + light_damp[1] * dist1 + light_damp[2] * dist2; // s = s / (damp0 + damp1*d1 + damp2*d2)
-        //scale = math::clamp(scale, 0.f, 1.f);
-        math::muladd3(res, light_intensity, scale); // L = I*clamp(s, 0, 1)
+        float scale{ math::dot3(ray, surf_normal) }; // s = R . N = cos(t) * |R|
+        if (scale > 0.f)
+        {
+            float dist1{ math::sqrt(dist2) }; // d1 = |R|
+            scale /= 1e-3f + dist1 * (l.damping[0] + dist1 * l.damping[1] + dist2 * l.damping[2]); // s = cos(t) / (damp0 + damp1*|R| + damp2*|R|^2)
+            math::muladd3(res, l.intensity, scale);
+        }
     }
 }
 
 force_inline void light_spot(
-    const math::vec3 light_position,
-    const math::vec3 light_direction,
-    const math::vec3 light_intensity,
-    const float light_damp[3],
-    const float light_costh[2],
-    const float light_radius,
+    const light& l,
     const math::vec3 surf_position,
     const math::vec3 surf_normal,
     math::vec3 res)
 {
     math::vec3 ray;
-    math::sub3(ray, light_position, surf_position);
+    math::sub3(ray, l.position, surf_position);
     float dist2{ math::dot3(ray, ray) };
-    if (dist2 < light_radius * light_radius)
+    if (dist2 < l.radius * l.radius)
     {
-        float dist1{ math::sqrt(dist2) };
-        float invdist{ 1.f / dist1 };
-        math::mul3(ray, invdist);
-        float costh{ -math::dot3(ray, light_direction) };
         float scale1{ math::dot3(ray, surf_normal) };
-        float scale2{ (costh - light_costh[1]) / (light_costh[0] - light_costh[1]) };
-        scale1 = math::max(scale1, 0.f);
-        scale2 = math::clamp(scale2, 0.f, 1.f);
-        float scale{ scale1 * scale2 };
-        scale /= light_damp[0] + light_damp[1] * dist1 + light_damp[2] * dist2;
-        //scale = math::max(scale, 0.f);
-        math::muladd3(res, light_intensity, scale);
+        if (scale1 > 0.f)
+        {
+            float dist1{ math::sqrt(dist2) };
+            float scale2{ -math::dot3(ray, l.direction) };
+            float costh_min_scaled{ l.spot_costh_min * dist1 };
+            if (scale2 > costh_min_scaled)
+            {
+                scale2 = (scale2 - costh_min_scaled) * l.spot_costh_range_inv;
+                float scale{ scale1 * math::min(scale2, dist1) };
+                scale /= 1e-3f + dist2 * (l.damping[0] + dist1 * l.damping[1] + dist2 * l.damping[2]);
+                math::muladd3(res, l.intensity, scale);
+            }
+        }
     }
 }
 
