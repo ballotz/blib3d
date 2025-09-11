@@ -1,7 +1,7 @@
 /* Copyright 2019 Alessio Ballotti <alessioballotti@tiscali.it> */
 
 #pragma once
-#include "math.hpp"
+#include "raster_light.hpp"
 
 namespace blib3d::raster
 {
@@ -33,28 +33,6 @@ struct alignas(4) ARGB
     uint8_t g;
     uint8_t r;
     uint8_t a;
-};
-
-//------------------------------------------------------------------------------
-
-struct light
-{
-    enum
-    {
-        type_off,
-        type_ambient,
-        type_directional,
-        type_point,
-        type_spot
-    };
-    uint32_t type;
-    float radius; // point, spot
-    math::vec3 position; // point, spot
-    math::vec3 direction; // directional, spot
-    math::vec3 intensity; // all
-    float damping[3]; // point, spot
-    float spot_costh_min; // spot
-    float spot_costh_range_inv; // spot
 };
 
 //------------------------------------------------------------------------------
