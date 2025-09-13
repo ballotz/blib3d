@@ -112,15 +112,9 @@ force_inline int32_t log2round(float v)
 {
     int32_t i{ reinterpret_cast<int32_t&>(v) };
     int32_t r{ (i >> 23) - 127 };
-    r += (i & 0x007FFFFF) >= 3474675;
+    r += (i & 0x007FFFFF) >= 0x003504F3;
     return r;
 }
-
-// force_inline float recipfast(float v)
-// {
-//     int32_t r{ 0x7F000000 - reinterpret_cast<int32_t&>(v) };
-//     return reinterpret_cast<float&>(r);
-// }
 
 // assume v is positive
 force_inline float log2fast(float v)
@@ -129,10 +123,23 @@ force_inline float log2fast(float v)
     return (float)reinterpret_cast<int32_t&>(v) * scale - 127.f;
 }
 
+// force_inline float recipfast(float v)
+// {
+//     int32_t r{ 0x7F000000 - reinterpret_cast<int32_t&>(v) };
+//     return reinterpret_cast<float&>(r);
+// }
+
 // // assume v is positive
 // force_inline float sqrtfast(float v)
 // {
 //     int32_t r{ (reinterpret_cast<int32_t&>(v) >> 1) + 0x1FC00000 };
+//     return reinterpret_cast<float&>(r);
+// }
+
+// // assume v is positive
+// force_inline float invsqrtfast(float v)
+// {
+//     int32_t r{ 0x5F400000 - (reinterpret_cast<int32_t&>(v) >> 1) };
 //     return reinterpret_cast<float&>(r);
 // }
 
@@ -145,6 +152,24 @@ force_inline float log2fast(float v)
 // {
 //     return 0.5f * (r + v / r);
 // }
+
+struct powfast_table
+{
+    static constexpr uint32_t exponent_bits{ 9 };
+    static constexpr uint32_t mantissa_bits{ 9 };
+    float exponent_table[1 << exponent_bits];
+    float mantissa_table[1 << mantissa_bits];
+};
+
+void powfast_build_table(float exponent, powfast_table& table);
+
+force_inline float powfast(float v, const powfast_table& table)
+{
+    uint32_t r{ reinterpret_cast<uint32_t&>(v) };
+    uint32_t ei{ r >> (32u - powfast_table::exponent_bits) };
+    uint32_t mi{ r << 9u >> (32u - powfast_table::mantissa_bits) };
+    return table.exponent_table[ei] * table.mantissa_table[mi];
+}
 
 force_inline float recip(float v)
 {

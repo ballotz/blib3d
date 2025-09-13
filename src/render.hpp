@@ -225,6 +225,7 @@ private:
     raster::occlusion_data occlusion_data;
 
     float gamma_value{ 1.f };
+    blib3d::math::powfast_table gamma_table;
 };
 
 } // namespace blib3d::render

@@ -235,6 +235,7 @@ void renderer::set_frame_data(
     raster_config.frame_stride = frame_stride;
     raster_config.depth_buffer = frame_depth;
     raster_config.frame_buffer = frame_data;
+    raster_config.light_table = &gamma_table;
 
     occlusion_config.frame_width = width;
     occlusion_config.frame_height = height;
@@ -686,6 +687,7 @@ bool renderer::occlusion_test_rect(float screen_min[2], float screen_max[2], flo
 void renderer::gamma_set(float gamma)
 {
     gamma_value = gamma;
+    blib3d::math::powfast_build_table(1.f / gamma, gamma_table);
 }
 
 float renderer::gamma_get()

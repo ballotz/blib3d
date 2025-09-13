@@ -222,6 +222,7 @@ static constexpr uint32_t shade_mask{ shade_hold - 1 };
 void sample_light(
     const math::vec3 pos, const math::vec3 norm,
     const light lights[], uint32_t num_lights,
+    const math::powfast_table* table,
     uint32_t res[3])
 {
     math::vec3 resf{};
@@ -244,15 +245,16 @@ void sample_light(
             break;
         }
     }
-    resf[0] = math::sqrt(resf[0]);
-    resf[1] = math::sqrt(resf[1]);
-    resf[2] = math::sqrt(resf[2]);
     resf[0] = math::min(resf[0], 1.f);
     resf[1] = math::min(resf[1], 1.f);
     resf[2] = math::min(resf[2], 1.f);
-    res[0] = (uint32_t)(resf[0] * (float)0xFF);
-    res[1] = (uint32_t)(resf[1] * (float)0xFF);
-    res[2] = (uint32_t)(resf[2] * (float)0xFF);
+    resf[0] = math::powfast(resf[0], *table);
+    resf[1] = math::powfast(resf[1], *table);
+    resf[2] = math::powfast(resf[2], *table);
+    math::mul3(resf, (float)0xFF);
+    res[0] = (uint32_t)resf[0];
+    res[1] = (uint32_t)resf[1];
+    res[2] = (uint32_t)resf[2];
 }
 
 //------------------------------------------------------------------------------
@@ -783,6 +785,7 @@ struct raster_solid_shade_light : public abstract_raster
         fill_color[3] = (uint32_t)c->fill_color.b;
         num_lights = c->num_lights;
         light_data = c->light_data;
+        light_table = c->light_table;
     }
 
     // abstract_raster
@@ -810,6 +813,7 @@ struct raster_solid_shade_light : public abstract_raster
     uint32_t fill_color[4];
     uint32_t num_lights;
     const light* light_data;
+    const math::powfast_table* light_table;
 
     struct span_data
     {
@@ -818,6 +822,7 @@ struct raster_solid_shade_light : public abstract_raster
         uint32_t fill_color[4];
         uint32_t num_lights;
         const light* light_data;
+        const math::powfast_table* light_table;
 
         float attrib[8];
         float depth;
@@ -850,6 +855,7 @@ struct raster_solid_shade_light : public abstract_raster
         s.fill_color[3] = fill_color[3];
         s.num_lights = num_lights;
         s.light_data = light_data;
+        s.light_table = light_table;
 
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
@@ -921,6 +927,7 @@ struct raster_solid_shade_light : public abstract_raster
                 sample_light(
                     &s.attrib_int[0], &s.attrib_int[3],
                     s.light_data, s.num_lights,
+                    s.light_table,
                     s.shade);
             }
             uint32_t color
@@ -1471,6 +1478,7 @@ struct raster_vertex_shade_light : public abstract_raster
         frame_buffer = c->frame_buffer;
         num_lights = c->num_lights;
         light_data = c->light_data;
+        light_table = c->light_table;
     }
 
     // abstract_raster
@@ -1497,6 +1505,7 @@ struct raster_vertex_shade_light : public abstract_raster
     ARGB* frame_buffer;
     uint32_t num_lights;
     const light* light_data;
+    const math::powfast_table* light_table;
 
     struct span_data
     {
@@ -1504,6 +1513,7 @@ struct raster_vertex_shade_light : public abstract_raster
 
         uint32_t num_lights;
         const light* light_data;
+        const math::powfast_table* light_table;
 
         float attrib[12];
         float depth;
@@ -1539,6 +1549,7 @@ struct raster_vertex_shade_light : public abstract_raster
 
         s.num_lights = num_lights;
         s.light_data = light_data;
+        s.light_table = light_table;
 
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
@@ -1647,6 +1658,7 @@ struct raster_vertex_shade_light : public abstract_raster
                 sample_light(
                     &s.attrib_intf[0], &s.attrib_intf[3],
                     s.light_data, s.num_lights,
+                    s.light_table,
                     s.shade);
             }
             uint32_t color
@@ -2499,6 +2511,7 @@ struct raster_texture_shade_light : public abstract_raster
 
         num_lights = c->num_lights;
         light_data = c->light_data;
+        light_table = c->light_table;
     }
 
     // abstract_raster
@@ -2571,6 +2584,7 @@ struct raster_texture_shade_light : public abstract_raster
     const uint8_t* texture_data;
     uint32_t num_lights;
     const light* light_data;
+    const math::powfast_table* light_table;
 
     struct span_data
     {
@@ -2583,6 +2597,7 @@ struct raster_texture_shade_light : public abstract_raster
         const uint8_t* texture_data;
         uint32_t num_lights;
         const light* light_data;
+        const math::powfast_table* light_table;
 
         float attrib[10];
         float depth;
@@ -2621,6 +2636,7 @@ struct raster_texture_shade_light : public abstract_raster
         s.texture_data = texture_data;
         s.num_lights = num_lights;
         s.light_data = light_data;
+        s.light_table = light_table;
 
         float x0f{ raster_to_real(x0) };
         float y0f{ raster_to_real(y) };
@@ -2721,6 +2737,7 @@ struct raster_texture_shade_light : public abstract_raster
                     sample_light(
                         &s.attrib_intf[0], &s.attrib_intf[3],
                         s.light_data, s.num_lights,
+                        s.light_table,
                         s.shade);
                 }
                 uint32_t color

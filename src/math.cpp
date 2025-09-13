@@ -6,6 +6,24 @@
 namespace blib3d::math
 {
 
+void powfast_build_table(float exponent, powfast_table& table)
+{
+    for (uint32_t n{}; n < (1u << powfast_table::exponent_bits); ++n)
+    {
+        uint32_t vi{ n << (32u - powfast_table::exponent_bits) };
+        float vf{ reinterpret_cast<float&>(vi) };
+        table.exponent_table[n] = std::pow(vf, exponent);
+    }
+    for (uint32_t n{}; n < (1u << powfast_table::mantissa_bits); ++n)
+    {
+        uint32_t vi{ 0x3F800000u + (n << (23u - powfast_table::mantissa_bits)) };
+        float vf{ reinterpret_cast<float&>(vi) };
+        table.mantissa_table[n] = std::pow(vf, exponent);
+    }
+}
+
+//------------------------------------------------------------------------------
+
 int32_t test3_aab_plane(const vec3 box_min, const vec3 box_max, const vec4 plane)
 {
     vec3 v0, v1;

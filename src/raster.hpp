@@ -103,6 +103,7 @@ struct config
 
     uint32_t num_lights;
     const light* light_data;
+    const math::powfast_table* light_table;
 };
 
 void scan_faces(const config* c);
