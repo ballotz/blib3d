@@ -294,6 +294,13 @@ force_inline void add3(vec3 inout, const vec3 a)
     inout[2] += a[2];
 }
 
+force_inline void add3(vec3 out, const vec3 a, const vec3 b)
+{
+    out[0] = a[0] + b[0];
+    out[1] = a[1] + b[1];
+    out[2] = a[2] + b[2];
+}
+
 // sub
 
 force_inline void sub2(vec2 out, const vec2 a, const vec2 b)
