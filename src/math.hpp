@@ -484,6 +484,13 @@ force_inline void muladd3(vec3 inout, const vec3 a, const float b)
     inout[2] += a[2] * b;
 }
 
+force_inline void muladd3(vec3 out, const vec3 in, const vec3 a, const float b)
+{
+    out[0] = in[0] + a[0] * b;
+    out[1] = in[1] + a[1] * b;
+    out[2] = in[2] + a[2] * b;
+}
+
 // transpose
 
 force_inline void trn3x3(mat3x3 out, const mat3x3 in)
