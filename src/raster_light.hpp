@@ -40,7 +40,7 @@ force_inline void light_directional(
     const math::vec3 surf_normal,
     math::vec3 res)
 {
-    float scale{ math::dot3(l.direction, surf_normal) };
+    float scale{ -math::dot3(l.direction, surf_normal) };
     if (scale > 0.f)
         math::muladd3(res, l.intensity, scale);
 }

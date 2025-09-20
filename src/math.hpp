@@ -332,6 +332,27 @@ force_inline void mul3(vec3 inout, const float a)
     inout[2] *= a;
 }
 
+force_inline void mul3(vec3 out, const vec3 a, const float b)
+{
+    out[0] = a[0] * b;
+    out[1] = a[1] * b;
+    out[2] = a[2] * b;
+}
+
+force_inline void mul3(vec3 inout, const vec3 a)
+{
+    inout[0] *= a[0];
+    inout[1] *= a[1];
+    inout[2] *= a[2];
+}
+
+force_inline void mul3(vec3 out, const vec3 a, const vec3 b)
+{
+    out[0] = a[0] * b[0];
+    out[1] = a[1] * b[1];
+    out[2] = a[2] * b[2];
+}
+
 force_inline void mul4(vec4 inout, const float a)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
@@ -342,13 +363,6 @@ force_inline void mul4(vec4 inout, const float a)
     inout[2] *= a;
     inout[3] *= a;
 #endif
-}
-
-force_inline void mul3(vec3 out, const vec3 a, const float b)
-{
-    out[0] = a[0] * b;
-    out[1] = a[1] * b;
-    out[2] = a[2] * b;
 }
 
 force_inline void mul3x3_3(vec3 out, const mat3x3 a, const vec3 b)
