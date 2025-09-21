@@ -81,6 +81,20 @@ int32_t test3_sphere_aab(const vec3 pos, const float radius, const vec3 box_min,
     }
 }
 
+int32_t test2_point_line(const vec2 p, const vec2 la, const vec2 lb)
+{
+    vec2 v0, v1;
+    sub2(v0, lb, la); // la -> lb
+    sub2(v1, p, la); // la -> p
+    float s{ cross2(v0, v1) };
+    if (s < 0.f)
+        return test_outside;
+    else if (s > 0.f)
+        return test_inside;
+    else
+        return test_intersect;
+}
+
 int32_t test2_segment_line(const vec2 sa, const vec2 sb, const vec2 la, const vec2 lb)
 {
     vec2 v0, v1, v2;

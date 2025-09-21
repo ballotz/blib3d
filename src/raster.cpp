@@ -245,9 +245,7 @@ void sample_light(
             break;
         }
     }
-    resf[0] = math::min(resf[0], 1.f);
-    resf[1] = math::min(resf[1], 1.f);
-    resf[2] = math::min(resf[2], 1.f);
+    math::min3(resf, resf, 1.f);
     resf[0] = math::powfast(resf[0], *table);
     resf[1] = math::powfast(resf[1], *table);
     resf[2] = math::powfast(resf[2], *table);

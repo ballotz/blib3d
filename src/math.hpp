@@ -18,12 +18,12 @@ constexpr float pi2{ (float)6.283185307179586476925286766559 };
 
 // types
 
-typedef float vec2[2];
-typedef float vec3[3];
-typedef float vec4[4];
+using vec2 = float[2];
+using vec3 = float[3];
+using vec4 = float[4];
 
-typedef float mat3x3[9]; // 00, 01, 02, 10, 11, 12, 20, 21, 22
-typedef float mat4x4[16]; // 00, 01, 02, 03, 10, 11, 12, 13, 20, 21, 22, 23, 30, 31, 32, 33
+using mat3x3 = float[9]; // 00, 01, 02, 10, 11, 12, 20, 21, 22
+using mat4x4 = float[16]; // 00, 01, 02, 03, 10, 11, 12, 13, 20, 21, 22, 23, 30, 31, 32, 33
 
 // common
 
@@ -228,7 +228,7 @@ force_inline void copy3(vec3 out, const vec3 in)
     out[2] = in[2];
 }
 
-force_inline void copy4(vec3 out, const vec3 in)
+force_inline void copy4(vec4 out, const vec4 in)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
     _mm_storeu_ps(out, _mm_loadu_ps(in));
@@ -309,11 +309,11 @@ force_inline void sub2(vec2 out, const vec2 a, const vec2 b)
     out[1] = a[1] - b[1];
 }
 
-force_inline void sub3(vec3 out, const vec3 a)
+force_inline void sub3(vec3 inout, const vec3 a)
 {
-    out[0] -= a[0];
-    out[1] -= a[1];
-    out[2] -= a[2];
+    inout[0] -= a[0];
+    inout[1] -= a[1];
+    inout[2] -= a[2];
 }
 
 force_inline void sub3(vec3 out, const vec3 a, const vec3 b)
@@ -356,7 +356,7 @@ force_inline void mul3(vec3 out, const vec3 a, const vec3 b)
 force_inline void mul4(vec4 inout, const float a)
 {
 #if defined(ARCH_INTEL) && defined(USE_SIMD)
-    _mm_storeu_ps(inout, _mm_mul_ps(_mm_loadu_ps(inout), _mm_load1_ps(&a)));
+    _mm_storeu_ps(inout, _mm_mul_ps(_mm_loadu_ps(inout), _mm_set_ps1(a)));
 #else
     inout[0] *= a;
     inout[1] *= a;
@@ -555,7 +555,35 @@ force_inline void trn4x4(mat4x4 out, const mat4x4 in)
 #endif
 }
 
-// clamp
+// min/max/clamp
+
+force_inline void min3(vec3 out, const vec3 a, const float b)
+{
+    out[0] = min(a[0], b);
+    out[1] = min(a[1], b);
+    out[2] = min(a[2], b);
+}
+
+force_inline void min3(vec3 out, const vec3 a, const vec3 b)
+{
+    out[0] = min(a[0], b[0]);
+    out[1] = min(a[1], b[1]);
+    out[2] = min(a[2], b[2]);
+}
+
+force_inline void max3(vec3 out, const vec3 a, const float b)
+{
+    out[0] = max(a[0], b);
+    out[1] = max(a[1], b);
+    out[2] = max(a[2], b);
+}
+
+force_inline void max3(vec3 out, const vec3 a, const vec3 b)
+{
+    out[0] = max(a[0], b[0]);
+    out[1] = max(a[1], b[1]);
+    out[2] = max(a[2], b[2]);
+}
 
 force_inline void clamp3(vec3 out, const vec3 v, const vec3 min, const vec3 max)
 {
@@ -655,6 +683,9 @@ int32_t test3_sphere_plane(const vec3 pos, const float radius, vec4 const plane)
 
 // test a sphere against an axis aligned box
 int32_t test3_sphere_aab(const vec3 pos, const float radius, const vec3 box_min, const vec3 box_max);
+
+// test a point against a line
+int32_t test2_point_line(const vec2 p, const vec2 la, const vec2 lb);
 
 // test a segment against a line
 int32_t test2_segment_line(const vec2 sa, const vec2 sb, const vec2 la, const vec2 lb);
