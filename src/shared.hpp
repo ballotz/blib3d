@@ -35,6 +35,20 @@
 
 #endif
 
+// debug
+
+#if defined(NDEBUG) && defined(DEBUG)
+#error both NDEBUG and DEBUG defined
+#endif
+
+#if !defined(NDEBUG) && !defined(DEBUG)
+#error neither NDEBUG or DEBUG defined
+#endif
+
+#if !defined(NDEBUG) && defined(DEBUG)
+#define debug_mode
+#endif
+
 // config
 
 #define USE_SIMD
