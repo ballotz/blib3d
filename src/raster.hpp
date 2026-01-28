@@ -25,6 +25,8 @@ static constexpr uint32_t num_max_vertices{ 12 };
 
 static constexpr uint32_t num_max_attributes{ 12 };
 
+static constexpr int32_t mip_table_max_size{ 16 };
+
 //------------------------------------------------------------------------------
 
 struct alignas(4) ARGB

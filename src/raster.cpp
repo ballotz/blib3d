@@ -1743,8 +1743,6 @@ static int32_t mip_level_calc(
     return math::log2ceil(l);
 }
 
-constexpr int32_t mip_table_max_size{ 16 };
-
 static int32_t mip_table_build(
     const uint8_t* texture,
     int32_t texture_width,
