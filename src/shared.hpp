@@ -53,3 +53,10 @@
 
 #define USE_SIMD
 
+// common
+
+template<typename T, uint32_t size>
+uint32_t array_size(T(&)[size])
+{
+    return size;
+}
