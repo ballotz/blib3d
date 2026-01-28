@@ -69,6 +69,7 @@ force_inline uint32_t is_power_of_2(uint32_t v)
     return v && !(v & (v - 1u));
 }
 
+// v > 0
 force_inline uint32_t next_power_of_2(uint32_t v)
 {
     v--;
@@ -592,6 +593,15 @@ force_inline void clamp3(vec3 out, const vec3 v, const vec3 min, const vec3 max)
     out[2] = clamp(v[2], min[2], max[2]);
 }
 
+// abs
+
+force_inline void abs3(vec3 inout)
+{
+    inout[0] = (inout[0] > 0.f) ? inout[0] : -inout[0];
+    inout[1] = (inout[1] > 0.f) ? inout[1] : -inout[1];
+    inout[2] = (inout[2] > 0.f) ? inout[2] : -inout[2];
+}
+
 // dot
 
 force_inline float dot3(const vec3 a, const vec3 b)
@@ -676,6 +686,9 @@ enum
 
 // test an axis aligned box against a plane
 int32_t test3_aab_plane(const vec3 box_min, const vec3 box_max, const vec4 plane);
+
+// test an axis aligned box against a sphere
+int32_t test3_aab_sphere(const vec3 box_min, const vec3 box_max, const vec3 pos, const float radius);
 
 // test a sphere against a plane
 // plane must be normalized

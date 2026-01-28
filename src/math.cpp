@@ -45,6 +45,28 @@ int32_t test3_aab_plane(const vec3 box_min, const vec3 box_max, const vec4 plane
         return test_intersect;
 }
 
+int32_t test3_aab_sphere(const vec3 box_min, const vec3 box_max, const vec3 pos, const float radius)
+{
+    vec3 mindist;
+    vec3 maxdist;
+    float dist2;
+    clamp3(mindist, pos, box_min, box_max);
+    sub3(mindist, pos);
+    dist2 = dot3(mindist, mindist);
+    if (dist2 > radius * radius)
+        return test_outside;
+    sub3(mindist, pos, box_min);
+    abs3(mindist);
+    sub3(maxdist, pos, box_max);
+    abs3(maxdist);
+    max3(maxdist, mindist, maxdist);
+    sub3(maxdist, pos);
+    dist2 = dot3(maxdist, maxdist);
+    if (dist2 < radius * radius)
+        return test_inside;
+    return test_intersect;
+}
+
 int32_t test3_sphere_plane(const vec3 pos, const float radius, const vec4 plane)
 {
     float d{ pos[0] * plane[0] + pos[1] * plane[1] + pos[2] * plane[2] + plane[3] };
