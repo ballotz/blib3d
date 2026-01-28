@@ -87,6 +87,8 @@ struct config
 
     bool back_cull;
 
+    int32_t frame_width;
+    int32_t frame_height;
     int32_t frame_stride;
     float* depth_buffer;
     ARGB* frame_buffer;

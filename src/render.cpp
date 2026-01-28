@@ -232,6 +232,8 @@ void renderer::set_frame_data(
     frame_depth = depth;
     frame_data = frame;
 
+    raster_config.frame_width = frame_width;
+    raster_config.frame_height = frame_height;
     raster_config.frame_stride = frame_stride;
     raster_config.depth_buffer = frame_depth;
     raster_config.frame_buffer = frame_data;
