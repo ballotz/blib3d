@@ -82,8 +82,8 @@ public:
 
     enum
     {
+        FILL_WIREFRAME,
         FILL_DEPTH,
-        FILL_OUTLINE,
         FILL_SOLID,
         FILL_VERTEX,
         FILL_TEXTURE

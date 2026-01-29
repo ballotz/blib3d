@@ -52,8 +52,8 @@ enum
     FILTER_SHIFT    = 9,
     FILTER_BIT_MASK = 0b1000000000,
 
-    FILL_DEPTH      = 0,
-    FILL_OUTLINE    = 1,
+    FILL_WIREFRAME  = 0,
+    FILL_DEPTH      = 1,
     FILL_SOLID      = 2,
     FILL_VERTEX     = 3,
     FILL_TEXTURE    = 4,

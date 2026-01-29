@@ -6,19 +6,10 @@
 #include <new>
 #include <cassert>
 #include <cfloat>
+#include <algorithm>
 
 namespace blib3d::raster
 {
-
-//------------------------------------------------------------------------------
-
-struct abstract_raster
-{
-    bool is_clockwise;
-
-    virtual bool setup_face(const float* pv[], uint32_t vertex_count) = 0;
-    virtual void process_span(int32_t y, int32_t x0, int32_t x1) = 0;
-};
 
 //------------------------------------------------------------------------------
 
@@ -30,6 +21,124 @@ force_inline int32_t real_to_raster(float v)
 force_inline float raster_to_real(int32_t v)
 {
     return (float)v + 0.5f;
+}
+
+//------------------------------------------------------------------------------
+
+void batch_draw_wireframe(const config* c)
+{
+    uint32_t num_faces{ c->num_faces };
+    uint32_t vertex_stride{ c->vertex_stride };
+    const uint32_t* num_vertices{ c->vertex_count_data };
+    const float* vertex_data{ c->vertex_data };
+    int32_t frame_width{ c->frame_width };
+    int32_t frame_height{ c->frame_height };
+    int32_t frame_stride{ c->frame_stride };
+    ARGB* frame_buffer{ c->frame_buffer };
+    uint32_t* frame_addr{ reinterpret_cast<uint32_t*>(frame_buffer) };
+
+    while (num_faces--)
+    {
+        uint32_t vertex_count{ *num_vertices++ };
+
+        for (uint32_t v0{ vertex_count - 1 }, v1{ 0 }; v1 < vertex_count; v0 = v1++)
+        {
+            float x0{ vertex_data[vertex_stride * v0 + 0] };
+            float y0{ vertex_data[vertex_stride * v0 + 1] };
+            float x1{ vertex_data[vertex_stride * v1 + 0] };
+            float y1{ vertex_data[vertex_stride * v1 + 1] };
+
+            float dx{ x1 - x0 };
+            float dy{ y1 - y0 };
+            if (y1 < y0)
+            {
+                std::swap(x0, x1);
+                std::swap(y0, y1);
+            }
+            if (std::abs(dx) <= std::abs(dy))
+            {
+                float slope{ dx / dy };
+                int32_t y{ math::max(0, real_to_raster(y0)) };
+                int32_t yend{ math::min(frame_height, real_to_raster(y1)) };
+                float xf{ x0 + ((float)y - y0) * slope };
+                for (; y < yend; ++y)
+                {
+                    int32_t x{ real_to_raster(xf) };
+                    if (x >= 0 && x < frame_width)
+                        frame_addr[x + frame_stride * y] = 0xFFFFFFFFu;
+                    xf += slope;
+                }
+            }
+            else
+            {
+                float slope{ dy / dx };
+                int32_t x{ math::max(0, real_to_raster(x0)) };
+                int32_t xend{ math::min(frame_width, real_to_raster(x1)) };
+                float yf{ y0 + ((float)x - x0) * slope };
+                if (x0 <= x1)
+                {
+                    for (; x < xend; ++x)
+                    {
+                        int32_t y{ real_to_raster(yf) };
+                        if (y >= 0 && y < frame_height)
+                            frame_addr[x + frame_stride * y] = 0xFFFFFFFFu;
+                        yf += slope;
+                    }
+                }
+                else
+                {
+                    for (; x > xend; --x)
+                    {
+                        int32_t y{ real_to_raster(yf) };
+                        if (y >= 0 && y < frame_height)
+                            frame_addr[x + frame_stride * y] = 0xFFFFFFFFu;
+                        yf -= slope;
+                    }
+                }
+            }
+        }
+
+        vertex_data += vertex_stride * vertex_count;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+struct scan
+{
+    void batch_draw(const config* c);
+
+    void scan_face(const float* v[], const int32_t num_vertices, const bool is_clockwise);
+
+    virtual bool setup_face(const float* pv[], uint32_t vertex_count,
+        const bool back_cull, bool& is_clockwise) = 0;
+
+    virtual void process_span(int32_t y, int32_t x0, int32_t x1) = 0;
+};
+
+void scan::batch_draw(const config* c)
+{
+    uint32_t num_faces{ c->num_faces };
+    uint32_t vertex_stride{ c->vertex_stride };
+    const uint32_t* num_vertices{ c->vertex_count_data };
+    const float* vertex_data{ c->vertex_data };
+    const bool back_cull{ c->back_cull };
+
+    while (num_faces--)
+    {
+        const uint32_t vertex_count{ *num_vertices++ };
+
+        const float* v[num_max_vertices];
+        for (uint32_t nv{}; nv < vertex_count; ++nv)
+        {
+            v[nv] = vertex_data;
+            vertex_data += vertex_stride;
+        }
+
+        bool is_clockwise;
+        if (setup_face(v, vertex_count, back_cull, is_clockwise))
+            scan_face(v, vertex_count, is_clockwise);
+    }
 }
 
 /*
@@ -56,14 +165,14 @@ force_inline float raster_to_real(int32_t v)
     this could cause the scanning loop to not terminate
     to avoid this situation backward tilted edges are treated as horizontal and skipped
 */
-void scan_face(const float* v[], int32_t num_vertices, abstract_raster* r)
+void scan::scan_face(const float* v[], const int32_t vertex_count, const bool is_clockwise)
 {
     struct edge
     {
         float x;
         float dx_dy;
 
-        force_inline void setup(const float* v0, const float* v1, float y0)
+        force_inline void setup(const float* v0, const float* v1, const float y0)
         {
             dx_dy = (v1[0] - v0[0]) / (v1[1] - v0[1]);
             x = v0[0] + (y0 - v0[1]) * dx_dy;
@@ -77,7 +186,7 @@ void scan_face(const float* v[], int32_t num_vertices, abstract_raster* r)
 
     struct util
     {
-        static force_inline int32_t wrap(int32_t v, int32_t last)
+        static force_inline int32_t wrap(const int32_t v, const int32_t last)
         {
             if (v < 0)
                 return last;
@@ -87,11 +196,11 @@ void scan_face(const float* v[], int32_t num_vertices, abstract_raster* r)
         };
     };
 
-    int32_t vi{ r->is_clockwise ? -1 : 1 }; // vertex index increment
+    const int32_t vi{ is_clockwise ? -1 : 1 }; // vertex index increment
 
     int32_t vt{ 0 }; // top vertex index
     int32_t vb{ 0 }; // bottom vertex index
-    for (int32_t n{ 1 }; n < num_vertices; ++n)
+    for (int32_t n{ 1 }; n < vertex_count; ++n)
     {
         if (v[vt][1] > v[n][1])
             vt = n;
@@ -99,7 +208,7 @@ void scan_face(const float* v[], int32_t num_vertices, abstract_raster* r)
             vb = n;
     }
 
-    int32_t ylimit[2]
+    const int32_t ylimit[2]
     {
         real_to_raster(v[vt][1]),
         real_to_raster(v[vb][1])
@@ -108,7 +217,7 @@ void scan_face(const float* v[], int32_t num_vertices, abstract_raster* r)
     if (ylimit[0] == ylimit[1])
         return;
 
-    int32_t last_vertex{ num_vertices - 1 };
+    int32_t last_vertex{ vertex_count - 1 };
 
     int32_t vl[2]{ vt, util::wrap(vt + vi, last_vertex) }; // left edge vertex indexes
     int32_t vr[2]{ vt, util::wrap(vt - vi, last_vertex) }; // right edge vertex indexes
@@ -151,13 +260,13 @@ void scan_face(const float* v[], int32_t num_vertices, abstract_raster* r)
             yend = yl[1] < yr[1] ? yl[1] : yr[1]; // next nearest end point
         }
         //assert(y < ylimit[1]);
-        int32_t x[2]
+        const int32_t x[2]
         {
             real_to_raster(e[0].x),
             real_to_raster(e[1].x)
         };
         if (x[0] < x[1]) // float error guard (1)
-            r->process_span(y, x[0], x[1]);
+            process_span(y, x[0], x[1]);
         e[0].advance();
         e[1].advance();
         ++y;
@@ -257,62 +366,19 @@ void sample_light(
 
 //------------------------------------------------------------------------------
 
-struct raster_outline : public abstract_raster
-{
-    raster_outline(const config* c)
-    {
-        frame_stride = c->frame_stride;
-        frame_buffer = c->frame_buffer;
-    }
-
-    // abstract_raster
-
-    bool setup_face(const float* /*pv*/[], uint32_t /*vertex_count*/) override
-    {
-        is_clockwise = true;
-        return true;
-    }
-
-    void process_span(int32_t y, int32_t x0, int32_t x1) override
-    {
-        //assert(x0 < x1);
-        uint32_t* line_addr = reinterpret_cast<uint32_t*>(&frame_buffer[frame_stride * y]);
-        int32_t n = x1 - x0;
-        if (n == 1)
-            line_addr[x0] = 0xFFFFFF00u;
-        else if (n > 1)
-        {
-            line_addr[x0] = 0xFF00FF00u;
-            line_addr[x1 - 1] = 0xFFFF0000u;
-        }
-    }
-
-    // raster
-
-    int32_t frame_stride;
-    ARGB* frame_buffer;
-};
-
-//------------------------------------------------------------------------------
-
-struct raster_depth : public abstract_raster
+struct raster_depth : public scan
 {
     raster_depth(const config* c)
     {
-        back_cull = c->back_cull;
-
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
-
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        return interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g);
+        return interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -367,26 +433,21 @@ struct raster_depth : public abstract_raster
 //------------------------------------------------------------------------------
 
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
-struct raster_solid_shade_none : public abstract_raster
+struct raster_solid_shade_none : public scan
 {
     raster_solid_shade_none(const config* c)
     {
-        back_cull = c->back_cull;
-
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
         fill_color = reinterpret_cast<const uint32_t&>(c->fill_color);
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
-
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        return interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g);
+        return interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -453,12 +514,10 @@ struct raster_solid_shade_none : public abstract_raster
 };
 
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
-struct raster_solid_shade_vertex : public abstract_raster
+struct raster_solid_shade_vertex : public scan
 {
     raster_solid_shade_vertex(const config* c)
     {
-        back_cull = c->back_cull;
-
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
@@ -468,14 +527,11 @@ struct raster_solid_shade_vertex : public abstract_raster
         fill_color[3] = (uint32_t)c->fill_color.b;
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
-
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        return interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g);
+        return interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -595,12 +651,10 @@ struct raster_solid_shade_vertex : public abstract_raster
 };
 
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
-struct raster_solid_shade_lightmap : public abstract_raster
+struct raster_solid_shade_lightmap : public scan
 {
     raster_solid_shade_lightmap(const config* c)
     {
-        back_cull = c->back_cull;
-
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
@@ -614,14 +668,11 @@ struct raster_solid_shade_lightmap : public abstract_raster
         lightmap = (const uint32_t*)(c->lightmap);
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
-
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        return interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g);
+        return interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -768,12 +819,10 @@ struct raster_solid_shade_lightmap : public abstract_raster
 };
 
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
-struct raster_solid_shade_light : public abstract_raster
+struct raster_solid_shade_light : public scan
 {
     raster_solid_shade_light(const config* c)
     {
-        back_cull = c->back_cull;
-
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
@@ -786,14 +835,11 @@ struct raster_solid_shade_light : public abstract_raster
         light_table = c->light_table;
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
-
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        return interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g);
+        return interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -961,25 +1007,20 @@ struct raster_solid_shade_light : public abstract_raster
 //------------------------------------------------------------------------------
 
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
-struct raster_vertex_shade_none : public abstract_raster
+struct raster_vertex_shade_none : public scan
 {
     raster_vertex_shade_none(const config* c)
     {
-        back_cull = c->back_cull;
-
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
-
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        return interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g);
+        return interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -1100,25 +1141,20 @@ struct raster_vertex_shade_none : public abstract_raster
 };
 
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
-struct raster_vertex_shade_vertex : public abstract_raster
+struct raster_vertex_shade_vertex : public scan
 {
     raster_vertex_shade_vertex(const config* c)
     {
-        back_cull = c->back_cull;
-
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
-
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        return interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g);
+        return interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -1266,12 +1302,10 @@ struct raster_vertex_shade_vertex : public abstract_raster
 };
 
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
-struct raster_vertex_shade_lightmap : public abstract_raster
+struct raster_vertex_shade_lightmap : public scan
 {
     raster_vertex_shade_lightmap(const config* c)
     {
-        back_cull = c->back_cull;
-
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
@@ -1281,14 +1315,11 @@ struct raster_vertex_shade_lightmap : public abstract_raster
         lightmap = (const uint32_t*)(c->lightmap);
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
-
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        return interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g);
+        return interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -1465,12 +1496,10 @@ struct raster_vertex_shade_lightmap : public abstract_raster
 };
 
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
-struct raster_vertex_shade_light : public abstract_raster
+struct raster_vertex_shade_light : public scan
 {
     raster_vertex_shade_light(const config* c)
     {
-        back_cull = c->back_cull;
-
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
@@ -1479,14 +1508,11 @@ struct raster_vertex_shade_light : public abstract_raster
         light_table = c->light_table;
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
-
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        return interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g);
+        return interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g);
     }
 
     void process_span(int32_t y, int32_t x0, int32_t x1) override
@@ -1774,11 +1800,10 @@ template<
     typename blend_type = blend_none,
     typename depth_type = depth_test_write,
     typename mask_type = mask_texture_off>
-struct raster_texture_shade_none : public abstract_raster
+struct raster_texture_shade_none : public scan
 {
     raster_texture_shade_none(const config* c)
     {
-        back_cull = c->back_cull;
         mip_enable = (c->flags & MIP_FACE) != 0;
 
         texture_width = c->texture_width;
@@ -1803,9 +1828,8 @@ struct raster_texture_shade_none : public abstract_raster
         }
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
     bool mip_enable;
 
     int32_t texture_width;
@@ -1814,10 +1838,9 @@ struct raster_texture_shade_none : public abstract_raster
     const uint8_t* mip_table[mip_table_max_size];
     int32_t mip_max_level;
 
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        if (interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g))
+        if (interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g))
         {
             float texture_width_f{ (float)texture_width };
             float texture_height_f{ (float)texture_height };
@@ -1975,11 +1998,10 @@ template<
     typename blend_type = blend_none,
     typename depth_type = depth_test_write,
     typename mask_type = mask_texture_off>
-struct raster_texture_shade_vertex : public abstract_raster
+struct raster_texture_shade_vertex : public scan
 {
     raster_texture_shade_vertex(const config* c)
     {
-        back_cull = c->back_cull;
         mip_enable = (c->flags & MIP_FACE) != 0;
 
         texture_width = c->texture_width;
@@ -2004,9 +2026,8 @@ struct raster_texture_shade_vertex : public abstract_raster
         }
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
     bool mip_enable;
 
     int32_t texture_width;
@@ -2015,10 +2036,9 @@ struct raster_texture_shade_vertex : public abstract_raster
     const uint8_t* mip_table[mip_table_max_size];
     int32_t mip_max_level;
 
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        if (interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g))
+        if (interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g))
         {
             float texture_width_f{ (float)texture_width };
             float texture_height_f{ (float)texture_height };
@@ -2210,11 +2230,10 @@ template<
     typename blend_type = blend_none,
     typename depth_type = depth_test_write,
     typename mask_type = mask_texture_off>
-struct raster_texture_shade_lightmap : public abstract_raster
+struct raster_texture_shade_lightmap : public scan
 {
     raster_texture_shade_lightmap(const config* c)
     {
-        back_cull = c->back_cull;
         mip_enable = (c->flags & MIP_FACE) != 0;
 
         texture_width = c->texture_width;
@@ -2244,9 +2263,8 @@ struct raster_texture_shade_lightmap : public abstract_raster
         lightmap = (const uint32_t*)(c->lightmap);
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
     bool mip_enable;
 
     int32_t texture_width;
@@ -2255,10 +2273,9 @@ struct raster_texture_shade_lightmap : public abstract_raster
     const uint8_t* mip_table[mip_table_max_size];
     int32_t mip_max_level;
 
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        if (interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g))
+        if (interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g))
         {
             float texture_width_f{ (float)texture_width };
             float texture_height_f{ (float)texture_height };
@@ -2477,11 +2494,10 @@ template<
     typename blend_type = blend_none,
     typename depth_type = depth_test_write,
     typename mask_type = mask_texture_off>
-struct raster_texture_shade_light : public abstract_raster
+struct raster_texture_shade_light : public scan
 {
     raster_texture_shade_light(const config* c)
     {
-        back_cull = c->back_cull;
         mip_enable = (c->flags & MIP_FACE) != 0;
 
         texture_width = c->texture_width;
@@ -2510,9 +2526,8 @@ struct raster_texture_shade_light : public abstract_raster
         light_table = c->light_table;
     }
 
-    // abstract_raster
+    // scan
 
-    bool back_cull;
     bool mip_enable;
 
     int32_t texture_width;
@@ -2521,10 +2536,9 @@ struct raster_texture_shade_light : public abstract_raster
     const uint8_t* mip_table[mip_table_max_size];
     int32_t mip_max_level;
 
-    bool setup_face(const float* pv[], uint32_t vertex_count) override
+    bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
-        if (interp_setup_face(pv, vertex_count, back_cull,
-            is_clockwise, g))
+        if (interp_setup_face(pv, vertex_count, back_cull, is_clockwise, g))
         {
             float texture_width_f{ (float)texture_width };
             float texture_height_f{ (float)texture_height };
@@ -2773,7 +2787,15 @@ struct raster_texture_shade_light : public abstract_raster
 
 void scan_faces(const config* c)
 {
-    abstract_raster* r{};
+    if ((c->flags & FILL_BIT_MASK) == FILL_WIREFRAME)
+    {
+        batch_draw_wireframe(c);
+        return;
+    }
+
+    //------------------------------------//
+
+    scan* r{};
 
     //------------------------------------//
 
@@ -2799,9 +2821,6 @@ void scan_faces(const config* c)
     {
     case FILL_DEPTH:
         r = new (raster) raster_depth(c);
-        break;
-    case FILL_OUTLINE:
-        r = new (raster) raster_outline(c);
         break;
     case FILL_SOLID:
         switch (c->flags & (SHADE_BIT_MASK | BLEND_BIT_MASK))
@@ -3038,28 +3057,8 @@ void scan_faces(const config* c)
 
     //------------------------------------//
 
-    if (r == nullptr)
-        return;
-
-    uint32_t num_faces{ c->num_faces };
-    const uint32_t* num_vertices{ c->vertex_count_data };
-    const float* vertex_data{ c->vertex_data };
-    uint32_t vertex_stride{ c->vertex_stride };
-
-    while (num_faces--)
-    {
-        uint32_t vertex_count{ *num_vertices++ };
-
-        const float* pv[num_max_vertices];
-        for (uint32_t nv{}; nv < vertex_count; ++nv)
-        {
-            pv[nv] = vertex_data;
-            vertex_data += vertex_stride;
-        }
-
-        if (r->setup_face(pv, vertex_count))
-            scan_face(pv, vertex_count, r);
-    }
+    if (r)
+        r->batch_draw(c);
 }
 
 //------------------------------------------------------------------------------
