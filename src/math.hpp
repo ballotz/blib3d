@@ -454,8 +454,8 @@ force_inline void mul4x4_4x4(mat4x4 out, const mat4x4 a, const mat4x4 b)
     t5 = _mm_add_ps(t2, t3);
     t6 = _mm_add_ps(t4, t5);
     _mm_storeu_ps(out +  4, t6);
-    t0 = _mm_mul_ps(_mm_load_ps1(a +  9), b0);
-    t1 = _mm_mul_ps(_mm_load_ps1(a +  8), b1);
+    t0 = _mm_mul_ps(_mm_load_ps1(a +  8), b0);
+    t1 = _mm_mul_ps(_mm_load_ps1(a +  9), b1);
     t2 = _mm_mul_ps(_mm_load_ps1(a + 10), b2);
     t3 = _mm_mul_ps(_mm_load_ps1(a + 11), b3);
     t4 = _mm_add_ps(t0, t1);
