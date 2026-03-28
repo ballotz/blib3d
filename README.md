@@ -46,11 +46,16 @@ Mip mapping
 
 ## Demo
 
-### SDL2
-
-clone SDL2 repository in the same folder of blib3d repository
+### SDL
 
 demo/sdl
+
+CMakeLists.txt searches SDL source code folder next to blib3d repository folder
+
+    /blib3d
+    /SDL
+
+demo is tested on SDL2 branch
 
 ![image](demo/sdl/screenshot.png)
 
