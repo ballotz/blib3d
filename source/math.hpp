@@ -45,6 +45,15 @@ force_inline data_type clamp(data_type v, data_type vmin, data_type vmax)
     return min(max(v, vmin), vmax);
 }
 
+template<typename data_type, int32_t num_elements>
+force_inline data_type norm(const data_type (&v)[num_elements])
+{
+    data_type r = (data_type)0;
+    for (int32_t i = 0; i < num_elements; ++i)
+        r += v[i] * v[i];
+    return r;
+}
+
 force_inline int32_t floor(float v)
 {
     int32_t r{ (int32_t)v };

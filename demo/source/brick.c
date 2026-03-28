@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "brick.h"
 
 const uint8_t brick_lut[][4] =
 {

@@ -211,6 +211,7 @@ renderer::renderer()
     raster_config.vertex_count_data = raster_vertex_count_buffer;
     raster_config.vertex_data = raster_geometry_buffer;
     raster_config.back_cull = true;
+    gamma_set(1.f);
 }
 
 renderer::~renderer()

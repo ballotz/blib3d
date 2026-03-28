@@ -27,7 +27,7 @@
 #elif defined(__GNUC__)
 
 #define no_inline __attribute__((noinline))
-#define force_inline __attribute__((always_inline))
+#define force_inline __attribute__((always_inline)) inline
 
 #else
 
@@ -37,15 +37,7 @@
 
 // debug
 
-#if defined(NDEBUG) && defined(DEBUG)
-#error both NDEBUG and DEBUG defined
-#endif
-
-#if !defined(NDEBUG) && !defined(DEBUG)
-#error neither NDEBUG or DEBUG defined
-#endif
-
-#if !defined(NDEBUG) && defined(DEBUG)
+#if !defined(NDEBUG)
 #define debug_mode
 #endif
 

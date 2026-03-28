@@ -1,18 +1,16 @@
-cmake_minimum_required(VERSION 3.28)
-
+cmake_minimum_required(VERSION 3.22)
 project(perf)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(SOURCES
-    ../../src/math.cpp
-    ../../src/timer.cpp
-    
-    main.cpp
-)
+add_subdirectory(../../ blib3d)
 
-add_executable(perf ${SOURCES})
+add_executable(perf main.cpp)
+
+target_link_libraries(perf PRIVATE
+    blib3d
+)
 
 target_compile_options(perf PRIVATE
     # -Wall -Wextra
@@ -22,11 +20,8 @@ target_compile_options(perf PRIVATE
 
 if (WIN32)
     message(STATUS "Configuring for Windows")
-
 elseif (APPLE)
     message(STATUS "Configuring for macOS")
-
 elseif (UNIX)
     message(STATUS "Configuring for Linux")
-
 endif()
