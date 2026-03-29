@@ -7,10 +7,10 @@ namespace blib3d::raster
 
 force_inline uint32_t adds_X888(uint32_t v0, uint32_t v1)
 {
-    uint32_t r{ v0 + v1 };
-    uint32_t m{ (v0 ^ v1 ^ r) & 0x01010100u };
-    r |= m - (m >> 8u) + 0xFF000000u;
-    return r - m;
+    uint32_t s{ v0 + v1 };
+    uint32_t c{ (v0 ^ v1 ^ s) & 0x01010100u };
+    uint32_t m{ c - (c >> 8u) + 0xFF000000u };
+    return (s - c) | m;
 }
 
 force_inline uint32_t mul_X888(uint32_t v0, uint32_t v1)

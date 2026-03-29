@@ -44,7 +44,6 @@ int32_t screen_width{ 0 };
 int32_t screen_height{ 0 };
 
 blib3d::math::mat4x4 mat_proj;
-blib3d::math::mat4x4 mat_view;
 blib3d::math::vec3 camera_pos{};
 blib3d::math::vec3 camera_ang{};
 blib3d::math::mat3x3 camera_A
@@ -67,6 +66,8 @@ void setup(int32_t width, int32_t height, bool rotate)
 
     renderer.set_frame_clear_color({ 0xC0, 0xC0, 0xC0, 0xFF });
     renderer.set_frame_clear_depth(0);
+
+    blib3d::math::mat4x4 mat_view;
 
     if (rotate == false)
     {
@@ -158,6 +159,8 @@ float fps{};
 float fps_count{};
 float ms{};
 
+char string[128];
+
 void tick(uint32_t controller, int32_t dx, int32_t dy)
 {
     float dt{ interval.get_s() };
@@ -245,6 +248,8 @@ void tick(uint32_t controller, int32_t dx, int32_t dy)
 
     text_model_angle += text_model_angle_speed * dt;
     text_model_tick(text_model_angle);
+
+    snprintf(string, sizeof(string), "%ix%i\nfps %i\nms %i", screen_width, screen_height, (int)fps, (int)ms);
 }
 
 void draw(uint32_t* pixels, float* zbuffer, int32_t stride)
@@ -263,12 +268,11 @@ void draw(uint32_t* pixels, float* zbuffer, int32_t stride)
 
     rect_model_draw(renderer);
 
-    text_model_draw(renderer);
-
-    char string[128];
-    snprintf(string, sizeof(string), "%ix%i\nfps %i\nms %i", screen_width, screen_height, (int)fps, (int)ms);
+    text_model_draw(renderer);    
 
     draw2d_draw_string(&rect, 0, 0, string, 0xFF888888);
+
+    renderer.render_end();
 }
 
 } // namespace demo

@@ -1,9 +1,9 @@
 #include "draw2d.hpp"
 
-template<>
-void draw2d_fill<uint16_t>(draw2d_rect<uint16_t>* rect, uint16_t color)
+template<typename T>
+void draw2d_fill<T>(draw2d_rect<T>* rect, T color)
 {
-    uint16_t *prow, *p;
+    T *prow, *p;
     int y, x;
 
     prow = rect->data;
@@ -16,21 +16,9 @@ void draw2d_fill<uint16_t>(draw2d_rect<uint16_t>* rect, uint16_t color)
     }
 }
 
-template<>
-void draw2d_fill<uint32_t>(draw2d_rect<uint32_t>* rect, uint32_t color)
-{
-    uint32_t* prow, * p;
-    int y, x;
-
-    prow = rect->data;
-    for (y = 0; y < rect->height; ++y)
-    {
-        p = prow;
-        for (x = 0; x < rect->width; ++x)
-            *p++ = color;
-        prow += rect->stride;
-    }
-}
+template void draw2d_fill<uint8_t>(draw2d_rect<uint8_t>* rect, uint8_t color);
+template void draw2d_fill<uint16_t>(draw2d_rect<uint16_t>* rect, uint16_t color);
+template void draw2d_fill<uint32_t>(draw2d_rect<uint32_t>* rect, uint32_t color);
 
 inline int32_t draw2d_clip(int32_t v, int32_t lim)
 {
@@ -173,8 +161,8 @@ const uint8_t draw2d_font_data[1536] =
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00
 };
 
-template<>
-void draw2d_draw_char<uint16_t>(draw2d_rect<uint16_t>* rect, int32_t pos_x, int32_t pos_y, char c, uint16_t color)
+template<typename T>
+void draw2d_draw_char<T>(draw2d_rect<T>* rect, int32_t pos_x, int32_t pos_y, char c, T color)
 {
     if (c < 32 || c > 126)
         return;
@@ -191,13 +179,13 @@ void draw2d_draw_char<uint16_t>(draw2d_rect<uint16_t>* rect, int32_t pos_x, int3
     int32_t data_col = c - 32;
     int32_t data_row = 15 - offy;
     const uint8_t* pbmp = &draw2d_font_data[data_col + 96 * data_row];
-    uint16_t* prow = (uint16_t*)rect->data;
+    T* prow = rect->data;
     prow = &prow[x0 + rect->stride * y0];
     while (h--)
     {
         uint8_t bmp = ~*pbmp;
         uint32_t bit = 1 << (7 - offx);
-        uint16_t* p = prow;
+        T* p = prow;
         int32_t c = w;
         while (c--)
         {
@@ -211,46 +199,12 @@ void draw2d_draw_char<uint16_t>(draw2d_rect<uint16_t>* rect, int32_t pos_x, int3
     }
 }
 
-template<>
-void draw2d_draw_char<uint32_t>(draw2d_rect<uint32_t>* rect, int32_t pos_x, int32_t pos_y, char c, uint32_t color)
-{
-    if (c < 32 || c > 126)
-        return;
-    int32_t x0 = draw2d_clip(pos_x, rect->width);
-    int32_t x1 = draw2d_clip(pos_x + 8, rect->width);
-    int32_t y0 = draw2d_clip(pos_y, rect->height);
-    int32_t y1 = draw2d_clip(pos_y + 16, rect->height);
-    int32_t w = x1 - x0;
-    int32_t h = y1 - y0;
-    if (w == 0 || h == 0)
-        return;
-    int32_t offx = x0 - pos_x;
-    int32_t offy = y0 - pos_y;
-    int32_t data_col = c - 32;
-    int32_t data_row = 15 - offy;
-    const uint8_t* pbmp = &draw2d_font_data[data_col + 96 * data_row];
-    uint32_t* prow = (uint32_t*)rect->data;
-    prow = &prow[x0 + rect->stride * y0];
-    while (h--)
-    {
-        uint8_t bmp = ~*pbmp;
-        uint32_t bit = 1 << (7 - offx);
-        uint32_t* p = prow;
-        int32_t c = w;
-        while (c--)
-        {
-            if (bmp & bit)
-                *p = color;
-            bit >>= 1;
-            ++p;
-        }
-        pbmp -= 96;
-        prow += rect->stride;
-    }
-}
+template void draw2d_draw_char<uint8_t>(draw2d_rect<uint8_t>* rect, int32_t pos_x, int32_t pos_y, char c, uint8_t color);
+template void draw2d_draw_char<uint16_t>(draw2d_rect<uint16_t>* rect, int32_t pos_x, int32_t pos_y, char c, uint16_t color);
+template void draw2d_draw_char<uint32_t>(draw2d_rect<uint32_t>* rect, int32_t pos_x, int32_t pos_y, char c, uint32_t color);
 
-template<>
-void draw2d_draw_string<uint16_t>(draw2d_rect<uint16_t>* rect, int32_t pos_x, int32_t pos_y, const char* str, uint16_t color)
+template<typename T>
+void draw2d_draw_string<T>(draw2d_rect<T>* rect, int32_t pos_x, int32_t pos_y, const char* str, T color)
 {
     int32_t pos_x_init = pos_x;
     while (*str)
@@ -278,31 +232,6 @@ void draw2d_draw_string<uint16_t>(draw2d_rect<uint16_t>* rect, int32_t pos_x, in
     }
 }
 
-template<>
-void draw2d_draw_string<uint32_t>(draw2d_rect<uint32_t>* rect, int32_t pos_x, int32_t pos_y, const char* str, uint32_t color)
-{
-    int32_t pos_x_init = pos_x;
-    while (*str)
-    {
-        if (*str >= 32 && *str <= 126)
-        {
-            draw2d_draw_char(rect, pos_x, pos_y, *str, color);
-            pos_x += 8;
-        }
-        else if (*str == '\r')
-        {
-            pos_x = pos_x_init;
-        }
-        else if (*str == '\n')
-        {
-            pos_x = pos_x_init;
-            pos_y += 16;
-        }
-        else
-        {
-            draw2d_draw_char(rect, pos_x, pos_y, '_', color);
-            pos_x += 8;
-        }
-        ++str;
-    }
-}
+template void draw2d_draw_string<uint8_t>(draw2d_rect<uint8_t>* rect, int32_t pos_x, int32_t pos_y, const char* str, uint8_t color);
+template void draw2d_draw_string<uint16_t>(draw2d_rect<uint16_t>* rect, int32_t pos_x, int32_t pos_y, const char* str, uint16_t color);
+template void draw2d_draw_string<uint32_t>(draw2d_rect<uint32_t>* rect, int32_t pos_x, int32_t pos_y, const char* str, uint32_t color);

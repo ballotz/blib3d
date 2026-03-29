@@ -1,3 +1,4 @@
+// #include "../../source/triangle.hpp"
 #include "../../source/demo.hpp"
 #include <SDL.h>
 
@@ -91,7 +92,7 @@ int init(int& width, int& height)
     int pitch;
     SDL_LockTexture(frame_texture, 0, &pixels, &pitch);
     SDL_UnlockTexture(frame_texture);
-    depth_buffer = new float[width * (pitch / sizeof(uint32_t))];
+    depth_buffer = new float[(pitch / sizeof(uint32_t)) * height];
 
     SDL_SetRelativeMouseMode(SDL_TRUE);
     SDL_GetRelativeMouseState(0, 0); // flush first
@@ -121,6 +122,7 @@ int SDL_main(int argc, char* argv[])
     if (init(screen_width, screen_height) != 0)
         return 1;
     
+    // triangle::setup(screen_width, screen_height);
     demo::setup(screen_width, screen_height, false);
 
     uint32_t controller{};
@@ -189,6 +191,7 @@ int SDL_main(int argc, char* argv[])
             int pitch;
             SDL_LockTexture(frame_texture, 0, &pixels, &pitch);
 
+            // triangle::draw((uint32_t*)pixels, depth_buffer, pitch / sizeof(uint32_t));
             demo::draw((uint32_t*)pixels, depth_buffer, pitch / sizeof(uint32_t));
 
             SDL_UnlockTexture(frame_texture);

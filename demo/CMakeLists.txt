@@ -17,6 +17,7 @@ target_sources(demo PUBLIC
     source/rect_model.cpp
     source/text_model.cpp
     source/demo.cpp
+    source/triangle.cpp
 )
 
 # target_include_directories(demo
