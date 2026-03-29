@@ -1,7 +1,7 @@
 #include "draw2d.hpp"
 
 template<typename T>
-void draw2d_fill<T>(draw2d_rect<T>* rect, T color)
+void draw2d_fill(draw2d_rect<T>* rect, T color)
 {
     T *prow, *p;
     int y, x;
@@ -162,7 +162,7 @@ const uint8_t draw2d_font_data[1536] =
 };
 
 template<typename T>
-void draw2d_draw_char<T>(draw2d_rect<T>* rect, int32_t pos_x, int32_t pos_y, char c, T color)
+void draw2d_draw_char(draw2d_rect<T>* rect, int32_t pos_x, int32_t pos_y, char c, T color)
 {
     if (c < 32 || c > 126)
         return;
@@ -204,7 +204,7 @@ template void draw2d_draw_char<uint16_t>(draw2d_rect<uint16_t>* rect, int32_t po
 template void draw2d_draw_char<uint32_t>(draw2d_rect<uint32_t>* rect, int32_t pos_x, int32_t pos_y, char c, uint32_t color);
 
 template<typename T>
-void draw2d_draw_string<T>(draw2d_rect<T>* rect, int32_t pos_x, int32_t pos_y, const char* str, T color)
+void draw2d_draw_string(draw2d_rect<T>* rect, int32_t pos_x, int32_t pos_y, const char* str, T color)
 {
     int32_t pos_x_init = pos_x;
     while (*str)
