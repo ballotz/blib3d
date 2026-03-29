@@ -11,7 +11,7 @@ set_target_properties(demo PROPERTIES
     CXX_EXTENSIONS OFF    
 )
 
-target_sources(demo PRIVATE
+target_sources(demo PUBLIC
     source/brick.c
     source/draw2d.cpp
     source/rect_model.cpp

@@ -9,7 +9,7 @@ static constexpr int num_components{ 18 }; // x y z w r g b a sr sg sb ls lt tu 
 
 static float d{ 20 };
 static float s{ 16.f / 9.f };
-static alignas(16) float vertices[num_vertices][num_components] =
+static float vertices[num_vertices][num_components] =
 {
     { -s * d,  s * d, 3 * d, 1, 255,   0,   0, 255,  64,  64, 64, 0, 0, 0 , 0  },
     {  s * d,  s * d, 3 * d, 1,   0,   0, 255, 255,  64,  64, 64, 1, 0, 15, 0  },

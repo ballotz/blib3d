@@ -11,7 +11,7 @@ set_target_properties(blib3d PROPERTIES
     CXX_EXTENSIONS OFF    
 )
 
-target_sources(blib3d PRIVATE
+target_sources(blib3d PUBLIC
     source/math.cpp
     source/raster.cpp
     source/render.cpp
