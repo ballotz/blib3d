@@ -30,7 +30,7 @@ void OnProjectLoad (void) {
   //
   // User settings
   //
-  File.Open ("$(ProjectDir)/Debug/MIMXRT1176_LCD_Test.axf");
+  File.Open ("$(ProjectDir)/Debug/mimxrt1176_lcd.axf");
 }
 
 /*********************************************************************

@@ -17,8 +17,8 @@
 #include "board.h"
 #include "elcdif_support.h"
 
+#include "../../source/demo.hpp"
 #include <algorithm>
-#include "draw2d.h"
 
 /*******************************************************************************
  * Definitions
@@ -46,9 +46,23 @@ typedef uint16_t frame_buffer_type;
 
 static volatile bool s_frameDone = false;
 
-AT_NONCACHEABLE_SECTION_ALIGN(static frame_buffer_type s_frameBuffer[2][APP_IMG_HEIGHT][APP_IMG_WIDTH], FRAME_BUFFER_ALIGN);
+//AT_NONCACHEABLE_SECTION_ALIGN(static frame_buffer_type s_frameBuffer[2][APP_IMG_HEIGHT][APP_IMG_WIDTH], FRAME_BUFFER_ALIGN);
+
+[[gnu::section(".bss.$BOARD_SDRAM")]]
+static frame_buffer_type alignas(FRAME_BUFFER_ALIGN) s_frameBuffer[2][APP_IMG_HEIGHT][APP_IMG_WIDTH];
 
 uint32_t frameBufferIndex = 0;
+
+//#define SCREEN_WIDTH    720
+//#define SCREEN_HEIGHT   1280
+#define SCREEN_WIDTH    720/2
+#define SCREEN_HEIGHT   1280/2
+
+[[gnu::section(".bss.$BOARD_SDRAM")]]
+uint32_t frame_texture[SCREEN_HEIGHT][SCREEN_WIDTH];
+
+[[gnu::section(".bss.$BOARD_SDRAM")]]
+float depth_buffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 
 /*******************************************************************************
  * Code
@@ -278,128 +292,6 @@ void APP_FillFrameBuffer16(uint16_t frameBuffer[APP_IMG_HEIGHT][APP_IMG_WIDTH])
     }
 }
 
-/*!
- * @brief Main function
- */
-int main(void)
-{
-    //uint32_t frameBufferIndex = 0;
-
-    draw2d_interval_type interval;
-    float interval_dt, fps = 0, new_fps, ms = 0, new_ms, count = 0;
-    draw2d_rect_type rect;
-    char string[128];
-
-    BOARD_ConfigMPU();
-    BOARD_BootClockRUN();
-    BOARD_ResetDisplayMix();
-    BOARD_InitLpuartPins();
-    BOARD_InitMipiPanelPins();
-    BOARD_InitDebugConsole();
-    BOARD_InitLcdifClock();
-
-    draw2d_interval_init();
-    draw2d_interval_reset(&interval);
-
-    PRINTF("LCDIF RGB example start...\r\n");
-
-    APP_ELCDIF_Init();
-
-    BOARD_EnableLcdInterrupt();
-
-    /* Clear the frame buffer. */
-//    memset(s_frameBuffer, 0, sizeof(s_frameBuffer));
-#if PIXELFORMAT==32
-    std::fill(&s_frameBuffer[0][0][0], &s_frameBuffer[0][APP_IMG_HEIGHT][0], 0xFFFFFF00u);
-    std::fill(&s_frameBuffer[1][0][0], &s_frameBuffer[1][APP_IMG_HEIGHT][0], 0xFF00FFFFu);
-#elif PIXELFORMAT==16
-    std::fill(&s_frameBuffer[0][0][0], &s_frameBuffer[0][APP_IMG_HEIGHT][0], 0xFFE0);
-    std::fill(&s_frameBuffer[1][0][0], &s_frameBuffer[1][APP_IMG_HEIGHT][0], 0x07FF);
-#endif
-
-#if PIXELFORMAT==32
-    APP_FillFrameBuffer32(s_frameBuffer[frameBufferIndex]);
-#elif PIXELFORMAT==16
-    APP_FillFrameBuffer16(s_frameBuffer[frameBufferIndex]);
-#endif
-
-    ELCDIF_EnableInterrupts(APP_ELCDIF, kELCDIF_CurFrameDoneInterruptEnable);
-    ELCDIF_RgbModeStart(APP_ELCDIF);
-
-#if 0
-    while (1)
-    {
-        frameBufferIndex ^= 1U;
-
-#if PIXELFORMAT==32
-        APP_FillFrameBuffer32(s_frameBuffer[frameBufferIndex]);
-#elif PIXELFORMAT==16
-        APP_FillFrameBuffer16(s_frameBuffer[frameBufferIndex]);
-#endif
-
-        draw2d_interval_tick(&interval);
-        interval_dt = draw2d_interval_get_s(&interval);
-        if (interval_dt != 0)
-        {
-            new_fps = 1.f / interval_dt;
-            new_ms = interval_dt * 1000.f;
-            fps = (fps * count + new_fps) / (count + 1);
-            ms = (ms * count + new_ms) / (count + 1);
-            count++;
-        }
-        snprintf(string, sizeof(string), "%ix%i %ibpp\nfps %i\nms %i", APP_IMG_WIDTH, APP_IMG_HEIGHT, PIXELFORMAT, (int)fps, (int)ms);
-        rect.data = &s_frameBuffer[frameBufferIndex][0][0];
-        rect.height = APP_IMG_HEIGHT;
-        rect.width = APP_IMG_WIDTH;
-        rect.stride = APP_IMG_WIDTH;
-#if PIXELFORMAT==32
-        draw2d_draw_string_32(&rect, 0, 0, string, 0xFF808080);
-#elif PIXELFORMAT==16
-        draw2d_draw_string_16(&rect, 0, 0, string, 0x8410);
-#endif
-
-//        ELCDIF_SetNextBufferAddr(APP_ELCDIF, (uint32_t)s_frameBuffer[frameBufferIndex]);
-        APP_ELCDIF->NEXT_BUF = (uint32_t)s_frameBuffer[frameBufferIndex];
-        APP_ELCDIF->CUR_BUF = (uint32_t)s_frameBuffer[frameBufferIndex];
-
-//        s_frameDone = false;
-//        /* Wait for previous frame complete. */
-//        while (!s_frameDone)
-//        {
-//        }
-    }
-#endif
-
-    float tavg = 0.f;
-    for (int i = 0; i < 32; ++i)
-    {
-        uint32_t t0 = DWT->CYCCNT;
-
-        frameBufferIndex ^= 1U;
-
-        for (int i = 0; i < APP_IMG_WIDTH * APP_IMG_HEIGHT; ++i)
-            s_frameBuffer[frameBufferIndex][0][i] = 0;
-
-        ELCDIF_SetNextBufferAddr(APP_ELCDIF, (uint32_t)s_frameBuffer[frameBufferIndex]);
-
-        s_frameDone = false;
-        /* Wait for previous frame complete. */
-        while (!s_frameDone)
-        {
-        }
-
-        uint32_t t1 = DWT->CYCCNT;
-        uint32_t t = t1 - t0;
-        tavg = (tavg * (float)i + (float)t) / (float)(i + 1);
-    }
-    PRINTF("Display min time: %dus\r\n", (int)(tavg / SystemCoreClock * 1e6f));
-
-    extern void blib3d_demo();
-    blib3d_demo();
-
-    return 0;
-}
-
 void APP_MemToScreen(uint32_t* buffer, int width, int height)
 {
     frameBufferIndex ^= 1U;
@@ -524,4 +416,135 @@ void APP_SetFrameBuffer(uint32_t* buffer)
 //    while (!s_frameDone)
 //    {
 //    }
+}
+
+/*!
+ * @brief Main function
+ */
+int main(void)
+{
+    BOARD_ConfigMPU();
+    BOARD_BootClockRUN();
+    BOARD_ResetDisplayMix();
+    BOARD_InitLpuartPins();
+    BOARD_InitMipiPanelPins();
+    BOARD_InitDebugConsole();
+    BOARD_InitLcdifClock();
+
+    // Enable trace globally (required for DWT)
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    // Enable cycle counter
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
+    PRINTF("LCDIF RGB example start...\r\n");
+
+    APP_ELCDIF_Init();
+
+    BOARD_EnableLcdInterrupt();
+
+    /* Clear the frame buffer. */
+//    memset(s_frameBuffer, 0, sizeof(s_frameBuffer));
+#if PIXELFORMAT==32
+    std::fill(&s_frameBuffer[0][0][0], &s_frameBuffer[0][APP_IMG_HEIGHT][0], 0xFFFFFF00u);
+    std::fill(&s_frameBuffer[1][0][0], &s_frameBuffer[1][APP_IMG_HEIGHT][0], 0xFF00FFFFu);
+#elif PIXELFORMAT==16
+    std::fill(&s_frameBuffer[0][0][0], &s_frameBuffer[0][APP_IMG_HEIGHT][0], 0xFFE0);
+    std::fill(&s_frameBuffer[1][0][0], &s_frameBuffer[1][APP_IMG_HEIGHT][0], 0x07FF);
+#endif
+
+#if PIXELFORMAT==32
+    APP_FillFrameBuffer32(s_frameBuffer[frameBufferIndex]);
+#elif PIXELFORMAT==16
+    APP_FillFrameBuffer16(s_frameBuffer[frameBufferIndex]);
+#endif
+
+    ELCDIF_EnableInterrupts(APP_ELCDIF, kELCDIF_CurFrameDoneInterruptEnable);
+    ELCDIF_RgbModeStart(APP_ELCDIF);
+
+#if 0
+    while (1)
+    {
+        frameBufferIndex ^= 1U;
+
+#if PIXELFORMAT==32
+        APP_FillFrameBuffer32(s_frameBuffer[frameBufferIndex]);
+#elif PIXELFORMAT==16
+        APP_FillFrameBuffer16(s_frameBuffer[frameBufferIndex]);
+#endif
+
+        draw2d_interval_tick(&interval);
+        interval_dt = draw2d_interval_get_s(&interval);
+        if (interval_dt != 0)
+        {
+            new_fps = 1.f / interval_dt;
+            new_ms = interval_dt * 1000.f;
+            fps = (fps * count + new_fps) / (count + 1);
+            ms = (ms * count + new_ms) / (count + 1);
+            count++;
+        }
+        snprintf(string, sizeof(string), "%ix%i %ibpp\nfps %i\nms %i", APP_IMG_WIDTH, APP_IMG_HEIGHT, PIXELFORMAT, (int)fps, (int)ms);
+        rect.data = &s_frameBuffer[frameBufferIndex][0][0];
+        rect.height = APP_IMG_HEIGHT;
+        rect.width = APP_IMG_WIDTH;
+        rect.stride = APP_IMG_WIDTH;
+#if PIXELFORMAT==32
+        draw2d_draw_string_32(&rect, 0, 0, string, 0xFF808080);
+#elif PIXELFORMAT==16
+        draw2d_draw_string_16(&rect, 0, 0, string, 0x8410);
+#endif
+
+//        ELCDIF_SetNextBufferAddr(APP_ELCDIF, (uint32_t)s_frameBuffer[frameBufferIndex]);
+        APP_ELCDIF->NEXT_BUF = (uint32_t)s_frameBuffer[frameBufferIndex];
+        APP_ELCDIF->CUR_BUF = (uint32_t)s_frameBuffer[frameBufferIndex];
+
+//        s_frameDone = false;
+//        /* Wait for previous frame complete. */
+//        while (!s_frameDone)
+//        {
+//        }
+    }
+#endif
+
+    float tavg = 0.f;
+    for (int i = 0; i < 32; ++i)
+    {
+        uint32_t t0 = DWT->CYCCNT;
+
+        frameBufferIndex ^= 1U;
+
+        for (int i = 0; i < APP_IMG_WIDTH * APP_IMG_HEIGHT; ++i)
+            s_frameBuffer[frameBufferIndex][0][i] = 0;
+
+        ELCDIF_SetNextBufferAddr(APP_ELCDIF, (uint32_t)s_frameBuffer[frameBufferIndex]);
+
+        s_frameDone = false;
+        /* Wait for previous frame complete. */
+        while (!s_frameDone)
+        {
+        }
+
+        uint32_t t1 = DWT->CYCCNT;
+        uint32_t t = t1 - t0;
+        tavg = (tavg * (float)i + (float)t) / (float)(i + 1);
+    }
+    PRINTF("Display min time: %dus\r\n", (int)(tavg / SystemCoreClock * 1e6f));
+
+    demo::setup(SCREEN_WIDTH, SCREEN_HEIGHT, true);
+
+    while (1)
+    {
+    	demo::tick(0, 0, 0);
+
+    	demo::draw(&frame_texture[0][0], &depth_buffer[0][0], SCREEN_WIDTH);
+
+    	APP_MemToScreen(&frame_texture[0][0], SCREEN_WIDTH, SCREEN_HEIGHT);
+//            extern void APP_SetFrameBuffer(uint32_t* buffer);
+//            APP_SetFrameBuffer(pixels);
+
+//    	frameBufferIndex ^= 1U;
+//    	demo::draw(&s_frameBuffer[frameBufferIndex][0][0], &depth_buffer[0][0], SCREEN_WIDTH);
+//        APP_ELCDIF->NEXT_BUF = (uint32_t)s_frameBuffer[frameBufferIndex];
+//        APP_ELCDIF->CUR_BUF = (uint32_t)s_frameBuffer[frameBufferIndex];
+    }
+    return 0;
 }

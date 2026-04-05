@@ -54,6 +54,7 @@ blib3d::math::mat3x3 camera_A
 };
 
 blib3d::timer::interval interval;
+blib3d::timer::profile profile;
 
 blib3d::raster::light lights[2];
 
@@ -159,12 +160,19 @@ float fps{};
 float fps_count{};
 float ms{};
 
+uint32_t profile_us;
+float profile_fps{};
+float profile_fps_count{};
+float profile_ms{};
+
 char string[128];
 
 void tick(uint32_t controller, int32_t dx, int32_t dy)
 {
     float dt{ interval.get_s() };
     interval.tick();
+
+    profile.start();
 
     if (controller & (1 << CONTROLLER_RESET))
     {
@@ -232,6 +240,28 @@ void tick(uint32_t controller, int32_t dx, int32_t dy)
         renderer.set_geometry_transform(mat_pre);
     }
 
+    rect_light_angle += rect_light_angle_speed * dt;
+    float rect_light_x{ std::cos(rect_light_angle) * 0.25f + 0.5f };
+    float rect_light_y{ std::sin(rect_light_angle) * -0.25f + 0.5f };
+    rect_model_tick(rect_light_x, rect_light_y);
+
+    if (text_model_angle > +(blib3d::math::pi / 2.f))
+    {
+    	text_model_angle = +(blib3d::math::pi / 2.f);
+    	text_model_angle_speed = -text_model_angle_speed;
+    }
+    if (text_model_angle < -(blib3d::math::pi / 2.f))
+    {
+    	text_model_angle = -(blib3d::math::pi / 2.f);
+    	text_model_angle_speed = -text_model_angle_speed;
+    }
+    text_model_angle += text_model_angle_speed * dt;
+    if (text_model_angle >= blib3d::math::pi)
+    	text_model_angle -= (blib3d::math::pi * 2.f);
+    if (text_model_angle < -blib3d::math::pi)
+    	text_model_angle += (blib3d::math::pi * 2.f);
+    text_model_tick(text_model_angle);
+
     if (dt != 0)
     {
         float new_fps{ 1.f / dt };
@@ -240,20 +270,27 @@ void tick(uint32_t controller, int32_t dx, int32_t dy)
         ms = (ms * fps_count + new_ms) / (fps_count + 1);
         fps_count++;
     }
+    if (profile_us != 0)
+    {
+        float new_fps{ 1e6f / (float)profile_us };
+        float new_ms{ (float)profile_us / 1000.f };
+        profile_fps = (profile_fps * profile_fps_count + new_fps) / (profile_fps_count + 1);
+        profile_ms = (profile_ms * profile_fps_count + new_ms) / (profile_fps_count + 1);
+        profile_fps_count++;
+    }
 
-    rect_light_angle += rect_light_angle_speed * dt;
-    float rect_light_x{ std::cos(rect_light_angle) * 0.25f + 0.5f };
-    float rect_light_y{ std::sin(rect_light_angle) * -0.25f + 0.5f };
-    rect_model_tick(rect_light_x, rect_light_y);
+    snprintf(string, sizeof(string), "%ix%i\nfps %i\nms %i\nprof fps %i\nprof ms %i",
+		screen_width, screen_height,
+		(int)fps, (int)ms,
+		(int)profile_fps, (int)profile_ms);
 
-    text_model_angle += text_model_angle_speed * dt;
-    text_model_tick(text_model_angle);
-
-    snprintf(string, sizeof(string), "%ix%i\nfps %i\nms %i", screen_width, screen_height, (int)fps, (int)ms);
+    profile.stop();
 }
 
 void draw(uint32_t* pixels, float* zbuffer, int32_t stride)
 {
+	profile.start();
+
     draw2d_rect<uint32_t> rect;
     rect.data = (uint32_t*)pixels;
     rect.height = screen_height;
@@ -270,9 +307,13 @@ void draw(uint32_t* pixels, float* zbuffer, int32_t stride)
 
     text_model_draw(renderer);    
 
-    draw2d_draw_string(&rect, 0, 0, string, 0xFF888888);
+    draw2d_draw_string<uint32_t>(&rect, 0, 0, string, 0xFF888888);
 
     renderer.render_end();
+
+    profile.stop();
+    profile.update();
+    profile_us = profile.max();
 }
 
 } // namespace demo

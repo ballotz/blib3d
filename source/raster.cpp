@@ -58,7 +58,7 @@ void batch_draw_wireframe(const config* c)
             if (std::abs(dx) <= std::abs(dy))
             {
                 float slope{ dx / dy };
-                int32_t y{ math::max(0, real_to_raster(y0)) };
+                int32_t y{ math::max((int32_t)0, real_to_raster(y0)) };
                 int32_t yend{ math::min(frame_height, real_to_raster(y1)) };
                 float xf{ x0 + ((float)y - y0) * slope };
                 for (; y < yend; ++y)
@@ -72,7 +72,7 @@ void batch_draw_wireframe(const config* c)
             else
             {
                 float slope{ dy / dx };
-                int32_t x{ math::max(0, real_to_raster(x0)) };
+                int32_t x{ math::max((int32_t)0, real_to_raster(x0)) };
                 int32_t xend{ math::min(frame_width, real_to_raster(x1)) };
                 float yf{ y0 + ((float)x - x0) * slope };
                 if (x0 <= x1)

@@ -6,14 +6,17 @@ namespace demo
 {
 
 static constexpr int vert_stride{ 12 };
+
+static constexpr int max_num_vertices{ 3072 };
 static int num_vertices{};
-static float vertex_data[4096][vert_stride];
+static float vertex_data[max_num_vertices][vert_stride];
 
+static constexpr int max_num_faces{ 768 };
 static int num_faces{};
-static blib3d::render::face faces[1024];
+static blib3d::render::face faces[max_num_faces];
 
-static float vertex_data_transformed[4096][vert_stride];
-static blib3d::raster::ARGB lightmap[1024][4];
+static float vertex_data_transformed[max_num_vertices][vert_stride];
+static blib3d::raster::ARGB lightmap[max_num_faces][4];
 
 extern void surface_normal(float* vertices, int32_t vert_stride, int32_t vert_count, blib3d::math::vec3 normal);
 
@@ -31,8 +34,8 @@ void text_model_setup(float step, float depth)
     rect.height = image_h;
     rect.width = image_w;
     rect.stride = image_w;
-    draw2d_fill(&rect, 0u);
-    draw2d_draw_string(&rect, 0, 0, str, 1u);
+    draw2d_fill<uint32_t>(&rect, 0u);
+    draw2d_draw_string<uint32_t>(&rect, 0, 0, str, 1u);
     num_vertices = 0;
     num_faces = 0;
     float x_offset{ -step * image_w / 2 };
@@ -267,6 +270,9 @@ void text_model_setup(float step, float depth)
         blib3d::math::copy3(&vertex_data[v + 2][9], normal);
         blib3d::math::copy3(&vertex_data[v + 3][9], normal);
     }
+
+    assert(num_vertices <= max_num_vertices);
+    assert(num_faces <= max_num_faces);
 }
 
 void text_model_tick(float angle)
