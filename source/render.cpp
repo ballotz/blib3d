@@ -211,6 +211,7 @@ renderer::renderer()
     raster_config.vertex_count_data = raster_vertex_count_buffer;
     raster_config.vertex_data = raster_geometry_buffer;
     raster_config.back_cull = true;
+    raster_config.light_table = &gamma_table;
     gamma_set(1.f);
 }
 
@@ -238,7 +239,6 @@ void renderer::set_frame_data(
     raster_config.frame_stride = frame_stride;
     raster_config.depth_buffer = frame_depth;
     raster_config.frame_buffer = frame_data;
-    raster_config.light_table = &gamma_table;
 
     occlusion_config.frame_width = width;
     occlusion_config.frame_height = height;
