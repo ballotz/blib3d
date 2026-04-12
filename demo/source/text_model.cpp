@@ -2,6 +2,8 @@
 #include "draw2d.hpp"
 #include "brick.h"
 
+#define VERTEX_SHADE
+
 namespace demo
 {
 
@@ -323,7 +325,7 @@ void text_model_tick(float angle)
             blib3d::math::sub3(v1, vertex_data[vert_index + 2], vertex_data[vert_index + 0]);
             blib3d::math::cross3(normal, v0, v1);
             blib3d::math::mul3(normal, blib3d::math::invsqrt(blib3d::math::dot3(normal, normal)));
-#if 0
+#if defined(VERTEX_SHADE)
             for (uint32_t nv{}; nv < f.count; ++nv)
             {
                 float* v{ vertex_data[vert_index + nv] };
@@ -429,11 +431,15 @@ void text_model_draw(blib3d::render::renderer& renderer)
     renderer.set_shade_lightmap(2, 2 * 1024, (blib3d::raster::ARGB*)lightmap);
 
     renderer.set_fill_type(blib3d::render::renderer::FILL_SOLID);
+    //renderer.set_fill_type(blib3d::render::renderer::FILL_VERTEX);
     //renderer.set_fill_type(blib3d::render::renderer::FILL_TEXTURE);
 
-    //renderer.set_shade_type(blib3d::render::renderer::SHADE_NONE);
-    //renderer.set_shade_type(blib3d::render::renderer::SHADE_VERTEX);
+#if defined(VERTEX_SHADE)
+    renderer.set_shade_type(blib3d::render::renderer::SHADE_VERTEX);
+#else
     renderer.set_shade_type(blib3d::render::renderer::SHADE_LIGHTMAP);
+#endif
+    //renderer.set_shade_type(blib3d::render::renderer::SHADE_NONE);
     //renderer.set_shade_type(blib3d::render::renderer::SHADE_LIGHT);
 
     renderer.set_blend_type(blib3d::render::renderer::BLEND_NONE);
@@ -441,7 +447,8 @@ void text_model_draw(blib3d::render::renderer& renderer)
     //renderer.set_blend_type(blib3d::render::renderer::BLEND_MUL);
     //renderer.set_blend_type(blib3d::render::renderer::BLEND_ALPHA);
 
-    renderer.set_filter_type(blib3d::render::renderer::FILTER_LINEAR);
+    renderer.set_filter_type(blib3d::render::renderer::FILTER_NONE);
+    //renderer.set_filter_type(blib3d::render::renderer::FILTER_LINEAR);
 
     renderer.render_draw();
 }

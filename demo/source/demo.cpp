@@ -160,7 +160,7 @@ float fps{};
 float fps_count{};
 float ms{};
 
-uint32_t profile_us;
+uint32_t profile_us{};
 float profile_fps{};
 float profile_fps_count{};
 float profile_ms{};
@@ -303,9 +303,10 @@ void draw(uint32_t* pixels, float* zbuffer, int32_t stride)
     renderer.render_clear_frame();
     renderer.render_clear_depth();
 
+    text_model_draw(renderer);
+
     rect_model_draw(renderer);
 
-    text_model_draw(renderer);    
 
     draw2d_draw_string<uint32_t>(&rect, 0, 0, string, 0xFF888888);
 
@@ -314,6 +315,7 @@ void draw(uint32_t* pixels, float* zbuffer, int32_t stride)
     profile.stop();
     profile.update();
     profile_us = profile.max();
+    profile.reset();
 }
 
 } // namespace demo

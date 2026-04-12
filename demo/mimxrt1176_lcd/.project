@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>MIMXRT1176_LCD_Test</name>
+	<name>mimxrt1176_lcd</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -71,6 +71,11 @@
 			<name>blib3d/raster_interp.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/raster_interp.hpp</locationURI>
+		</link>
+		<link>
+			<name>blib3d/raster_light.hpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/source/raster_light.hpp</locationURI>
 		</link>
 		<link>
 			<name>blib3d/render.cpp</name>
@@ -168,4 +173,14 @@
 			<locationURI>PARENT-1-PROJECT_LOC/source/triangle.hpp</locationURI>
 		</link>
 	</linkedResources>
+	<variableList>
+		<variable>
+			<name>copy_PARENT</name>
+			<value>$%7BPARENT-3-PROJECT_LOC%7D</value>
+		</variable>
+		<variable>
+			<name>copy_PARENT1</name>
+			<value>$%7Bcopy_PARENT%7D/demo</value>
+		</variable>
+	</variableList>
 </projectDescription>

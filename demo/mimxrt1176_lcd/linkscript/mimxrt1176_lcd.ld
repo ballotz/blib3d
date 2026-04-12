@@ -205,6 +205,9 @@ SECTIONS
         FILL(0xff)
         PROVIDE(__start_text_RAM2 = .) ;
         PROVIDE(__start_text_NCACHE_REGION = .) ;
+        *(.ramfunc.$RAM2)
+        *(.ramfunc.$NCACHE_REGION)
+        *(NonCacheable.init)
         *(.text.$RAM2)
         *(.text.$NCACHE_REGION)
         *(.text.$RAM2.*)
@@ -221,10 +224,17 @@ SECTIONS
         FILL(0xff)
         PROVIDE(__start_text_RAM3 = .) ;
         PROVIDE(__start_text_SRAM_DTC_cm7 = .) ;
+        *(.ramfunc.$RAM3)
+        *(.ramfunc.$SRAM_DTC_cm7)
         *(.text.$RAM3)
         *(.text.$SRAM_DTC_cm7)
         *(.text.$RAM3.*)
-        *(.text.$SRAM_DTC_cm7.*)       
+        *(.text.$SRAM_DTC_cm7.*)
+        
+        *(.rodata.brick_lut)
+        *(.rodata.brick_width)
+        *(.rodata.brick_height)
+        
         . = ALIGN(4) ;
         PROVIDE(__end_text_RAM3 = .) ;
         PROVIDE(__end_text_SRAM_DTC_cm7 = .) ;
@@ -237,16 +247,14 @@ SECTIONS
         FILL(0xff)
         PROVIDE(__start_text_RAM4 = .) ;
         PROVIDE(__start_text_SRAM_ITC_cm7 = .) ;
+        *(.ramfunc.$RAM4)
+        *(.ramfunc.$SRAM_ITC_cm7)
         *(.text.$RAM4)
         *(.text.$SRAM_ITC_cm7)
         *(.text.$RAM4.*)
         *(.text.$SRAM_ITC_cm7.*)
         
-        *elcdif_rgb*(*.text *.text.*)
-        *elcdif_rgb*(*.rodata *.rodata.*)
-        
-        *blib3d*(*.text *.text.*)
-        *blib3d*(*.rodata *.rodata.*)
+        *(.rodata.brick_data)
         
         . = ALIGN(4) ;
         PROVIDE(__end_text_RAM4 = .) ;
@@ -260,11 +268,20 @@ SECTIONS
         FILL(0xff)
         PROVIDE(__text_data_RAM5 = .) ;
         PROVIDE(__text_data_SRAM_OC = .) ;
+        *(.ramfunc.$RAM5)
+        *(.ramfunc.$SRAM_OC)
         *(.text.$RAM5)
         *(.text.$SRAM_OC)
         *(.text.$RAM5.*)
         *(.text.$SRAM_OC.*)
+        *(.ramfunc*)
+        *(RamFunction)
+        KEEP(*(CodeQuickAccess))
         
+        *elcdif_rgb*(*.text *.text.*)
+        *elcdif_rgb*(*.rodata *.rodata.*)
+        *blib3d*(*.text *.text.*)
+        *blib3d*(*.rodata *.rodata.*)
         *demo*(*.text *.text.*)
         *demo*(*.rodata *.rodata.*)
         
@@ -292,9 +309,6 @@ SECTIONS
         FILL(0xff)
         PROVIDE(__start_data_RAM2 = .) ;
         PROVIDE(__start_data_NCACHE_REGION = .) ;
-        *(.ramfunc.$RAM2)
-        *(.ramfunc.$NCACHE_REGION)
-        *(NonCacheable.init)
         *(.data.$RAM2)
         *(.data.$NCACHE_REGION)
         *(.data.$RAM2.*)
@@ -311,8 +325,6 @@ SECTIONS
         FILL(0xff)
         PROVIDE(__start_data_RAM3 = .) ;
         PROVIDE(__start_data_SRAM_DTC_cm7 = .) ;
-        *(.ramfunc.$RAM3)
-        *(.ramfunc.$SRAM_DTC_cm7)
         *(.data.$RAM3)
         *(.data.$SRAM_DTC_cm7)
         *(.data.$RAM3.*)
@@ -332,9 +344,6 @@ SECTIONS
         FILL(0xff)
         PROVIDE(__start_data_RAM4 = .) ;
         PROVIDE(__start_data_SRAM_ITC_cm7 = .) ;
-        *(.ramfunc.$RAM4)
-        *(.ramfunc.$SRAM_ITC_cm7)
-        KEEP(*(CodeQuickAccess))
         *(.data.$RAM4)
         *(.data.$SRAM_ITC_cm7)
         *(.data.$RAM4.*)
@@ -351,12 +360,12 @@ SECTIONS
         FILL(0xff)
         PROVIDE(__start_data_RAM5 = .) ;
         PROVIDE(__start_data_SRAM_OC = .) ;
-        *(.ramfunc.$RAM5)
-        *(.ramfunc.$SRAM_OC)
         *(.data.$RAM5)
         *(.data.$SRAM_OC)
         *(.data.$RAM5.*)
         *(.data.$SRAM_OC.*)
+        *(vtable)
+        KEEP(*(DataQuickAccess))
         
         *demo*(*.data *.data.*)
         
@@ -381,11 +390,6 @@ SECTIONS
        _data = . ;
        PROVIDE(__start_data_RAM = .) ;
        PROVIDE(__start_data_BOARD_SDRAM = .) ;
-       *(vtable)
-       *(.ramfunc*)
-       KEEP(*(CodeQuickAccess))
-       KEEP(*(DataQuickAccess))
-       *(RamFunction)
        *(.data*)
        . = ALIGN(4) ;
        _edata = . ;

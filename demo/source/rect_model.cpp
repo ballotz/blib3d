@@ -99,6 +99,7 @@ void rect_model_draw(blib3d::render::renderer& renderer)
     //renderer.set_blend_type(blib3d::render::renderer::BLEND_MUL);
     //renderer.set_blend_type(blib3d::render::renderer::BLEND_ALPHA);
 
+    renderer.set_filter_type(blib3d::render::renderer::FILTER_NONE);
     //renderer.set_filter_type(blib3d::render::renderer::FILTER_LINEAR);
 
     renderer.render_draw();

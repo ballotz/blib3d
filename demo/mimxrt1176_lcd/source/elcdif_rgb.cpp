@@ -35,8 +35,8 @@
  * Variables
  ******************************************************************************/
 
-//#define PIXELFORMAT 32
-#define PIXELFORMAT 16
+#define PIXELFORMAT 32
+//#define PIXELFORMAT 16
 
 #if PIXELFORMAT==32
 typedef uint32_t frame_buffer_type;
@@ -49,7 +49,7 @@ static volatile bool s_frameDone = false;
 //AT_NONCACHEABLE_SECTION_ALIGN(static frame_buffer_type s_frameBuffer[2][APP_IMG_HEIGHT][APP_IMG_WIDTH], FRAME_BUFFER_ALIGN);
 
 [[gnu::section(".bss.$BOARD_SDRAM")]]
-static frame_buffer_type alignas(FRAME_BUFFER_ALIGN) s_frameBuffer[2][APP_IMG_HEIGHT][APP_IMG_WIDTH];
+static frame_buffer_type s_frameBuffer[2][APP_IMG_HEIGHT][APP_IMG_WIDTH] alignas(FRAME_BUFFER_ALIGN);
 
 uint32_t frameBufferIndex = 0;
 
@@ -537,12 +537,12 @@ int main(void)
 
     	demo::draw(&frame_texture[0][0], &depth_buffer[0][0], SCREEN_WIDTH);
 
-    	APP_MemToScreen(&frame_texture[0][0], SCREEN_WIDTH, SCREEN_HEIGHT);
-//            extern void APP_SetFrameBuffer(uint32_t* buffer);
-//            APP_SetFrameBuffer(pixels);
+        APP_MemToScreen(&frame_texture[0][0], SCREEN_WIDTH, SCREEN_HEIGHT);
+//      APP_SetFrameBuffer(pixels);
 
-//    	frameBufferIndex ^= 1U;
-//    	demo::draw(&s_frameBuffer[frameBufferIndex][0][0], &depth_buffer[0][0], SCREEN_WIDTH);
+//        frameBufferIndex ^= 1U;
+//        demo::draw(&s_frameBuffer[frameBufferIndex][0][0], &depth_buffer[0][0], SCREEN_WIDTH);
+//        SCB_CleanDCache_by_Addr(&s_frameBuffer[frameBufferIndex][0][0], SCREEN_WIDTH*SCREEN_HEIGHT*sizeof(uint32_t));
 //        APP_ELCDIF->NEXT_BUF = (uint32_t)s_frameBuffer[frameBufferIndex];
 //        APP_ELCDIF->CUR_BUF = (uint32_t)s_frameBuffer[frameBufferIndex];
     }
