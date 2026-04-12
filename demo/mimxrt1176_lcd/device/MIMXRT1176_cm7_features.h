@@ -1,13 +1,13 @@
 /*
 ** ###################################################################
 **     Version:             rev. 1.0, 2020-12-29
-**     Build:               b230419
+**     Build:               b240428
 **
 **     Abstract:
 **         Chip specific module features.
 **
 **     Copyright 2016 Freescale Semiconductor, Inc.
-**     Copyright 2016-2023 NXP
+**     Copyright 2016-2024 NXP
 **     SPDX-License-Identifier: BSD-3-Clause
 **
 **     http:                 www.nxp.com
@@ -229,7 +229,7 @@
 
 /* CDOG module features */
 
-/* @brief SOC has no reset driver. */
+/* @brief CDOG Has No Reset */
 #define FSL_FEATURE_CDOG_HAS_NO_RESET (1)
 
 /* IGPIO module features */
@@ -249,6 +249,8 @@
 #define FSL_FEATURE_ACMP_HAS_C0_LINKEN_BIT (1)
 /* @brief Has C0 OFFSET Bit */
 #define FSL_FEATURE_ACMP_HAS_C0_OFFSET_BIT (0)
+/* @brief Has C0 HYSTCTR Bit */
+#define FSL_FEATURE_ACMP_HAS_C0_HYSTCTR_BIT (1)
 /* @brief Has C1 INPSEL Bit */
 #define FSL_FEATURE_ACMP_HAS_C1_INPSEL_BIT (0)
 /* @brief Has C1 INNSEL Bit */
@@ -339,7 +341,7 @@
 /* @brief Has register POSDPERBFR, POSDPERH, or POSDPER. */
 #define FSL_FEATURE_ENC_HAS_POSDPER (1)
 /* @brief Has bitfiled FILT[FILT_PRSC]. */
-#define FSL_FEATURE_ENC_HAS_FILT_PRSC (1)
+#define FSL_FEATURE_ENC_HAS_FILT_PRSC (0)
 
 /* ENET module features */
 
@@ -454,10 +456,30 @@
 #define FSL_FEATURE_FLEXSPI_HAS_NO_AHB_PARALLEL_MODE (0)
 /* @brief FLEXSPI support address shift. */
 #define FSL_FEATURE_FLEXSPI_SUPPORT_ADDRESS_SHIFT (0)
+/* @brief FlexSPI has no MCR0 ARDFEN bit */
+#define FSL_FEATURE_FLEXSPI_HAS_NO_MCR0_ARDFEN (0)
+/* @brief FlexSPI has no MCR0 ATDFEN bit */
+#define FSL_FEATURE_FLEXSPI_HAS_NO_MCR0_ATDFEN (0)
+/* @brief FlexSPI has no STS0 DATALEARNPHASEB bit */
+#define FSL_FEATURE_FLEXSPI_HAS_NO_STS0_DATALEARNPHASEB (1)
+/* @brief FlexSPI AHB RX buffer size (byte) */
+#define FSL_FEATURE_FLEXSPI_AHB_RX_BUFFER_SIZEn(x) (4096)
 
 /* GPC_CPU_CTRL module features */
 
 /* No feature definitions */
+
+/* GPT module features */
+
+/* @brief Is affected by errata with ID 3777. */
+#define FSL_FEATURE_GPT_HAS_ERRATA_3777 (1)
+
+/* IEE module features */
+
+/* @brief SOC support ele provided. */
+#define FSL_FEATURE_IEE_ELE_PROVISIONED_KEY (0)
+/* @brief iee apc use GPR. */
+#define FSL_FEATURE_IEE_APC_USE_GPR (1)
 
 /* KEY_MANAGER module features */
 
@@ -508,6 +530,8 @@
 #define FSL_FEATURE_LPADC_HAS_CMDL_CTYPE (0)
 /* @brief Has conversion resolution select  (bitfield CMDLn[MODE]). */
 #define FSL_FEATURE_LPADC_HAS_CMDL_MODE (0)
+/* @brief Has compare function enable (bitfield CMDHn[CMPEN]). */
+#define FSL_FEATURE_LPADC_HAS_CMDH_CMPEN (1)
 /* @brief Has Wait for trigger assertion before execution (bitfield CMDHn[WAIT_TRIG]). */
 #define FSL_FEATURE_LPADC_HAS_CMDH_WAIT_TRIG (0)
 /* @brief Has offset calibration (bitfield CTRL[CALOFS]). */
@@ -524,6 +548,8 @@
 #define FSL_FEATURE_LPADC_HAS_CFG_CALOFS (0)
 /* @brief Has offset trim (register OFSTRIM). */
 #define FSL_FEATURE_LPADC_HAS_OFSTRIM (0)
+/* @brief Has Trigger status register. */
+#define FSL_FEATURE_LPADC_HAS_TSTAT (0)
 /* @brief Has power select (bitfield CFG[PWRSEL]). */
 #define FSL_FEATURE_LPADC_HAS_CFG_PWRSEL (1)
 /* @brief Has alternate channel B scale (bitfield CMDLn[ALTB_CSCALE]). */
@@ -538,6 +564,28 @@
 #define FSL_FEATURE_LPADC_CONVERSIONS_AVERAGED_BITFIELD_WIDTH (3)
 /* @brief Enable hardware trigger command selection */
 #define FSL_FEATURE_LPADC_HAS_TCTRL_CMD_SEL (1)
+/* @brief Has B side channels. */
+#define FSL_FEATURE_LPADC_HAS_B_SIDE_CHANNELS (1)
+/* @brief Indicate whether the LPADC STAT register has trigger exception interrupt function (bitfield STAT[TEXC_INT]). */
+#define FSL_FEATURE_LPADC_HAS_STAT_TEXC_INT (0)
+/* @brief Indicate whether the LPADC STAT register has trigger completion interrupt function (bitfield STAT[TCOMP_INT]). */
+#define FSL_FEATURE_LPADC_HAS_STAT_TCOMP_INT (0)
+/* @brief Indicate whether the LPADC STAT register has calibration ready function (bitfield STAT[CAL_RDY]). */
+#define FSL_FEATURE_LPADC_HAS_STAT_CAL_RDY (0)
+/* @brief Indicate whether the LPADC STAT register has ADC active function (bitfield STAT[ADC_ACTIVE]). */
+#define FSL_FEATURE_LPADC_HAS_STAT_ADC_ACTIVE (1)
+/* @brief Indicate whether the LPADC IE register has trigger exception interrupt enable function (bitfield IE[TEXC_IE]). */
+#define FSL_FEATURE_LPADC_HAS_IE_TEXC_IE (0)
+/* @brief Indicate whether the LPADC IE register has trigger completion interrupt enable function (bitfield IE[TCOMP_IE]). */
+#define FSL_FEATURE_LPADC_HAS_IE_TCOMP_IE (0)
+/* @brief Indicate whether the LPADC CFG register has trigger resume/restart enable function (bitfield CFG[TRES]). */
+#define FSL_FEATURE_LPADC_HAS_CFG_TRES (0)
+/* @brief Indicate whether the LPADC CFG register has trigger command resume/restart enable function (bitfield CFG[TCMDRES]). */
+#define FSL_FEATURE_LPADC_HAS_CFG_TCMDRES (0)
+/* @brief Indicate whether the LPADC CFG register has high priority trigger exception disable function (bitfield CFG[HPT_EXDI]). */
+#define FSL_FEATURE_LPADC_HAS_CFG_HPT_EXDI (0)
+/* @brief Indicate LPADC CFG register TPRICTRL bitfield width. */
+#define FSL_FEATURE_LPADC_CFG_TPRICTRL_BITFIELD_WIDTH (1)
 
 /* LPI2C module features */
 
@@ -554,6 +602,12 @@
 #define FSL_FEATURE_LPSPI_HAS_SEPARATE_DMA_RX_TX_REQn(x) (1)
 /* @brief Has CCR1 (related to existence of registers CCR1). */
 #define FSL_FEATURE_LPSPI_HAS_CCR1 (0)
+/* @brief Has no PCSCFG bit in CFGR1 register */
+#define FSL_FEATURE_LPSPI_HAS_NO_PCSCFG (0)
+/* @brief Has no WIDTH bits in TCR register */
+#define FSL_FEATURE_LPSPI_HAS_NO_MULTI_WIDTH (0)
+/* @brief Has ERRATA051472. */
+#define FSL_FEATURE_LPSPI_HAS_ERRATA_051472 (1)
 
 /* LPUART module features */
 
@@ -701,7 +755,11 @@
 /* @brief PDM Has No VADEF Bitfield In PDM VAD0_STAT Register */
 #define FSL_FEATURE_PDM_HAS_NO_VADEF (0)
 /* @brief PDM Has no FIR_RDY Bitfield In PDM STAT Register */
-#define FSL_FEATURE_PDM_HAS_NO_FIR_RDY (1)
+#define FSL_FEATURE_PDM_HAS_NO_FIR_RDY (0)
+/* @brief PDM Has no DOZEN Bitfield In PDM CTRL_1 Register */
+#define FSL_FEATURE_PDM_HAS_NO_DOZEN (0)
+/* @brief PDM Has DEC_BYPASS Bitfield In PDM CTRL_2 Register */
+#define FSL_FEATURE_PDM_HAS_DECIMATION_FILTER_BYPASS (0)
 
 /* PIT module features */
 
@@ -729,11 +787,21 @@
 /* @brief If (e)FlexPWM has mux trigger source select bit field. */
 #define FSL_FEATURE_PWM_HAS_MUX_TRIGGER_SOURCE_SEL (1)
 /* @brief Number of submodules in each (e)FlexPWM module. */
-#define FSL_FEATURE_PWM_SUBMODULE_COUNT (4U)
+#define FSL_FEATURE_PWM_SUBMODULE_COUNT (4)
 /* @brief Number of fault channel in each (e)FlexPWM module. */
 #define FSL_FEATURE_PWM_FAULT_CH_COUNT (1)
 /* @brief (e)FlexPWM has no WAITEN Bitfield In CTRL2 Register. */
 #define FSL_FEATURE_PWM_HAS_NO_WAITEN (1)
+/* @brief If (e)FlexPWM has phase delay feature. */
+#define FSL_FEATURE_PWM_HAS_PHASE_DELAY (0)
+/* @brief If (e)FlexPWM has input filter capture feature. */
+#define FSL_FEATURE_PWM_HAS_INPUT_FILTER_CAPTURE (0)
+/* @brief If (e)FlexPWM has module capture functionality on A channels (inputs). */
+#define FSL_FEATURE_PWM_HAS_CAPTURE_ON_CHANNELA (1)
+/* @brief If (e)FlexPWM has module capture functionality on B channels (inputs). */
+#define FSL_FEATURE_PWM_HAS_CAPTURE_ON_CHANNELB (1)
+/* @brief If (e)FlexPWM has module capture functionality on X channels (inputs). */
+#define FSL_FEATURE_PWM_HAS_CAPTURE_ON_CHANNELX (1)
 
 /* PXP module features */
 
@@ -745,6 +813,12 @@
 #define FSL_FEATURE_PXP_HAS_NO_CSC2 (1)
 /* @brief PXP doesn't have LUT */
 #define FSL_FEATURE_PXP_HAS_NO_LUT (1)
+/* @brief PXP doesn't have PORTER_DUFF_CTR */
+#define FSL_FEATURE_PXP_HAS_NO_PORTER_DUFF_CTRL (0)
+/* @brief PXP 3.0 version */
+#define FSL_FEATURE_PXP_V3 (0)
+/* @brief PXP doesn't have ROT_POS */
+#define FSL_FEATURE_PXP_HAS_NO_ROT_POS (1)
 
 /* RTWDOG module features */
 
@@ -779,6 +853,8 @@
 #define FSL_FEATURE_SAI_HAS_CLOCKING_MODE (0)
 /* @brief Has register for configuration of the MCLK divide ratio (register bit fields MDR[FRACT], MDR[DIVIDE]). */
 #define FSL_FEATURE_SAI_HAS_MCLKDIV_REGISTER (0)
+/* @brief Interrupt source number */
+#define FSL_FEATURE_SAI_INT_SOURCE_NUM (2)
 /* @brief Has register of MCR. */
 #define FSL_FEATURE_SAI_HAS_MCR (0)
 /* @brief Has bit field MICS of the MCR register. */
@@ -791,6 +867,8 @@
 #define FSL_FEATURE_SAI_HAS_MCR_MCLK_POST_DIV (0)
 /* @brief Support Channel Mode (register bit fields TCR4[CHMOD]). */
 #define FSL_FEATURE_SAI_HAS_CHANNEL_MODE (1)
+/* @brief Support synchronous with another SAI. */
+#define FSL_FEATURE_SAI_HAS_SYNC_WITH_ANOTHER_SAI (0)
 
 /* SEMC module features */
 
@@ -908,6 +986,8 @@
 #define FSL_FEATURE_USDHC_REGISTER_HOST_CTRL_CAP_HAS_NO_RETUNING_TIME_COUNTER (1)
 /* @brief Has no VSELECT bit in VEND_SPEC register */
 #define FSL_FEATURE_USDHC_HAS_NO_VOLTAGE_SELECT (0)
+/* @brief Has no VS18 bit in HOST_CTRL_CAP register */
+#define FSL_FEATURE_USDHC_HAS_NO_VS18 (0)
 
 /* XBARA module features */
 
