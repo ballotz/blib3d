@@ -1,6 +1,7 @@
 #include "rect_model.hpp"
 #include "draw2d.hpp"
 #include "brick.h"
+#include <cassert>
 
 #define VERTEX_SHADE
 

@@ -280,10 +280,15 @@ SECTIONS
         
         *elcdif_rgb*(*.text *.text.*)
         *elcdif_rgb*(*.rodata *.rodata.*)
-        *blib3d*(*.text *.text.*)
-        *blib3d*(*.rodata *.rodata.*)
-        *demo*(*.text *.text.*)
-        *demo*(*.rodata *.rodata.*)
+
+        *blib3d/source*(*.text *.text.*)
+        *blib3d.a:*.o(*.text *.text.*)
+        *blib3d/source*(*.rodata *.rodata.*)
+        *blib3d.a:*.o(*.rodata *.rodata.*)
+        *demo/source*(*.text *.text.*)
+        *demo.a:*.o(*.text *.text.*)
+        *demo/source*(*.rodata *.rodata.*)
+        *demo.a:*.o(*.rodata *.rodata.*)
         
         . = ALIGN(4) ;
         PROVIDE(__end_text_RAM5 = .) ;
@@ -330,7 +335,8 @@ SECTIONS
         *(.data.$RAM3.*)
         *(.data.$SRAM_DTC_cm7.*)
         
-        *blib3d*(*.data *.data.*)
+        *blib3d/source*(*.data *.data.*)
+        *blib3d.a:*.o(*.data *.data.*)
         
         . = ALIGN(4) ;
         PROVIDE(__end_data_RAM3 = .) ;
@@ -367,7 +373,8 @@ SECTIONS
         *(vtable)
         KEEP(*(DataQuickAccess))
         
-        *demo*(*.data *.data.*)
+        *demo/source*(*.data *.data.*)
+        *demo.a:*.o(*.data *.data.*)
         
         . = ALIGN(4) ;
         PROVIDE(__end_data_RAM5 = .) ;
@@ -422,7 +429,8 @@ SECTIONS
        *(.bss.$RAM3.*)
        *(.bss.$SRAM_DTC_cm7.*)
        
-       *blib3d*(*.bss *.bss.*)
+       *blib3d/source*(*.bss *.bss.*)
+       *blib3d.a:*.o(*.bss *.bss.*)
        
        . = ALIGN (. != 0 ? 4 : 1) ; /* avoid empty segment */
        PROVIDE(__end_bss_RAM3 = .) ;
@@ -453,7 +461,8 @@ SECTIONS
        *(.bss.$RAM5.*)
        *(.bss.$SRAM_OC.*)
        
-       *demo*(*.bss *.bss.*)       
+       *demo/source*(*.bss *.bss.*)
+       *demo.a:*.o(*.bss *.bss.*)
        
        . = ALIGN (. != 0 ? 4 : 1) ; /* avoid empty segment */
        PROVIDE(__end_bss_RAM5 = .) ;
