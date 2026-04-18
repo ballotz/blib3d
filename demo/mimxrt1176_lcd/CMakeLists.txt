@@ -39,11 +39,13 @@ add_compile_options(
     -g3
 )
 
+set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/linkscript/mimxrt1176_lcd.ld)
+
 add_link_options(
     -nostdlib
     LINKER:--sort-section=alignment
     LINKER:--cref
-    -T ${CMAKE_CURRENT_SOURCE_DIR}/linkscript/mimxrt1176_lcd.ld
+    -T ${LINKER_SCRIPT}
 )
 
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
@@ -191,3 +193,5 @@ target_link_libraries(mimxrt1176_lcd PRIVATE
 # target_compile_definitions(mimxrt1176_lcd
 #     PRIVATE
 # )
+
+set_target_properties(mimxrt1176_lcd PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})

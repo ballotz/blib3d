@@ -456,6 +456,8 @@ SECTIONS
        *source/render*(*.bss *.bss.*)
        *source/timer*(*.bss *.bss.*)
        *source/view*(*.bss *.bss.*)
+
+       *(*.bss.*renderer*)
        
        . = ALIGN (. != 0 ? 4 : 1) ; /* avoid empty segment */
        PROVIDE(__end_bss_RAM3 = .) ;
