@@ -43,132 +43,142 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>blib3d/math.cpp</name>
+			<name>blib3d/source</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>demo/source</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>blib3d/source/math.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/math.cpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/math.hpp</name>
+			<name>blib3d/source/math.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/math.hpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/raster.cpp</name>
+			<name>blib3d/source/raster.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/raster.cpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/raster.hpp</name>
+			<name>blib3d/source/raster.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/raster.hpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/raster_fill.hpp</name>
+			<name>blib3d/source/raster_fill.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/raster_fill.hpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/raster_interp.hpp</name>
+			<name>blib3d/source/raster_interp.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/raster_interp.hpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/raster_light.hpp</name>
+			<name>blib3d/source/raster_light.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/raster_light.hpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/render.cpp</name>
+			<name>blib3d/source/render.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/render.cpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/render.hpp</name>
+			<name>blib3d/source/render.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/render.hpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/shared.hpp</name>
+			<name>blib3d/source/shared.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/shared.hpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/timer.cpp</name>
+			<name>blib3d/source/timer.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/timer.cpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/timer.hpp</name>
+			<name>blib3d/source/timer.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/timer.hpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/view.cpp</name>
+			<name>blib3d/source/view.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/view.cpp</locationURI>
 		</link>
 		<link>
-			<name>blib3d/view.hpp</name>
+			<name>blib3d/source/view.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/source/view.hpp</locationURI>
 		</link>
 		<link>
-			<name>demo/brick.c</name>
+			<name>demo/source/brick.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/brick.c</locationURI>
 		</link>
 		<link>
-			<name>demo/brick.h</name>
+			<name>demo/source/brick.h</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/brick.h</locationURI>
 		</link>
 		<link>
-			<name>demo/demo.cpp</name>
+			<name>demo/source/demo.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/demo.cpp</locationURI>
 		</link>
 		<link>
-			<name>demo/demo.hpp</name>
+			<name>demo/source/demo.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/demo.hpp</locationURI>
 		</link>
 		<link>
-			<name>demo/draw2d.cpp</name>
+			<name>demo/source/draw2d.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/draw2d.cpp</locationURI>
 		</link>
 		<link>
-			<name>demo/draw2d.hpp</name>
+			<name>demo/source/draw2d.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/draw2d.hpp</locationURI>
 		</link>
 		<link>
-			<name>demo/rect_model.cpp</name>
+			<name>demo/source/rect_model.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/rect_model.cpp</locationURI>
 		</link>
 		<link>
-			<name>demo/rect_model.hpp</name>
+			<name>demo/source/rect_model.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/rect_model.hpp</locationURI>
 		</link>
 		<link>
-			<name>demo/text_model.cpp</name>
+			<name>demo/source/text_model.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/text_model.cpp</locationURI>
 		</link>
 		<link>
-			<name>demo/text_model.hpp</name>
+			<name>demo/source/text_model.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/text_model.hpp</locationURI>
 		</link>
 		<link>
-			<name>demo/triangle.cpp</name>
+			<name>demo/source/triangle.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/triangle.cpp</locationURI>
 		</link>
 		<link>
-			<name>demo/triangle.hpp</name>
+			<name>demo/source/triangle.hpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/source/triangle.hpp</locationURI>
 		</link>

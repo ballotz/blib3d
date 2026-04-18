@@ -281,14 +281,29 @@ SECTIONS
         *elcdif_rgb*(*.text *.text.*)
         *elcdif_rgb*(*.rodata *.rodata.*)
 
-        *blib3d/source*(*.text *.text.*)
-        *blib3d.a:*.o(*.text *.text.*)
-        *blib3d/source*(*.rodata *.rodata.*)
-        *blib3d.a:*.o(*.rodata *.rodata.*)
-        *demo/source*(*.text *.text.*)
-        *demo.a:*.o(*.text *.text.*)
-        *demo/source*(*.rodata *.rodata.*)
-        *demo.a:*.o(*.rodata *.rodata.*)
+        *source/math*(*.text *.text.*)
+        *source/math*(*.rodata *.rodata.*)
+        *source/raster*(*.text *.text.*)
+        *source/raster*(*.rodata *.rodata.*)
+        *source/render*(*.text *.text.*)
+        *source/render*(*.rodata *.rodata.*)
+        *source/timer*(*.text *.text.*)
+        *source/timer*(*.rodata *.rodata.*)
+        *source/view*(*.text *.text.*)
+        *source/view*(*.rodata *.rodata.*)
+        
+        *source/brick*(*.text *.text.*)
+        *source/brick*(*.rodata *.rodata.*)
+        *source/demo*(*.text *.text.*)
+        *source/demo*(*.rodata *.rodata.*)
+        *source/draw2d*(*.text *.text.*)
+        *source/draw2d*(*.rodata *.rodata.*)
+        *source/rect_model*(*.text *.text.*)
+        *source/rect_model*(*.rodata *.rodata.*)
+        *source/text_model*(*.text *.text.*)
+        *source/text_model*(*.rodata *.rodata.*)
+        *source/triangle*(*.text *.text.*)
+        *source/triangle*(*.rodata *.rodata.*)
         
         . = ALIGN(4) ;
         PROVIDE(__end_text_RAM5 = .) ;
@@ -335,8 +350,11 @@ SECTIONS
         *(.data.$RAM3.*)
         *(.data.$SRAM_DTC_cm7.*)
         
-        *blib3d/source*(*.data *.data.*)
-        *blib3d.a:*.o(*.data *.data.*)
+        *source/math*(*.data *.data.*)
+        *source/raster*(*.data *.data.*)
+        *source/render*(*.data *.data.*)
+        *source/timer*(*.data *.data.*)
+        *source/view*(*.data *.data.*)
         
         . = ALIGN(4) ;
         PROVIDE(__end_data_RAM3 = .) ;
@@ -373,8 +391,12 @@ SECTIONS
         *(vtable)
         KEEP(*(DataQuickAccess))
         
-        *demo/source*(*.data *.data.*)
-        *demo.a:*.o(*.data *.data.*)
+        *source/brick*(*.data *.data.*)
+        *source/demo*(*.data *.data.*)
+        *source/draw2d*(*.data *.data.*)
+        *source/rect_model*(*.data *.data.*)
+        *source/text_model*(*.data *.data.*)
+        *source/triangle*(*.data *.data.*)
         
         . = ALIGN(4) ;
         PROVIDE(__end_data_RAM5 = .) ;
@@ -429,8 +451,11 @@ SECTIONS
        *(.bss.$RAM3.*)
        *(.bss.$SRAM_DTC_cm7.*)
        
-       *blib3d/source*(*.bss *.bss.*)
-       *blib3d.a:*.o(*.bss *.bss.*)
+       *source/math*(*.bss *.bss.*)
+       *source/raster*(*.bss *.bss.*)
+       *source/render*(*.bss *.bss.*)
+       *source/timer*(*.bss *.bss.*)
+       *source/view*(*.bss *.bss.*)
        
        . = ALIGN (. != 0 ? 4 : 1) ; /* avoid empty segment */
        PROVIDE(__end_bss_RAM3 = .) ;
@@ -461,8 +486,12 @@ SECTIONS
        *(.bss.$RAM5.*)
        *(.bss.$SRAM_OC.*)
        
-       *demo/source*(*.bss *.bss.*)
-       *demo.a:*.o(*.bss *.bss.*)
+       *source/brick*(*.bss *.bss.*)
+       *source/demo*(*.bss *.bss.*)
+       *source/draw2d*(*.bss *.bss.*)
+       *source/rect_model*(*.bss *.bss.*)
+       *source/text_model*(*.bss *.bss.*)
+       *source/triangle*(*.bss *.bss.*)
        
        . = ALIGN (. != 0 ? 4 : 1) ; /* avoid empty segment */
        PROVIDE(__end_bss_RAM5 = .) ;
