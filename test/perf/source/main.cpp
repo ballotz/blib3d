@@ -90,51 +90,51 @@ int main()
 
     struct log2floor
     {
-        force_inline static float reference(float x) { return std::floor(std::log2(x)); }
-        force_inline static float function(float x) { return math::log2floor(x); }
+        blib3d_force_inline static float reference(float x) { return std::floor(std::log2(x)); }
+        blib3d_force_inline static float function(float x) { return math::log2floor(x); }
     };
     test<log2floor>("log2floor");
 
     struct log2ceil
     {
-        force_inline static float reference(float x) { return std::ceil(std::log2(x)); }
-        force_inline static float function(float x) { return math::log2ceil(x); }
+        blib3d_force_inline static float reference(float x) { return std::ceil(std::log2(x)); }
+        blib3d_force_inline static float function(float x) { return math::log2ceil(x); }
     };
     test<log2ceil>("log2ceil");
 
     // round(log2(5792.617188)) = 12
     struct log2round
     {
-        force_inline static float reference(float x) { return std::round(std::log2(x)); }
-        force_inline static float function(float x) { return math::log2round(x); }
+        blib3d_force_inline static float reference(float x) { return std::round(std::log2(x)); }
+        blib3d_force_inline static float function(float x) { return math::log2round(x); }
     };
     test<log2round>("log2round");
 
     struct log2fast
     {
-        force_inline static float reference(float x) { return std::log2(x); }
-        force_inline static float function(float x) { return math::log2fast(x); }
+        blib3d_force_inline static float reference(float x) { return std::log2(x); }
+        blib3d_force_inline static float function(float x) { return math::log2fast(x); }
     };
     test<log2fast>("log2fast");
 
     // struct recipfast
     // {
-    //     force_inline static float reference(float x) { return 1.f / x; }
-    //     force_inline static float function(float x) { return math::recipfast(x); }
+    //     blib3d_force_inline static float reference(float x) { return 1.f / x; }
+    //     blib3d_force_inline static float function(float x) { return math::recipfast(x); }
     // };
     // test<recipfast>("recipfast");
 
     // struct sqrtfast
     // {
-    //     force_inline static float reference(float x) { return std::sqrt(x); }
-    //     force_inline static float function(float x) { return math::sqrtfast(x); }
+    //     blib3d_force_inline static float reference(float x) { return std::sqrt(x); }
+    //     blib3d_force_inline static float function(float x) { return math::sqrtfast(x); }
     // };
     // test<sqrtfast>("sqrtfast");
 
     // struct invsqrtfast
     // {
-    //     force_inline static float reference(float x) { return 1.f / std::sqrt(x); }
-    //     force_inline static float function(float x) { return math::invsqrtfast(x); }
+    //     blib3d_force_inline static float reference(float x) { return 1.f / std::sqrt(x); }
+    //     blib3d_force_inline static float function(float x) { return math::invsqrtfast(x); }
     // };
     // test<invsqrtfast>("invsqrtfast");
 
@@ -142,8 +142,8 @@ int main()
     // math::powfast_build_table(0.5f, sqrt_table);
     // struct sqrtpowfast
     // {
-    //     force_inline static float reference(float x) { return std::sqrt(x); }
-    //     force_inline static float function(float x) { return math::powfast(x, sqrt_table); }
+    //     blib3d_force_inline static float reference(float x) { return std::sqrt(x); }
+    //     blib3d_force_inline static float function(float x) { return math::powfast(x, sqrt_table); }
     // };
     // test<sqrtpowfast>("sqrtpowfast");
 
@@ -151,8 +151,8 @@ int main()
     // math::powfast_build_table(-0.5f, invsqrt_table);
     // struct invsqrtpowfast
     // {
-    //     force_inline static float reference(float x) { return 1.f / std::sqrt(x); }
-    //     force_inline static float function(float x) { return math::powfast(x, invsqrt_table); }
+    //     blib3d_force_inline static float reference(float x) { return 1.f / std::sqrt(x); }
+    //     blib3d_force_inline static float function(float x) { return math::powfast(x, invsqrt_table); }
     // };
     // test<invsqrtpowfast>("invsqrtpowfast");
 
@@ -160,36 +160,36 @@ int main()
     math::powfast_build_table(0.45f, gamma_table);
     struct gammapowfast
     {
-        force_inline static float reference(float x) { return std::pow(x, 0.45f); }
-        force_inline static float function(float x) { return math::powfast(x, gamma_table); }
+        blib3d_force_inline static float reference(float x) { return std::pow(x, 0.45f); }
+        blib3d_force_inline static float function(float x) { return math::powfast(x, gamma_table); }
     };
     test<gammapowfast>("gammapowfast");
 
     // struct recip
     // {
-    //     force_inline static float reference(float x) { return 1.f / x; }
-    //     force_inline static float function(float x) { return math::recip(x); }
+    //     blib3d_force_inline static float reference(float x) { return 1.f / x; }
+    //     blib3d_force_inline static float function(float x) { return math::recip(x); }
     // };
     // test<recip>("recip");
 
     // struct sqrt
     // {
-    //     force_inline static float reference(float x) { return std::sqrt(x); }
-    //     force_inline static float function(float x) { return math::sqrt(x); }
+    //     blib3d_force_inline static float reference(float x) { return std::sqrt(x); }
+    //     blib3d_force_inline static float function(float x) { return math::sqrt(x); }
     // };
     // test<sqrt>("sqrt");
 
     // struct log2
     // {
-    //     force_inline static float reference(float x) { return std::log2(x); }
-    //     force_inline static float function(float x) { return math::log2(x); }
+    //     blib3d_force_inline static float reference(float x) { return std::log2(x); }
+    //     blib3d_force_inline static float function(float x) { return math::log2(x); }
     // };
     // test<log2>("log2");
 
     // struct invsqrt
     // {
-    //     force_inline static float reference(float x) { return 1.f / std::sqrt(x); }
-    //     force_inline static float function(float x) { return math::invsqrt(x); }
+    //     blib3d_force_inline static float reference(float x) { return 1.f / std::sqrt(x); }
+    //     blib3d_force_inline static float function(float x) { return math::invsqrt(x); }
     // };
     // test<invsqrt>("invsqrt");
 }

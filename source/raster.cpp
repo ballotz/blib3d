@@ -13,12 +13,12 @@ namespace blib3d::raster
 
 //------------------------------------------------------------------------------
 
-force_inline int32_t real_to_raster(float v)
+blib3d_force_inline int32_t real_to_raster(float v)
 {
     return math::ceil(v - 0.5f);
 }
 
-force_inline float raster_to_real(int32_t v)
+blib3d_force_inline float raster_to_real(int32_t v)
 {
     return (float)v + 0.5f;
 }
@@ -172,13 +172,13 @@ void scan::scan_face(const float* v[], const int32_t vertex_count, const bool is
         float x;
         float dx_dy;
 
-        force_inline void setup(const float* v0, const float* v1, const float y0)
+        blib3d_force_inline void setup(const float* v0, const float* v1, const float y0)
         {
             dx_dy = (v1[0] - v0[0]) / (v1[1] - v0[1]);
             x = v0[0] + (y0 - v0[1]) * dx_dy;
         }
 
-        force_inline void advance()
+        blib3d_force_inline void advance()
         {
             x += dx_dy;
         }
@@ -186,7 +186,7 @@ void scan::scan_face(const float* v[], const int32_t vertex_count, const bool is
 
     struct util
     {
-        static force_inline int32_t wrap(const int32_t v, const int32_t last)
+        static blib3d_force_inline int32_t wrap(const int32_t v, const int32_t last)
         {
             if (v < 0)
                 return last;
@@ -283,7 +283,7 @@ constexpr int32_t span_block_size{ 16 };
 constexpr int32_t span_block_size_shift{ 4 };
 
 template<typename raster_type>
-force_inline void span_process_algo(int32_t y, int32_t x0, int32_t x1, raster_type* r)
+blib3d_force_inline void span_process_algo(int32_t y, int32_t x0, int32_t x1, raster_type* r)
 {
     //assert(x0 < x1);
     typename raster_type::span_data s;
@@ -300,7 +300,7 @@ force_inline void span_process_algo(int32_t y, int32_t x0, int32_t x1, raster_ty
 }
 
 //template<typename raster_type>
-//force_inline void span_process_algo(raster_type& raster, int32_t y, int32_t x0, int32_t x1)
+//blib3d_force_inline void span_process_algo(raster_type& raster, int32_t y, int32_t x0, int32_t x1)
 //{
 //    //assert(x0 < x1);
 //    raster.setup_span(y, x0);
@@ -403,7 +403,7 @@ struct raster_depth : public scan
         float* depth_addr;
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx = g[0].dx;
 
@@ -414,13 +414,13 @@ struct raster_depth : public scan
         s.depth_addr = &depth_buffer[frame_stride * y + x0];
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         s.depth = s.attrib;
         s.attrib += s.gdx * (float)count;
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         *s.depth_addr = math::min(*s.depth_addr, s.depth);
 
@@ -477,7 +477,7 @@ struct raster_solid_shade_none : public scan
         uint32_t* frame_addr;
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx = g[0].dx;
 
@@ -492,13 +492,13 @@ struct raster_solid_shade_none : public scan
         s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         s.depth = s.attrib;
         s.attrib += s.gdx * (float)count;
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -564,7 +564,7 @@ struct raster_solid_shade_vertex : public scan
         int32_t attrib_int_next[3]; // 16.16
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0] = g[0].dx;
         s.gdx[1] = g[1].dx;
@@ -594,7 +594,7 @@ struct raster_solid_shade_vertex : public scan
         s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -625,7 +625,7 @@ struct raster_solid_shade_vertex : public scan
         }
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -717,7 +717,7 @@ struct raster_solid_shade_lightmap : public scan
         uint32_t shade[3];
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0] = g[0].dx;
         s.gdx[1] = g[1].dx;
@@ -751,7 +751,7 @@ struct raster_solid_shade_lightmap : public scan
         s.shade_trigger = 1;
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -777,7 +777,7 @@ struct raster_solid_shade_lightmap : public scan
         }
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -882,7 +882,7 @@ struct raster_solid_shade_light : public scan
         uint32_t shade[3];
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0] = g[0].dx;
         s.gdx[1] = g[1].dx;
@@ -927,7 +927,7 @@ struct raster_solid_shade_light : public scan
         s.shade_trigger = 1;
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -961,7 +961,7 @@ struct raster_solid_shade_light : public scan
         s.attrib_int_dx[5] = (s.attrib_int_next[5] - s.attrib_int[5]) * scale;
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -1050,7 +1050,7 @@ struct raster_vertex_shade_none : public scan
         int32_t attrib_int_next[4]; // 16.16
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0] = g[0].dx;
         s.gdx[1] = g[1].dx;
@@ -1078,7 +1078,7 @@ struct raster_vertex_shade_none : public scan
         s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -1114,7 +1114,7 @@ struct raster_vertex_shade_none : public scan
         }
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -1184,7 +1184,7 @@ struct raster_vertex_shade_vertex : public scan
         int32_t attrib_int_next[7]; // 16.16
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0] = g[0].dx;
         s.gdx[1] = g[1].dx;
@@ -1221,7 +1221,7 @@ struct raster_vertex_shade_vertex : public scan
         s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -1272,7 +1272,7 @@ struct raster_vertex_shade_vertex : public scan
         }
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -1362,7 +1362,7 @@ struct raster_vertex_shade_lightmap : public scan
         uint32_t shade[3];
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0] = g[0].dx;
         s.gdx[1] = g[1].dx;
@@ -1404,7 +1404,7 @@ struct raster_vertex_shade_lightmap : public scan
         s.shade_trigger = 1;
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -1450,7 +1450,7 @@ struct raster_vertex_shade_lightmap : public scan
         }
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -1556,7 +1556,7 @@ struct raster_vertex_shade_light : public scan
         uint32_t shade[3];
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0x0] = g[0x0].dx;
         s.gdx[0x1] = g[0x1].dx;
@@ -1610,7 +1610,7 @@ struct raster_vertex_shade_light : public scan
         s.shade_trigger = 1;
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -1672,7 +1672,7 @@ struct raster_vertex_shade_light : public scan
         s.attrib_intf_dx[5] = (s.attrib_intf_next[5] - s.attrib_intf[5]) * scale;
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -1915,7 +1915,7 @@ struct raster_texture_shade_none : public scan
         int32_t attrib_int_next[2]; // 16.16
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0] = g[0].dx;
         s.gdx[1] = g[1].dx;
@@ -1943,7 +1943,7 @@ struct raster_texture_shade_none : public scan
         s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -1969,7 +1969,7 @@ struct raster_texture_shade_none : public scan
         }
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -2113,7 +2113,7 @@ struct raster_texture_shade_vertex : public scan
         int32_t attrib_int_next[5]; // 16.16
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0] = g[0].dx;
         s.gdx[1] = g[1].dx;
@@ -2150,7 +2150,7 @@ struct raster_texture_shade_vertex : public scan
         s.frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -2191,7 +2191,7 @@ struct raster_texture_shade_vertex : public scan
         }
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -2362,7 +2362,7 @@ struct raster_texture_shade_lightmap : public scan
         uint32_t shade[3];
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0] = g[0].dx;
         s.gdx[1] = g[1].dx;
@@ -2403,7 +2403,7 @@ struct raster_texture_shade_lightmap : public scan
         s.shade_trigger = 1;
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -2439,7 +2439,7 @@ struct raster_texture_shade_lightmap : public scan
         }
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -2626,7 +2626,7 @@ struct raster_texture_shade_light : public scan
         uint32_t shade[3];
     };
 
-    force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
+    blib3d_force_inline void setup_span(int32_t y, int32_t x0, span_data& s)
     {
         s.gdx[0] = g[0].dx;
         s.gdx[1] = g[1].dx;
@@ -2679,7 +2679,7 @@ struct raster_texture_shade_light : public scan
         s.shade_trigger = 1;
     }
 
-    force_inline static void setup_subspan(int32_t count, span_data& s)
+    blib3d_force_inline static void setup_subspan(int32_t count, span_data& s)
     {
         float count_float{ (float)count };
         s.depth = s.attrib[0];
@@ -2731,7 +2731,7 @@ struct raster_texture_shade_light : public scan
         s.attrib_intf_dx[5] = (s.attrib_intf_next[5] - s.attrib_intf[5]) * scale;
     }
 
-    force_inline static void fill(span_data& s)
+    blib3d_force_inline static void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {

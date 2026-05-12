@@ -5,7 +5,7 @@
 namespace blib3d::raster
 {
 
-force_inline uint32_t adds_X888(uint32_t v0, uint32_t v1)
+blib3d_force_inline uint32_t adds_X888(uint32_t v0, uint32_t v1)
 {
     uint32_t s{ v0 + v1 };
     uint32_t c{ (v0 ^ v1 ^ s) & 0x01010100u };
@@ -13,7 +13,7 @@ force_inline uint32_t adds_X888(uint32_t v0, uint32_t v1)
     return (s - c) | m;
 }
 
-force_inline uint32_t mul_X888(uint32_t v0, uint32_t v1)
+blib3d_force_inline uint32_t mul_X888(uint32_t v0, uint32_t v1)
 {
     uint32_t r0{ (v0 & 0x000000FFu) *  (v1 & 0x000000FFu)         };
     uint32_t r1{ (v0 & 0x0000FF00u) * ((v1 & 0x0000FF00u) >>  8u) };
@@ -21,7 +21,7 @@ force_inline uint32_t mul_X888(uint32_t v0, uint32_t v1)
     return ((r0 + (r1 & 0x00FF0000u) + (r2 & 0xFF000000u)) >> 8u) + 0xFF010101u;
 }
 
-force_inline uint32_t alpha_8888(uint32_t b, uint32_t f)
+blib3d_force_inline uint32_t alpha_8888(uint32_t b, uint32_t f)
 {
 #if 1
     uint32_t a1{ f >> 24u };
@@ -42,7 +42,7 @@ force_inline uint32_t alpha_8888(uint32_t b, uint32_t f)
 
 struct blend_none
 {
-    static force_inline void process(uint32_t* buffer, uint32_t color)
+    static blib3d_force_inline void process(uint32_t* buffer, uint32_t color)
     {
         *buffer = color;
     }
@@ -50,7 +50,7 @@ struct blend_none
 
 struct blend_add
 {
-    static force_inline void process(uint32_t* buffer, uint32_t color)
+    static blib3d_force_inline void process(uint32_t* buffer, uint32_t color)
     {
         *buffer = adds_X888(*buffer, color);
     }
@@ -58,7 +58,7 @@ struct blend_add
 
 struct blend_mul
 {
-    static force_inline void process(uint32_t* buffer, uint32_t color)
+    static blib3d_force_inline void process(uint32_t* buffer, uint32_t color)
     {
         *buffer = mul_X888(*buffer, color);
     }
@@ -66,7 +66,7 @@ struct blend_mul
 
 struct blend_alpha
 {
-    static force_inline void process(uint32_t* buffer, uint32_t color)
+    static blib3d_force_inline void process(uint32_t* buffer, uint32_t color)
     {
         *buffer = alpha_8888(*buffer, color);
     }
@@ -76,36 +76,36 @@ struct blend_alpha
 
 struct depth_off
 {
-    static force_inline bool process_test(float* /*buffer*/, float /*depth*/)
+    static blib3d_force_inline bool process_test(float* /*buffer*/, float /*depth*/)
     {
         return true;
     }
 
-    static force_inline void process_write(float* /*buffer*/, float /*depth*/)
+    static blib3d_force_inline void process_write(float* /*buffer*/, float /*depth*/)
     {
     }
 };
 
 struct depth_test
 {
-    static force_inline bool process_test(float* buffer, float depth)
+    static blib3d_force_inline bool process_test(float* buffer, float depth)
     {
         return *buffer > depth;
     }
 
-    static force_inline void process_write(float* /*buffer*/, float /*depth*/)
+    static blib3d_force_inline void process_write(float* /*buffer*/, float /*depth*/)
     {
     }
 };
 
 struct depth_test_write
 {
-    static force_inline bool process_test(float* buffer, float depth)
+    static blib3d_force_inline bool process_test(float* buffer, float depth)
     {
         return *buffer > depth;
     }
 
-    static force_inline void process_write(float* buffer, float depth)
+    static blib3d_force_inline void process_write(float* buffer, float depth)
     {
         *buffer = depth;
     }
@@ -113,7 +113,7 @@ struct depth_test_write
 
 //------------------------------------------------------------------------------
 
-force_inline uint32_t bilinear88(
+blib3d_force_inline uint32_t bilinear88(
     uint32_t v0, uint32_t v1,
     uint32_t v2, uint32_t v3,
     uint32_t a0, uint32_t a1)
@@ -143,7 +143,7 @@ force_inline uint32_t bilinear88(
     return ((r0 >> 8u) & 0x00FF00FFu) + (r1 & 0xFF00FF00u);
 }
 
-force_inline uint32_t bilinear44(
+blib3d_force_inline uint32_t bilinear44(
     uint32_t v0, uint32_t v1,
     uint32_t v2, uint32_t v3,
     uint32_t a0, uint32_t a1)
@@ -159,7 +159,7 @@ force_inline uint32_t bilinear44(
         ((v3 & 0xF0F0F0F0u) >> 4u) * w3;
 }
 
-force_inline uint32_t bilinear53(
+blib3d_force_inline uint32_t bilinear53(
     uint32_t v0, uint32_t v1,
     uint32_t v2, uint32_t v3,
     uint32_t a0, uint32_t a1)
@@ -175,7 +175,7 @@ force_inline uint32_t bilinear53(
         ((v3 & 0xF8F8F8F8u) >> 3u) * w3;
 }
 
-force_inline uint32_t bilinear62(
+blib3d_force_inline uint32_t bilinear62(
     uint32_t v0, uint32_t v1,
     uint32_t v2, uint32_t v3,
     uint32_t a0, uint32_t a1)
@@ -193,7 +193,7 @@ force_inline uint32_t bilinear62(
 
 //------------------------------------------------------------------------------
 
-force_inline uint32_t sample_lightmap(int32_t u, int32_t v, int32_t vshift, const uint32_t* pt)
+blib3d_force_inline uint32_t sample_lightmap(int32_t u, int32_t v, int32_t vshift, const uint32_t* pt)
 {
     int32_t r0{ (u >> 16) + (v >> 16 << vshift) };
     int32_t r1{ r0 + (1 << vshift) };
@@ -210,12 +210,12 @@ force_inline uint32_t sample_lightmap(int32_t u, int32_t v, int32_t vshift, cons
 
 struct sample_nearest
 {
-    static force_inline int32_t process_coord(int32_t attribute)
+    static blib3d_force_inline int32_t process_coord(int32_t attribute)
     {
         return attribute;
     }
 
-    static force_inline uint32_t process_texel(int32_t s, int32_t t, int32_t smask, int32_t tmask, int32_t tshift, const uint32_t* plut, const uint8_t* pdata)
+    static blib3d_force_inline uint32_t process_texel(int32_t s, int32_t t, int32_t smask, int32_t tmask, int32_t tshift, const uint32_t* plut, const uint8_t* pdata)
     {
         return plut[pdata[((s & smask) >> 16) + ((t & tmask) >> tshift)]];
     }
@@ -223,12 +223,12 @@ struct sample_nearest
 
 struct sample_bilinear
 {
-    static force_inline int32_t process_coord(int32_t attribute)
+    static blib3d_force_inline int32_t process_coord(int32_t attribute)
     {
         return attribute - 0x8000;
     }
 
-    static force_inline uint32_t process_texel(int32_t s, int32_t t, int32_t smask, int32_t tmask, int32_t tshift, const uint32_t* plut, const uint8_t* pdata)
+    static blib3d_force_inline uint32_t process_texel(int32_t s, int32_t t, int32_t smask, int32_t tmask, int32_t tshift, const uint32_t* plut, const uint8_t* pdata)
     {
         int32_t s0{ s };
         int32_t s1{ s + 0x10000 };
@@ -273,7 +273,7 @@ struct sample_bilinear
 
 struct mask_texture_on
 {
-    static force_inline bool process(uint32_t v)
+    static blib3d_force_inline bool process(uint32_t v)
     {
         return v > 0x7FFFFFFFu;
     }
@@ -281,7 +281,7 @@ struct mask_texture_on
 
 struct mask_texture_off
 {
-    static force_inline bool process(uint32_t /*v*/)
+    static blib3d_force_inline bool process(uint32_t /*v*/)
     {
         return true;
     }

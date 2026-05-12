@@ -27,9 +27,10 @@ target_sources(blib3d PUBLIC
 #     PRIVATE
 # )
 
-# target_compile_definitions(blib3d
-#     PRIVATE
-# )
+target_compile_definitions(blib3d
+    PUBLIC
+    BLIB3D_USE_SIMD
+)
 
 # target_compile_options(blib3d
 #     PRIVATE

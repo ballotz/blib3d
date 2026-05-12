@@ -4,7 +4,7 @@
 #include "shared.hpp"
 #include <cmath>
 
-#if defined(ARCH_INTEL) && defined(USE_SIMD)
+#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
 #include <xmmintrin.h>
 #endif
 
@@ -28,25 +28,25 @@ using mat4x4 = float[16]; // 00, 01, 02, 03, 10, 11, 12, 13, 20, 21, 22, 23, 30,
 // common
 
 template<typename data_type>
-force_inline data_type min(data_type v0, data_type v1)
+blib3d_force_inline data_type min(data_type v0, data_type v1)
 {
     return v0 < v1 ? v0 : v1;
 }
 
 template<typename data_type>
-force_inline data_type max(data_type v0, data_type v1)
+blib3d_force_inline data_type max(data_type v0, data_type v1)
 {
     return v0 > v1 ? v0 : v1;
 }
 
 template<typename data_type>
-force_inline data_type clamp(data_type v, data_type vmin, data_type vmax)
+blib3d_force_inline data_type clamp(data_type v, data_type vmin, data_type vmax)
 {
     return min(max(v, vmin), vmax);
 }
 
 template<typename data_type, int32_t num_elements>
-force_inline data_type norm(const data_type (&v)[num_elements])
+blib3d_force_inline data_type norm(const data_type (&v)[num_elements])
 {
     data_type r = (data_type)0;
     for (int32_t i = 0; i < num_elements; ++i)
@@ -54,7 +54,7 @@ force_inline data_type norm(const data_type (&v)[num_elements])
     return r;
 }
 
-force_inline int32_t floor(float v)
+blib3d_force_inline int32_t floor(float v)
 {
     int32_t r{ (int32_t)v };
     if ((float)r > v)
@@ -62,7 +62,7 @@ force_inline int32_t floor(float v)
     return r;
 }
 
-force_inline int32_t ceil(float v)
+blib3d_force_inline int32_t ceil(float v)
 {
     int32_t r{ (int32_t)v };
     if ((float)r < v)
@@ -73,13 +73,13 @@ force_inline int32_t ceil(float v)
 // bits
 
 // is_power_of_2(0) = false
-force_inline uint32_t is_power_of_2(uint32_t v)
+blib3d_force_inline uint32_t is_power_of_2(uint32_t v)
 {
     return v && !(v & (v - 1u));
 }
 
 // v > 0
-force_inline uint32_t next_power_of_2(uint32_t v)
+blib3d_force_inline uint32_t next_power_of_2(uint32_t v)
 {
     v--;
     v |= v >> 1u;
@@ -91,7 +91,7 @@ force_inline uint32_t next_power_of_2(uint32_t v)
     return v;
 }
 
-force_inline uint32_t prev_power_of_2(uint32_t v)
+blib3d_force_inline uint32_t prev_power_of_2(uint32_t v)
 {
     v |= v >> 1u;
     v |= v >> 2u;
@@ -103,13 +103,13 @@ force_inline uint32_t prev_power_of_2(uint32_t v)
 }
 
 // assume v is positive
-force_inline int32_t log2floor(float v)
+blib3d_force_inline int32_t log2floor(float v)
 {
     return (reinterpret_cast<int32_t&>(v) >> 23) - 127;
 }
 
 // assume v is positive
-force_inline int32_t log2ceil(float v)
+blib3d_force_inline int32_t log2ceil(float v)
 {
     int32_t i{ reinterpret_cast<int32_t&>(v) };
     int32_t r{ (i >> 23) - 127 };
@@ -118,7 +118,7 @@ force_inline int32_t log2ceil(float v)
 }
 
 // assume v is positive
-force_inline int32_t log2round(float v)
+blib3d_force_inline int32_t log2round(float v)
 {
     int32_t i{ reinterpret_cast<int32_t&>(v) };
     int32_t r{ (i >> 23) - 127 };
@@ -127,38 +127,38 @@ force_inline int32_t log2round(float v)
 }
 
 // assume v is positive
-force_inline float log2fast(float v)
+blib3d_force_inline float log2fast(float v)
 {
     constexpr float scale{ 1.f / (1 << 23) };
     return (float)reinterpret_cast<int32_t&>(v) * scale - 127.f;
 }
 
-// force_inline float recipfast(float v)
+// blib3d_force_inline float recipfast(float v)
 // {
 //     int32_t r{ 0x7F000000 - reinterpret_cast<int32_t&>(v) };
 //     return reinterpret_cast<float&>(r);
 // }
 
 // // assume v is positive
-// force_inline float sqrtfast(float v)
+// blib3d_force_inline float sqrtfast(float v)
 // {
 //     int32_t r{ (reinterpret_cast<int32_t&>(v) >> 1) + 0x1FC00000 };
 //     return reinterpret_cast<float&>(r);
 // }
 
 // // assume v is positive
-// force_inline float invsqrtfast(float v)
+// blib3d_force_inline float invsqrtfast(float v)
 // {
 //     int32_t r{ 0x5F400000 - (reinterpret_cast<int32_t&>(v) >> 1) };
 //     return reinterpret_cast<float&>(r);
 // }
 
-// force_inline float recipiter(float v, float r)
+// blib3d_force_inline float recipiter(float v, float r)
 // {
 //     return r * (2.f - r * v);
 // }
 
-// force_inline float sqrtiter(float v, float r)
+// blib3d_force_inline float sqrtiter(float v, float r)
 // {
 //     return 0.5f * (r + v / r);
 // }
@@ -173,7 +173,7 @@ struct powfast_table
 
 void powfast_build_table(float exponent, powfast_table& table);
 
-force_inline float powfast(float v, const powfast_table& table)
+blib3d_force_inline float powfast(float v, const powfast_table& table)
 {
     uint32_t r{ reinterpret_cast<uint32_t&>(v) };
     uint32_t ei{ r >> (32u - powfast_table::exponent_bits) };
@@ -181,7 +181,7 @@ force_inline float powfast(float v, const powfast_table& table)
     return table.exponent_table[ei] * table.mantissa_table[mi];
 }
 
-force_inline float recip(float v)
+blib3d_force_inline float recip(float v)
 {
 #if 0
     float r{ recipfast(v) };
@@ -194,7 +194,7 @@ force_inline float recip(float v)
 #endif
 }
 
-force_inline float sqrt(float v)
+blib3d_force_inline float sqrt(float v)
 {
 #if 0
     float r{ sqrtfast(v) };
@@ -206,17 +206,17 @@ force_inline float sqrt(float v)
 #endif
 }
 
-force_inline float log2(float v)
+blib3d_force_inline float log2(float v)
 {
     return std::log2(v);
 }
 
-force_inline int32_t log2(int32_t v)
+blib3d_force_inline int32_t log2(int32_t v)
 {
     return log2floor((float)v);
 }
 
-force_inline float invsqrt(float v)
+blib3d_force_inline float invsqrt(float v)
 {
 #if 0
     float vh{ v * 0.5f };
@@ -231,16 +231,16 @@ force_inline float invsqrt(float v)
 
 // copy
 
-force_inline void copy3(vec3 out, const vec3 in)
+blib3d_force_inline void copy3(vec3 out, const vec3 in)
 {
     out[0] = in[0];
     out[1] = in[1];
     out[2] = in[2];
 }
 
-force_inline void copy4(vec4 out, const vec4 in)
+blib3d_force_inline void copy4(vec4 out, const vec4 in)
 {
-#if defined(ARCH_INTEL) && defined(USE_SIMD)
+#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
     _mm_storeu_ps(out, _mm_loadu_ps(in));
 #else
     out[0] = in[0];
@@ -250,9 +250,9 @@ force_inline void copy4(vec4 out, const vec4 in)
 #endif
 }
 
-force_inline void copy3x3(mat3x3 out, const mat3x3 in)
+blib3d_force_inline void copy3x3(mat3x3 out, const mat3x3 in)
 {
-#if defined(ARCH_INTEL) && defined(USE_SIMD)
+#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
     _mm_storeu_ps(out + 0, _mm_loadu_ps(in + 0));
     _mm_storeu_ps(out + 4, _mm_loadu_ps(in + 4));
 #else
@@ -268,9 +268,9 @@ force_inline void copy3x3(mat3x3 out, const mat3x3 in)
     out[8] = in[8];
 }
 
-force_inline void copy4x4(mat4x4 out, const mat4x4 in)
+blib3d_force_inline void copy4x4(mat4x4 out, const mat4x4 in)
 {
-#if defined(ARCH_INTEL) && defined(USE_SIMD)
+#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
     _mm_storeu_ps(out +  0, _mm_loadu_ps(in +  0));
     _mm_storeu_ps(out +  4, _mm_loadu_ps(in +  4));
     _mm_storeu_ps(out +  8, _mm_loadu_ps(in +  8));
@@ -297,14 +297,14 @@ force_inline void copy4x4(mat4x4 out, const mat4x4 in)
 
 // add
 
-force_inline void add3(vec3 inout, const vec3 a)
+blib3d_force_inline void add3(vec3 inout, const vec3 a)
 {
     inout[0] += a[0];
     inout[1] += a[1];
     inout[2] += a[2];
 }
 
-force_inline void add3(vec3 out, const vec3 a, const vec3 b)
+blib3d_force_inline void add3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = a[0] + b[0];
     out[1] = a[1] + b[1];
@@ -313,20 +313,20 @@ force_inline void add3(vec3 out, const vec3 a, const vec3 b)
 
 // sub
 
-force_inline void sub2(vec2 out, const vec2 a, const vec2 b)
+blib3d_force_inline void sub2(vec2 out, const vec2 a, const vec2 b)
 {
     out[0] = a[0] - b[0];
     out[1] = a[1] - b[1];
 }
 
-force_inline void sub3(vec3 inout, const vec3 a)
+blib3d_force_inline void sub3(vec3 inout, const vec3 a)
 {
     inout[0] -= a[0];
     inout[1] -= a[1];
     inout[2] -= a[2];
 }
 
-force_inline void sub3(vec3 out, const vec3 a, const vec3 b)
+blib3d_force_inline void sub3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = a[0] - b[0];
     out[1] = a[1] - b[1];
@@ -335,37 +335,37 @@ force_inline void sub3(vec3 out, const vec3 a, const vec3 b)
 
 // mul
 
-force_inline void mul3(vec3 inout, const float a)
+blib3d_force_inline void mul3(vec3 inout, const float a)
 {
     inout[0] *= a;
     inout[1] *= a;
     inout[2] *= a;
 }
 
-force_inline void mul3(vec3 out, const vec3 a, const float b)
+blib3d_force_inline void mul3(vec3 out, const vec3 a, const float b)
 {
     out[0] = a[0] * b;
     out[1] = a[1] * b;
     out[2] = a[2] * b;
 }
 
-force_inline void mul3(vec3 inout, const vec3 a)
+blib3d_force_inline void mul3(vec3 inout, const vec3 a)
 {
     inout[0] *= a[0];
     inout[1] *= a[1];
     inout[2] *= a[2];
 }
 
-force_inline void mul3(vec3 out, const vec3 a, const vec3 b)
+blib3d_force_inline void mul3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = a[0] * b[0];
     out[1] = a[1] * b[1];
     out[2] = a[2] * b[2];
 }
 
-force_inline void mul4(vec4 inout, const float a)
+blib3d_force_inline void mul4(vec4 inout, const float a)
 {
-#if defined(ARCH_INTEL) && defined(USE_SIMD)
+#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
     _mm_storeu_ps(inout, _mm_mul_ps(_mm_loadu_ps(inout), _mm_set_ps1(a)));
 #else
     inout[0] *= a;
@@ -375,21 +375,21 @@ force_inline void mul4(vec4 inout, const float a)
 #endif
 }
 
-force_inline void mul3x3_3(vec3 out, const mat3x3 a, const vec3 b)
+blib3d_force_inline void mul3x3_3(vec3 out, const mat3x3 a, const vec3 b)
 {
     out[0] = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     out[1] = a[3] * b[0] + a[4] * b[1] + a[5] * b[2];
     out[2] = a[6] * b[0] + a[7] * b[1] + a[8] * b[2];
 }
 
-force_inline void mul3x3t_3(vec3 out, const mat3x3 a, const vec3 b)
+blib3d_force_inline void mul3x3t_3(vec3 out, const mat3x3 a, const vec3 b)
 {
     out[0] = a[0] * b[0] + a[3] * b[1] + a[6] * b[2];
     out[1] = a[1] * b[0] + a[4] * b[1] + a[7] * b[2];
     out[2] = a[2] * b[0] + a[5] * b[1] + a[8] * b[2];
 }
 
-force_inline void mul3x3_3x3(mat3x3 out, const mat3x3 a, const mat3x3 b)
+blib3d_force_inline void mul3x3_3x3(mat3x3 out, const mat3x3 a, const mat3x3 b)
 {
     out[0] = a[0] * b[0] + a[1] * b[3] + a[2] * b[6];
     out[1] = a[0] * b[1] + a[1] * b[4] + a[2] * b[7];
@@ -402,9 +402,9 @@ force_inline void mul3x3_3x3(mat3x3 out, const mat3x3 a, const mat3x3 b)
     out[8] = a[6] * b[2] + a[7] * b[5] + a[8] * b[8];
 }
 
-force_inline void mul4x4t_3(vec4 out, const mat4x4 a, const vec3 b)
+blib3d_force_inline void mul4x4t_3(vec4 out, const mat4x4 a, const vec3 b)
 {
-#if defined(ARCH_INTEL) && defined(USE_SIMD)
+#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
     __m128 t0{ _mm_mul_ps(_mm_loadu_ps(a + 0), _mm_load_ps1(b + 0)) };
     __m128 t1{ _mm_mul_ps(_mm_loadu_ps(a + 4), _mm_load_ps1(b + 1)) };
     __m128 t2{ _mm_mul_ps(_mm_loadu_ps(a + 8), _mm_load_ps1(b + 2)) };
@@ -420,9 +420,9 @@ force_inline void mul4x4t_3(vec4 out, const mat4x4 a, const vec3 b)
 #endif
 }
 
-force_inline void mul4x4t_4(vec4 out, const mat4x4 a, const vec4 b)
+blib3d_force_inline void mul4x4t_4(vec4 out, const mat4x4 a, const vec4 b)
 {
-#if defined(ARCH_INTEL) && defined(USE_SIMD)
+#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
     __m128 t0{ _mm_mul_ps(_mm_loadu_ps(a +  0), _mm_load_ps1(b + 0)) };
     __m128 t1{ _mm_mul_ps(_mm_loadu_ps(a +  4), _mm_load_ps1(b + 1)) };
     __m128 t2{ _mm_mul_ps(_mm_loadu_ps(a +  8), _mm_load_ps1(b + 2)) };
@@ -439,9 +439,9 @@ force_inline void mul4x4t_4(vec4 out, const mat4x4 a, const vec4 b)
 #endif
 }
 
-force_inline void mul4x4_4x4(mat4x4 out, const mat4x4 a, const mat4x4 b)
+blib3d_force_inline void mul4x4_4x4(mat4x4 out, const mat4x4 a, const mat4x4 b)
 {
-#if defined(ARCH_INTEL) && defined(USE_SIMD)
+#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
     __m128 t0, t1, t2, t3, t4, t5, t6;
     __m128 b0{ _mm_loadu_ps(b +  0) };
     __m128 b1{ _mm_loadu_ps(b +  4) };
@@ -501,14 +501,14 @@ force_inline void mul4x4_4x4(mat4x4 out, const mat4x4 a, const mat4x4 b)
 
 // muladd
 
-force_inline void muladd3(vec3 inout, const vec3 a, const float b)
+blib3d_force_inline void muladd3(vec3 inout, const vec3 a, const float b)
 {
     inout[0] += a[0] * b;
     inout[1] += a[1] * b;
     inout[2] += a[2] * b;
 }
 
-force_inline void muladd3(vec3 out, const vec3 in, const vec3 a, const float b)
+blib3d_force_inline void muladd3(vec3 out, const vec3 in, const vec3 a, const float b)
 {
     out[0] = in[0] + a[0] * b;
     out[1] = in[1] + a[1] * b;
@@ -517,7 +517,7 @@ force_inline void muladd3(vec3 out, const vec3 in, const vec3 a, const float b)
 
 // transpose
 
-force_inline void trn3x3(mat3x3 out, const mat3x3 in)
+blib3d_force_inline void trn3x3(mat3x3 out, const mat3x3 in)
 {
     out[0] = in[0];
     out[1] = in[3];
@@ -530,9 +530,9 @@ force_inline void trn3x3(mat3x3 out, const mat3x3 in)
     out[8] = in[8];
 }
 
-force_inline void trn4x4(mat4x4 out, const mat4x4 in)
+blib3d_force_inline void trn4x4(mat4x4 out, const mat4x4 in)
 {
-#if defined(ARCH_INTEL) && defined(USE_SIMD)
+#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
     __m128 a0{ _mm_loadu_ps(in +  0) };
     __m128 a1{ _mm_loadu_ps(in +  4) };
     __m128 a2{ _mm_loadu_ps(in +  8) };
@@ -567,35 +567,35 @@ force_inline void trn4x4(mat4x4 out, const mat4x4 in)
 
 // min/max/clamp
 
-force_inline void min3(vec3 out, const vec3 a, const float b)
+blib3d_force_inline void min3(vec3 out, const vec3 a, const float b)
 {
     out[0] = min(a[0], b);
     out[1] = min(a[1], b);
     out[2] = min(a[2], b);
 }
 
-force_inline void min3(vec3 out, const vec3 a, const vec3 b)
+blib3d_force_inline void min3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = min(a[0], b[0]);
     out[1] = min(a[1], b[1]);
     out[2] = min(a[2], b[2]);
 }
 
-force_inline void max3(vec3 out, const vec3 a, const float b)
+blib3d_force_inline void max3(vec3 out, const vec3 a, const float b)
 {
     out[0] = max(a[0], b);
     out[1] = max(a[1], b);
     out[2] = max(a[2], b);
 }
 
-force_inline void max3(vec3 out, const vec3 a, const vec3 b)
+blib3d_force_inline void max3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = max(a[0], b[0]);
     out[1] = max(a[1], b[1]);
     out[2] = max(a[2], b[2]);
 }
 
-force_inline void clamp3(vec3 out, const vec3 v, const vec3 min, const vec3 max)
+blib3d_force_inline void clamp3(vec3 out, const vec3 v, const vec3 min, const vec3 max)
 {
     out[0] = clamp(v[0], min[0], max[0]);
     out[1] = clamp(v[1], min[1], max[1]);
@@ -604,7 +604,7 @@ force_inline void clamp3(vec3 out, const vec3 v, const vec3 min, const vec3 max)
 
 // abs
 
-force_inline void abs3(vec3 inout)
+blib3d_force_inline void abs3(vec3 inout)
 {
     inout[0] = (inout[0] > 0.f) ? inout[0] : -inout[0];
     inout[1] = (inout[1] > 0.f) ? inout[1] : -inout[1];
@@ -613,24 +613,24 @@ force_inline void abs3(vec3 inout)
 
 // dot
 
-force_inline float dot3(const vec3 a, const vec3 b)
+blib3d_force_inline float dot3(const vec3 a, const vec3 b)
 {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
 // cross
 
-force_inline float cross2(float ax, float ay, float bx, float by)
+blib3d_force_inline float cross2(float ax, float ay, float bx, float by)
 {
     return ax * by - ay * bx;
 };
 
-force_inline float cross2(const vec2 a, const vec2 b)
+blib3d_force_inline float cross2(const vec2 a, const vec2 b)
 {
     return a[0] * b[1] - a[1] * b[0];
 };
 
-force_inline void cross3(vec3 out, const vec3 a, const vec3 b)
+blib3d_force_inline void cross3(vec3 out, const vec3 a, const vec3 b)
 {
     out[0] = a[1] * b[2] - a[2] * b[1];
     out[1] = a[2] * b[0] - a[0] * b[2];
@@ -639,7 +639,7 @@ force_inline void cross3(vec3 out, const vec3 a, const vec3 b)
 
 // utility matrices
 
-force_inline void rotation_x(mat3x3 out, const float angle)
+blib3d_force_inline void rotation_x(mat3x3 out, const float angle)
 {
     float c{ std::cos(angle) };
     float s{ std::sin(angle) };
@@ -654,7 +654,7 @@ force_inline void rotation_x(mat3x3 out, const float angle)
     out[8] = c;
 }
 
-force_inline void rotation_y(mat3x3 out, const float angle)
+blib3d_force_inline void rotation_y(mat3x3 out, const float angle)
 {
     float c{ std::cos(angle) };
     float s{ std::sin(angle) };
@@ -669,7 +669,7 @@ force_inline void rotation_y(mat3x3 out, const float angle)
     out[8] = c;
 }
 
-force_inline void rotation_z(mat3x3 out, const float angle)
+blib3d_force_inline void rotation_z(mat3x3 out, const float angle)
 {
     float c{ std::cos(angle) };
     float s{ std::sin(angle) };

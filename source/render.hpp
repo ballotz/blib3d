@@ -8,7 +8,7 @@
 namespace blib3d::render
 {
 
-#if defined(CLIP_Z)
+#if defined(BLIB3D_CLIP_Z)
 constexpr uint32_t num_clip_planes{ 7 };
 #else
 constexpr uint32_t num_clip_planes{ 5 };

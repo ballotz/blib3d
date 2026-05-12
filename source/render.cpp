@@ -27,7 +27,7 @@ uint32_t clip_face(
                 RIGHT   = 0b00000100,
                 TOP     = 0b00001000,
                 BOTTOM  = 0b00010000,
-#if defined(CLIP_Z)
+#if defined(BLIB3D_CLIP_Z)
                 NEAR    = 0b00100000,
                 FAR     = 0b01000000,
 #endif
@@ -48,7 +48,7 @@ uint32_t clip_face(
             else if (p[1] > p[3]) // y > w
                 flag |= BOTTOM;
 
-#if defined(CLIP_Z)
+#if defined(BLIB3D_CLIP_Z)
             if (p[2] < -p[3]) // z < -w
                 flag |= NEAR;
             else if (p[2] > p[3]) // z > w
@@ -142,7 +142,7 @@ uint32_t clip_face(
                     (clip_interp_type)1.0,
                     (clip_interp_type)-1.0,
                     (clip_interp_type)1.0,
-#if defined(CLIP_Z)
+#if defined(BLIB3D_CLIP_Z)
                     (clip_interp_type)-1.0,
                     (clip_interp_type)1.0
 #endif
@@ -154,7 +154,7 @@ uint32_t clip_face(
                     0,
                     1,
                     1,
-#if defined(CLIP_Z)
+#if defined(BLIB3D_CLIP_Z)
                     2,
                     2
 #endif

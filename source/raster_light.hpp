@@ -28,14 +28,14 @@ struct light
 
 //------------------------------------------------------------------------------
 
-force_inline void light_ambient(
+blib3d_force_inline void light_ambient(
     const light& l,
     math::vec3 res)
 {
     math::add3(res, l.intensity);
 }
 
-force_inline void light_directional(
+blib3d_force_inline void light_directional(
     const light& l,
     const math::vec3 surf_normal,
     math::vec3 res)
@@ -45,7 +45,7 @@ force_inline void light_directional(
         math::muladd3(res, l.intensity, scale);
 }
 
-force_inline void light_point(
+blib3d_force_inline void light_point(
     const light& l,
     const math::vec3 surf_position,
     const math::vec3 surf_normal,
@@ -66,7 +66,7 @@ force_inline void light_point(
     }
 }
 
-force_inline void light_spot(
+blib3d_force_inline void light_spot(
     const light& l,
     const math::vec3 surf_position,
     const math::vec3 surf_normal,

@@ -70,7 +70,7 @@ blib3d is organized as five independent modules. Each layer uses only the layers
 │   vec2/3/4 · mat3x3/4x4 · SIMD SSE · powfast · geometry     │
 ├─────────────────────────────────────────────────────────────┤
 │                         shared                              │
-│        arch detect · compiler macros · USE_SIMD             │
+│              arch detect · compiler macros                  │
 └─────────────────────────────────────────────────────────────┘
 
   view   ─── standalone · builds projection & viewport matrices
@@ -313,7 +313,7 @@ template<
     typename mask_type>     // mask_texture_on / mask_texture_off
 struct raster_texture_shade_lightmap : public scan
 {
-    static force_inline void fill(span_data& s)
+    static blib3d_force_inline void fill(span_data& s)
     {
         if (depth_type::process_test(s.depth_addr, s.depth))
         {
@@ -401,7 +401,7 @@ The test is O(1) — few table lookups at the chosen mip level. Building the cha
 | `render` | `render.hpp` `render.cpp` | Public renderer API, clipping, geometry batching |
 | `view` | `view.hpp` `view.cpp` | Projection and viewport matrix construction |
 | `timer` | `timer.hpp` `timer.cpp` | Profiling helpers |
-| `shared` | `shared.hpp` | Compiler/arch detection, `force_inline`, `USE_SIMD` |
+| `shared` | `shared.hpp` | Compiler/arch detection, `blib3d_force_inline` |
 
 ---
 
