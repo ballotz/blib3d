@@ -187,8 +187,13 @@ def setup_trace(jlink, regmap, trace_clk, prescaler, post_tap, post_reset):
     print("  [4] Configure ITM")
     _wr(jlink, R.ITM_LAR, R.LOCK_KEY, "ITM_LAR unlock")
     _wr(jlink, R.ITM_TCR, 0x0001000C, "ITM_TCR disable")
-    _wr(jlink, R.ITM_TCR, 0x0001040A, "ITM_TCR DWT->TPIU + ts")
-    _wr(jlink, R.ITM_TCR, 0x0001040B, "ITM_TCR enable ITM")
+    # ITM_TCR final value: ITMENA=1, TSENA=0, TXENA=1, TraceBusID=1
+    # TSENA=0: disable local timestamps (they add 1-5 bytes per DWT packet
+    #          and stall the ITM pipeline — primary cause of overflows)
+    # GTSFREQ=00: disable global timestamps (saves more bandwidth)
+    # The original value 0x0001040B had TSENA=1+GTSFREQ=01 which caused
+    # ~40% extra ITM traffic and filled the FIFO between DWT packets.
+    _wr(jlink, R.ITM_TCR, 0x00010009, "ITM_TCR enable (no timestamps)")
     _wr(jlink, R.ITM_TER, 0x00000001, "ITM_TER port 0")
 
     # Step 5: enable DWT cycle counter + PC sampling
@@ -196,9 +201,22 @@ def setup_trace(jlink, regmap, trace_clk, prescaler, post_tap, post_reset):
     #                [17:14]=POSTINIT, [22]=PCSAMPLEENA
     print("  [5] Enable DWT PC sampling")
     p4 = post_reset & 0xF
+    # DWT_CTRL bits set:
+    #   [0]      CYCCNTENA   = 1  (cycle counter on)
+    #   [9]      CYCTAP      = post_tap
+    #   [13:10]  POSTPRESET  = p4
+    #   [17:14]  POSTINIT    = p4
+    #   [22]     PCSAMPLEENA = 1
+    # Bits explicitly left 0:
+    #   [16]     EXCTRCENA   = 0  (exception trace OFF — each IRQ entry/exit
+    #                               emits a 3-byte packet, floods ITM with
+    #                               unneeded traffic and causes overflows)
+    #   [19]     FOLDEVTENA  = 0  (folded instruction counter, not needed)
+    #   [20]     LSUEVTENA   = 0  (LSU counter, not needed)
+    #   [21]     SLEEPEVTENA = 0  (sleep counter, not needed)
     dwt_ctrl = (1 << 0) | (post_tap << 9) | (p4 << 10) | (p4 << 14) | (1 << 22)
     _wr(jlink, R.DWT_CYCCNT, 0x00000000, "DWT_CYCCNT clear")
-    _wr(jlink, R.DWT_CTRL,   dwt_ctrl,   "DWT_CTRL enable")
+    _wr(jlink, R.DWT_CTRL,   dwt_ctrl,   "DWT_CTRL enable (EXCTRCENA=0)")
 
     divisor = (1 << (6 if post_tap == 0 else 10)) * (p4 + 1)
     cpu = regmap.DEFAULT_CPU_FREQ
@@ -246,7 +264,7 @@ def verify_registers(jlink, regmap, trace_clk, prescaler):
     # so a full-word compare would always mismatch.
     # PCSAMPLEENA = bit22, CYCCNTENA = bit0
     dwt   = chk(R.DWT_CTRL, "DWT_CTRL")
-    tcr   = chk(R.ITM_TCR,  "ITM_TCR",  expected=0x0001040B, mask=0x0001040F)
+    tcr   = chk(R.ITM_TCR,  "ITM_TCR",  expected=0x00010009, mask=0x0001000F)
     chk(R.ITM_TER, "ITM_TER", expected=0x1)
 
     if demcr is not None and not (demcr & (1<<24)):
@@ -287,53 +305,167 @@ def verify_registers(jlink, regmap, trace_clk, prescaler):
 # ---------------------------------------------------------------------------
 
 class ITMDecoder:
+    """
+    Complete ARM CoreSight ITM/DWT stream decoder (ARM DDI0403E Table D4-3).
+    Tracks a full packet-type histogram for diagnostics.
+    """
     def __init__(self, on_pc_sample, on_overflow=None, on_sleep=None):
-        self.on_pc_sample  = on_pc_sample
-        self.on_overflow   = on_overflow or (lambda: None)
-        self.on_sleep      = on_sleep    or (lambda: None)
-        self._buf          = bytearray()
-        self._sync_zeros   = 0
-        self.total_bytes   = 0
-        self.total_samples = 0
-        self.total_overflow= 0
-        self.total_sleep   = 0
+        self.on_pc_sample   = on_pc_sample
+        self.on_overflow    = on_overflow or (lambda: None)
+        self.on_sleep       = on_sleep    or (lambda: None)
+        self._buf           = bytearray()
+        self._sync_zeros    = 0
+        self.total_bytes    = 0
+        self.total_samples  = 0
+        self.total_overflow = 0
+        self.total_sleep    = 0
+        self.total_corrupt  = 0
+        self.total_unknown  = 0
+        self.total_exctrace = 0
+        self.pkt_counts     = collections.Counter()  # {type_str: packet count}
+        self.pkt_bytes      = collections.Counter()  # {type_str: byte count}
 
     def feed(self, data: bytes):
         self._buf.extend(data)
         self._parse()
 
+    def _consume(self, ptype, nbytes):
+        self.pkt_counts[ptype] += 1
+        self.pkt_bytes[ptype]  += nbytes
+
     def _parse(self):
+        """
+        Packet types handled per ARM DDI0403E D4.3:
+          Sync            5x 0x00 + 0x80
+          Overflow        0x70 (1B)
+          Local TS        header bits[3:0]=0000, variable length
+          Global TS GTS1  0x94 + continuation
+          Global TS GTS2  0xB4 + continuation
+          DWT PC sleep    0x15 (1B, no payload)
+          DWT PC sample   0x17 + 4B payload
+          DWT exc trace   0x0E + 2B payload
+          DWT event ctr   0x05 + 1B payload
+          HW source       discriminator in bits[7:3], size in bits[1:0]
+          ITM stimulus    port in bits[7:3], size in bits[1:0]
+        """
         buf = self._buf
         i, n = 0, len(buf)
+
         while i < n:
             b = buf[i]
+
+            # ---- Synchronization ----
             if b == 0x00:
-                self._sync_zeros += 1; i += 1; continue
+                self._sync_zeros += 1
+                self._consume("sync_zero", 1)
+                i += 1; continue
+
             if b == 0x80 and self._sync_zeros >= 5:
-                self._sync_zeros = 0;  i += 1; continue
+                self._sync_zeros = 0
+                self._consume("sync_end", 1)
+                i += 1; continue
+
             self._sync_zeros = 0
+
+            # ---- Overflow (1B) ----
             if b == 0x70:
-                self.total_overflow += 1; self.on_overflow(); i += 1; continue
+                self._consume("overflow", 1)
+                self.total_overflow += 1
+                self.on_overflow()
+                i += 1; continue
+
+            # ---- Local timestamp ----
+            # bits[3:0]=0000 with non-zero byte (excluding 0x00, 0x70, 0x80)
+            # bit7=C: 1=continuation byte follows, 0=final byte
+            if (b & 0x0F) == 0x00 and b not in (0x00, 0x70, 0x80):
+                # Local timestamp. bit7 of header = C (continuation):
+                #   bit7=0: this byte IS the complete packet
+                #   bit7=1: continuation bytes follow (each with bit7=1), terminated
+                #           by a final byte with bit7=0
+                start_i = i; i += 1
+                if b & 0x80:          # C=1: continuation bytes present
+                    while i < n and (buf[i] & 0x80): i += 1
+                    if i < n: i += 1  # consume final byte (bit7=0)
+                # C=0: header is the complete packet, i already advanced past it
+                nb = i - start_i
+                self._consume(f"local_ts({nb}B)", nb)
+                continue
+
+            # 0x80 without sync context = local timestamp: TC=0, C=1 → has continuation
+            if b == 0x80:
+                start_i = i; i += 1
+                while i < n and (buf[i] & 0x80): i += 1
+                if i < n: i += 1
+                nb = i - start_i
+                self._consume(f"local_ts_0x80({nb}B)", nb)
+                continue
+
+            # ---- Global timestamps ----
+            if b in (0x94, 0xB4):
+                label = "GTS1" if b == 0x94 else "GTS2"
+                start_i = i; i += 1
+                while i < n and (buf[i] & 0x80): i += 1
+                if i < n: i += 1
+                nb = i - start_i
+                self._consume(f"{label}({nb}B)", nb)
+                continue
+
+            # ---- DWT PC sample (sleep) — header only, no payload ----
             if b == 0x15:
-                self.total_sleep += 1; self.on_sleep(); i += 1; continue
+                self._consume("DWT_PC_sleep(1B)", 1)
+                self.total_sleep += 1
+                self.on_sleep()
+                i += 1; continue
+
+            # ---- DWT PC sample (running) — 4B payload ----
             if b == 0x17:
                 if i + 4 >= n: break
-                self.total_samples += 1
-                self.on_pc_sample(struct.unpack_from('<I', buf, i+1)[0])
+                pc = struct.unpack_from('<I', buf, i+1)[0]
+                if pc & 1:
+                    self._consume("corrupt_PC(5B)", 5)
+                    self.total_corrupt += 1
+                else:
+                    self._consume("DWT_PC_sample(5B)", 5)
+                    self.total_samples += 1
+                    self.on_pc_sample(pc)
                 i += 5; continue
-            sz = b & 0x03
-            if sz:
-                psz = 1 << (sz - 1)
+
+            # ---- DWT exception trace — 2B payload ----
+            if b == 0x0E:
+                if i + 2 >= n: break
+                self._consume("DWT_exc_trace(3B)", 3)
+                self.total_exctrace += 1
+                i += 3; continue
+
+            # ---- DWT event counter wrapper — 1B payload ----
+            if b == 0x05:
+                if i + 1 >= n: break
+                self._consume("DWT_event_ctr(2B)", 2)
+                i += 2; continue
+
+            # ---- Generic sized packets (HW source + ITM stimulus) ----
+            # bits[1:0] encode payload size: 01=1B, 10=2B, 11=4B
+            size_enc = b & 0x03
+            if size_enc != 0:
+                psz = 1 << (size_enc - 1)
                 if i + psz >= n: break
+                disc = (b >> 3) & 0x1F
+                port = (b >> 3) & 0x1F
+                # Discriminate HW (disc ID in known DWT range) vs ITM SW stimulus
+                # ITM stimulus: any port (0-31), size 1/2/4B, lo bits = size_enc
+                # DWT HW:       disc IDs 0-23 per ARM spec, lo bits = size_enc
+                # In practice both use the same format; label by disc value
+                label = f"HW_disc{disc}({1+psz}B)"
+                self._consume(label, 1 + psz)
                 i += 1 + psz; continue
+
+            # ---- Unknown ----
+            self._consume(f"unknown_0x{b:02X}(1B)", 1)
+            self.total_unknown += 1
             i += 1
+
         self._buf = buf[i:]
         self.total_bytes += i
-
-
-# ---------------------------------------------------------------------------
-# Symbol resolver
-# ---------------------------------------------------------------------------
 
 class SymbolResolver:
     """
@@ -573,11 +705,18 @@ def run_profiler(args):
 
             now = time.time()
             if now - last_report >= 1.0:
-                el   = now - start
-                rate = len(pc_samples) / el if el > 0 else 0
-                print(f"  t={el:5.1f}s  PC_samples={len(pc_samples):7d}  "
-                      f"rate={rate:.0f}/s  raw_bytes={raw_bytes_rx[0]}  "
-                      f"sleep={sleep_count[0]}  overflow={overflow_count[0]}",
+                el        = now - start
+                bw        = raw_bytes_rx[0] / el if el > 0 else 0
+                n_samp    = len(pc_samples)
+                n_ov      = overflow_count[0]
+                # "decoded" bytes = bytes we have a packet type for
+                decoded_b = sum(decoder.pkt_bytes.values())
+                quality   = 100.0 * decoded_b / raw_bytes_rx[0] if raw_bytes_rx[0] else 0.0
+                print(f"  t={el:5.1f}s  "
+                      f"bw={bw/1e3:6.1f}kB/s  "
+                      f"PC={n_samp:7d}  "
+                      f"overflow={n_ov:7d}  "
+                      f"decoded={quality:5.1f}%",
                       flush=True)
                 last_report = now
 
@@ -599,7 +738,39 @@ def run_profiler(args):
     print(f"\nTotal: {len(pc_samples)} PC samples in {elapsed:.1f}s  "
           f"({len(pc_samples)/elapsed:.0f}/s)  "
           f"raw bytes rx: {raw_bytes_rx[0]}")
-    print(f"Sleep: {sleep_count[0]}  Overflow: {overflow_count[0]}")
+    rb  = raw_bytes_rx[0]
+    b_decoded = sum(decoder.pkt_bytes.values())
+    b_missing = rb - b_decoded
+    b_pc = decoder.total_samples * 5
+    b_ov = decoder.total_overflow * 1
+    pct_loss = 100.0 * b_ov / (decoder.total_samples + decoder.total_overflow) \
+               if (decoder.total_samples + decoder.total_overflow) else 0.0
+
+    print()
+    print("=== Packet accounting ===")
+    print(f"  Raw bytes received  : {rb:>12,}  ({rb/elapsed/1e3:.1f} kB/s avg)")
+    print(f"  Decoded by parser   : {b_decoded:>12,}  ({100*b_decoded/rb:.1f}%)")
+    print(f"  Truly unaccounted   : {b_missing:>12,}  ({100*b_missing/rb:.1f}%)")
+    print()
+    print("  Packet type breakdown:")
+    for ptype, pbytes in sorted(decoder.pkt_bytes.items(), key=lambda x: -x[1]):
+        pct = 100.0 * pbytes / rb if rb else 0
+        cnt = decoder.pkt_counts[ptype]
+        if pbytes > 0:
+            print(f"    {ptype:<32s}: {pbytes:>10,} B  {pct:5.1f}%  ({cnt:,} pkts)")
+    print()
+    print(f"  Sample loss rate    : {pct_loss:.1f}% of DWT events dropped (overflow)")
+    print(f"  PC sample payload   : {100.0*b_pc/rb if rb else 0:.1f}% of raw bytes")
+
+    ts_bytes = sum(v for k,v in decoder.pkt_bytes.items() if "ts" in k.lower() or "GTS" in k)
+    if ts_bytes > rb * 0.03:
+        print(f"  [!] {100.0*ts_bytes/rb:.1f}% timestamp traffic — firmware may be re-writing")
+        print(f"      ITM_TCR at runtime (re-enabling TSENA/GTSFREQ after our setup).")
+        print(f"      Halt core mid-run and read 0xE0000E80 to confirm.")
+    if b_missing > rb * 0.02:
+        print(f"  [!] {100*b_missing/rb:.1f}% bytes unaccounted — baud mismatch or signal issue.")
+    if decoder.total_corrupt > 0:
+        print(f"  [!] {decoder.total_corrupt} corrupt PC packets — check baud/signal quality.")
 
     if args.output:
         with open(args.output, "w") as f:
