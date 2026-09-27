@@ -404,6 +404,11 @@ void renderer::set_shade_lights(
     raster_config.light_data = data;
 }
 
+void renderer::set_wireframe(bool enable)
+{
+    wireframe = enable;
+}
+
 //------------------------------------------------------------------------------
 
 void renderer::render_begin()
@@ -568,7 +573,7 @@ void renderer::render_draw()
 
             prof_geometry.stop();
             prof_raster.start();
-            raster::scan_faces(&raster_config);
+            wireframe ? raster::scan_faces_wireframe(&raster_config) : raster::scan_faces(&raster_config);
             prof_raster.stop();
             prof_geometry.start();
 
@@ -672,7 +677,7 @@ void renderer::render_draw()
 
         prof_geometry.stop();
         prof_raster.start();
-        raster::scan_faces(&raster_config);
+        wireframe ? raster::scan_faces_wireframe(&raster_config) : raster::scan_faces(&raster_config);
         prof_raster.stop();
         prof_geometry.start();
     }

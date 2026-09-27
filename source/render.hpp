@@ -157,6 +157,8 @@ public:
     };
     void set_texture_mip_type(uint32_t setting);
 
+    void set_wireframe(bool enable);
+
     //----------------------------------
 
     void render_begin();
@@ -225,6 +227,7 @@ private:
     math::mat4x4 post_matrix_t{};
 
     raster::config raster_config{};
+    bool wireframe{};
 
     float render_buffer[2][raster::num_max_vertices][num_max_components];
 

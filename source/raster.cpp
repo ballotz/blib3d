@@ -110,6 +110,8 @@ struct scan
 
     void scan_face(const float* v[], const int32_t num_vertices, const bool is_clockwise);
 
+    virtual void setup(const config* c) = 0;
+
     virtual bool setup_face(const float* pv[], uint32_t vertex_count,
         const bool back_cull, bool& is_clockwise) = 0;
 
@@ -123,6 +125,8 @@ void scan::batch_draw(const config* c)
     const uint32_t* num_vertices{ c->vertex_count_data };
     const float* vertex_data{ c->vertex_data };
     const bool back_cull{ c->back_cull };
+
+    setup(c);
 
     while (num_faces--)
     {
@@ -369,13 +373,13 @@ void sample_light(
 template<typename depth_type = depth_test_write>
 struct raster_depth : public scan
 {
-    raster_depth(const config* c)
+    // scan
+
+    void setup(const config* c) override
     {
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
     }
-
-    // scan
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -437,15 +441,15 @@ struct raster_depth : public scan
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
 struct raster_solid_shade_none : public scan
 {
-    raster_solid_shade_none(const config* c)
+    // scan
+
+    void setup(const config* c) override
     {
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
         fill_color = reinterpret_cast<const uint32_t&>(c->fill_color);
     }
-
-    // scan
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -518,7 +522,9 @@ struct raster_solid_shade_none : public scan
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
 struct raster_solid_shade_vertex : public scan
 {
-    raster_solid_shade_vertex(const config* c)
+    // scan
+
+    void setup(const config* c) override
     {
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -528,8 +534,6 @@ struct raster_solid_shade_vertex : public scan
         fill_color[2] = (uint32_t)c->fill_color.g;
         fill_color[3] = (uint32_t)c->fill_color.b;
     }
-
-    // scan
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -655,7 +659,9 @@ struct raster_solid_shade_vertex : public scan
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
 struct raster_solid_shade_lightmap : public scan
 {
-    raster_solid_shade_lightmap(const config* c)
+    // scan
+
+    void setup(const config* c) override
     {
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -669,8 +675,6 @@ struct raster_solid_shade_lightmap : public scan
         vshift = math::log2(c->lightmap_width);
         lightmap = (const uint32_t*)(c->lightmap);
     }
-
-    // scan
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -823,7 +827,9 @@ struct raster_solid_shade_lightmap : public scan
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
 struct raster_solid_shade_light : public scan
 {
-    raster_solid_shade_light(const config* c)
+    // scan
+
+    void setup(const config* c) override
     {
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -836,8 +842,6 @@ struct raster_solid_shade_light : public scan
         light_data = c->light_data;
         light_table = c->light_table;
     }
-
-    // scan
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -1011,14 +1015,14 @@ struct raster_solid_shade_light : public scan
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
 struct raster_vertex_shade_none : public scan
 {
-    raster_vertex_shade_none(const config* c)
+    // scan
+
+    void setup(const config* c) override
     {
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
     }
-
-    // scan
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -1145,14 +1149,14 @@ struct raster_vertex_shade_none : public scan
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
 struct raster_vertex_shade_vertex : public scan
 {
-    raster_vertex_shade_vertex(const config* c)
+    // scan
+
+    void setup(const config* c) override
     {
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
         frame_buffer = c->frame_buffer;
     }
-
-    // scan
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -1306,7 +1310,9 @@ struct raster_vertex_shade_vertex : public scan
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
 struct raster_vertex_shade_lightmap : public scan
 {
-    raster_vertex_shade_lightmap(const config* c)
+    // scan
+
+    void setup(const config* c) override
     {
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -1316,8 +1322,6 @@ struct raster_vertex_shade_lightmap : public scan
         vshift = math::log2(c->lightmap_width);
         lightmap = (const uint32_t*)(c->lightmap);
     }
-
-    // scan
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -1500,7 +1504,9 @@ struct raster_vertex_shade_lightmap : public scan
 template<typename blend_type = blend_none, typename depth_type = depth_test_write>
 struct raster_vertex_shade_light : public scan
 {
-    raster_vertex_shade_light(const config* c)
+    // scan
+
+    void setup(const config* c) override
     {
         frame_stride = c->frame_stride;
         depth_buffer = c->depth_buffer;
@@ -1509,8 +1515,6 @@ struct raster_vertex_shade_light : public scan
         light_data = c->light_data;
         light_table = c->light_table;
     }
-
-    // scan
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -1804,7 +1808,17 @@ template<
     typename mask_type = mask_texture_off>
 struct raster_texture_shade_none : public scan
 {
-    raster_texture_shade_none(const config* c)
+    // scan
+
+    bool mip_enable;
+
+    int32_t texture_width;
+    int32_t texture_height;
+
+    const uint8_t* mip_table[mip_table_max_size];
+    int32_t mip_max_level;
+
+    void setup(const config* c) override
     {
         mip_enable = (c->flags & TEXMIP_FACE) != 0;
 
@@ -1829,16 +1843,6 @@ struct raster_texture_shade_none : public scan
             mip_max_level = mip_table_build(c->texture_data, c->texture_width, c->texture_height, mip_table) - 1;
         }
     }
-
-    // scan
-
-    bool mip_enable;
-
-    int32_t texture_width;
-    int32_t texture_height;
-
-    const uint8_t* mip_table[mip_table_max_size];
-    int32_t mip_max_level;
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -2002,7 +2006,17 @@ template<
     typename mask_type = mask_texture_off>
 struct raster_texture_shade_vertex : public scan
 {
-    raster_texture_shade_vertex(const config* c)
+    // scan
+
+    bool mip_enable;
+
+    int32_t texture_width;
+    int32_t texture_height;
+
+    const uint8_t* mip_table[mip_table_max_size];
+    int32_t mip_max_level;
+
+    void setup(const config* c) override
     {
         mip_enable = (c->flags & TEXMIP_FACE) != 0;
 
@@ -2027,16 +2041,6 @@ struct raster_texture_shade_vertex : public scan
             mip_max_level = mip_table_build(c->texture_data, c->texture_width, c->texture_height, mip_table) - 1;
         }
     }
-
-    // scan
-
-    bool mip_enable;
-
-    int32_t texture_width;
-    int32_t texture_height;
-
-    const uint8_t* mip_table[mip_table_max_size];
-    int32_t mip_max_level;
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -2234,7 +2238,17 @@ template<
     typename mask_type = mask_texture_off>
 struct raster_texture_shade_lightmap : public scan
 {
-    raster_texture_shade_lightmap(const config* c)
+    // scan
+
+    bool mip_enable;
+
+    int32_t texture_width;
+    int32_t texture_height;
+
+    const uint8_t* mip_table[mip_table_max_size];
+    int32_t mip_max_level;
+
+    void setup(const config* c) override
     {
         mip_enable = (c->flags & TEXMIP_FACE) != 0;
 
@@ -2264,16 +2278,6 @@ struct raster_texture_shade_lightmap : public scan
         vshift = math::log2(c->lightmap_width);
         lightmap = (const uint32_t*)(c->lightmap);
     }
-
-    // scan
-
-    bool mip_enable;
-
-    int32_t texture_width;
-    int32_t texture_height;
-
-    const uint8_t* mip_table[mip_table_max_size];
-    int32_t mip_max_level;
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -2498,7 +2502,17 @@ template<
     typename mask_type = mask_texture_off>
 struct raster_texture_shade_light : public scan
 {
-    raster_texture_shade_light(const config* c)
+    // scan
+
+    bool mip_enable;
+
+    int32_t texture_width;
+    int32_t texture_height;
+
+    const uint8_t* mip_table[mip_table_max_size];
+    int32_t mip_max_level;
+
+    void setup(const config* c) override
     {
         mip_enable = (c->flags & TEXMIP_FACE) != 0;
 
@@ -2527,16 +2541,6 @@ struct raster_texture_shade_light : public scan
         light_data = c->light_data;
         light_table = c->light_table;
     }
-
-    // scan
-
-    bool mip_enable;
-
-    int32_t texture_width;
-    int32_t texture_height;
-
-    const uint8_t* mip_table[mip_table_max_size];
-    int32_t mip_max_level;
 
     bool setup_face(const float* pv[], uint32_t vertex_count, bool back_cull, bool& is_clockwise) override
     {
@@ -2797,20 +2801,19 @@ struct shade_lightmap_tag {};
 struct shade_light_tag {};
 
 template<typename depth_type, typename fill_tag, typename shade_tag, typename blend_type, typename mask_type, typename sample_type>
-blib3d_force_inline scan* create_raster_texfilter(void* addr, const config* c)
+blib3d_force_inline scan* create_raster_texfilter(void* addr, const config* /*c*/)
 {
     if constexpr (std::is_same_v<fill_tag, fill_texture_tag>)
     {
         if constexpr (std::is_same_v<shade_tag, shade_none_tag>)
-            return new (addr) raster_texture_shade_none<sample_type, blend_type, depth_type, mask_type>(c);
+            return new (addr) raster_texture_shade_none<sample_type, blend_type, depth_type, mask_type>();
         if constexpr (std::is_same_v<shade_tag, shade_vertex_tag>)
-            return new (addr) raster_texture_shade_vertex<sample_type, blend_type, depth_type, mask_type>(c);
+            return new (addr) raster_texture_shade_vertex<sample_type, blend_type, depth_type, mask_type>();
         if constexpr (std::is_same_v<shade_tag, shade_lightmap_tag>)
-            return new (addr) raster_texture_shade_lightmap<sample_type, blend_type, depth_type, mask_type>(c);
+            return new (addr) raster_texture_shade_lightmap<sample_type, blend_type, depth_type, mask_type>();
         if constexpr (std::is_same_v<shade_tag, shade_light_tag>)
-            return new (addr) raster_texture_shade_light<sample_type, blend_type, depth_type, mask_type>(c);
+            return new (addr) raster_texture_shade_light<sample_type, blend_type, depth_type, mask_type>();
     }
-    return nullptr;
 }
 
 template<typename depth_type, typename fill_tag, typename shade_tag, typename blend_type, typename mask_type>
@@ -2830,33 +2833,33 @@ blib3d_force_inline scan* create_raster_blend(void* addr, const config* c)
     if constexpr (std::is_same_v<fill_tag, fill_solid_tag>)
     {
         if constexpr (std::is_same_v<shade_tag, shade_none_tag>)
-            return new (addr) raster_solid_shade_none<blend_type, depth_type>(c);
+            return new (addr) raster_solid_shade_none<blend_type, depth_type>();
         if constexpr (std::is_same_v<shade_tag, shade_vertex_tag>)
-            return new (addr) raster_solid_shade_vertex<blend_type, depth_type>(c);
+            return new (addr) raster_solid_shade_vertex<blend_type, depth_type>();
         if constexpr (std::is_same_v<shade_tag, shade_lightmap_tag>)
-            return new (addr) raster_solid_shade_lightmap<blend_type, depth_type>(c);
+            return new (addr) raster_solid_shade_lightmap<blend_type, depth_type>();
         if constexpr (std::is_same_v<shade_tag, shade_light_tag>)
-            return new (addr) raster_solid_shade_light<blend_type, depth_type>(c);
-        return nullptr;
+            return new (addr) raster_solid_shade_light<blend_type, depth_type>();
     }
     if constexpr (std::is_same_v<fill_tag, fill_vertex_tag>)
     {
         if constexpr (std::is_same_v<shade_tag, shade_none_tag>)
-            return new (addr) raster_vertex_shade_none<blend_type, depth_type>(c);
+            return new (addr) raster_vertex_shade_none<blend_type, depth_type>();
         if constexpr (std::is_same_v<shade_tag, shade_vertex_tag>)
-            return new (addr) raster_vertex_shade_vertex<blend_type, depth_type>(c);
+            return new (addr) raster_vertex_shade_vertex<blend_type, depth_type>();
         if constexpr (std::is_same_v<shade_tag, shade_lightmap_tag>)
-            return new (addr) raster_vertex_shade_lightmap<blend_type, depth_type>(c);
+            return new (addr) raster_vertex_shade_lightmap<blend_type, depth_type>();
         if constexpr (std::is_same_v<shade_tag, shade_light_tag>)
-            return new (addr) raster_vertex_shade_light<blend_type, depth_type>(c);
-        return nullptr;
+            return new (addr) raster_vertex_shade_light<blend_type, depth_type>();
     }
-
-    switch (c->flags & TEXMASK_MASK)
+    if constexpr (std::is_same_v<fill_tag, fill_texture_tag>)
     {
-    case TEXMASK_OFF: return create_raster_texmask<depth_type, fill_tag, shade_tag, blend_type, mask_texture_off>(addr, c);
-    case TEXMASK_ON: return create_raster_texmask<depth_type, fill_tag, shade_tag, blend_type, mask_texture_on>(addr, c);
-    default: return nullptr;
+        switch (c->flags & TEXMASK_MASK)
+        {
+        case TEXMASK_OFF: return create_raster_texmask<depth_type, fill_tag, shade_tag, blend_type, mask_texture_off>(addr, c);
+        case TEXMASK_ON: return create_raster_texmask<depth_type, fill_tag, shade_tag, blend_type, mask_texture_on>(addr, c);
+        default: return nullptr;
+        }
     }
 }
 
@@ -2891,7 +2894,7 @@ blib3d_force_inline scan* create_raster_depth(void* addr, const config* c)
 {
     switch (c->flags & FILL_MASK)
     {
-    case FILL_NONE: return new (addr) raster_depth<depth_type>(c);
+    case FILL_NONE: return new (addr) raster_depth<depth_type>();
     case FILL_SOLID: return create_raster_fill<depth_type, fill_solid_tag>(addr, c);
     case FILL_VERTEX: return create_raster_fill<depth_type, fill_vertex_tag>(addr, c);
     case FILL_TEXTURE: return create_raster_fill<depth_type, fill_texture_tag>(addr, c);
@@ -2916,6 +2919,36 @@ blib3d_force_inline scan* create_raster(void* addr, const config* c)
 void scan_faces_wireframe(const config* c)
 {
     batch_draw_wireframe(c);
+
+    switch (c->flags & DEPTH_MASK)
+    {
+    case DEPTH_OFF:
+    {
+        raster_depth<depth_notest_nowrite> r;
+        r.batch_draw(c);
+        break;
+    }
+    case DEPTH_WRITE:
+    {
+        raster_depth<depth_notest_write> r;
+        r.batch_draw(c);
+        break;
+    }
+    case DEPTH_TEST:
+    {
+        raster_depth<depth_test_nowrite> r;
+        r.batch_draw(c);
+        break;
+    }
+    case DEPTH_TEST_WRITE:
+    {
+        raster_depth<depth_test_write> r;
+        r.batch_draw(c);
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 void scan_faces(const config* c)
