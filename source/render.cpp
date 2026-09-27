@@ -322,34 +322,46 @@ void renderer::set_geometry_back_cull(bool back_cull)
 
 //------------------------------------------------------------------------------
 
+void renderer::set_depth_type(uint32_t setting)
+{
+    raster_config.flags &= ~raster::DEPTH_MASK;
+    raster_config.flags |= (setting << raster::DEPTH_SHIFT) & raster::DEPTH_MASK;
+}
+
 void renderer::set_fill_type(uint32_t setting)
 {
-    raster_config.flags &= ~raster::FILL_BIT_MASK;
-    raster_config.flags |= (setting << raster::FILL_SHIFT) & raster::FILL_BIT_MASK;
+    raster_config.flags &= ~raster::FILL_MASK;
+    raster_config.flags |= (setting << raster::FILL_SHIFT) & raster::FILL_MASK;
 }
 
 void renderer::set_shade_type(uint32_t setting)
 {
-    raster_config.flags &= ~raster::SHADE_BIT_MASK;
-    raster_config.flags |= (setting << raster::SHADE_SHIFT) & raster::SHADE_BIT_MASK;
+    raster_config.flags &= ~raster::SHADE_MASK;
+    raster_config.flags |= (setting << raster::SHADE_SHIFT) & raster::SHADE_MASK;
 }
 
 void renderer::set_blend_type(uint32_t setting)
 {
-    raster_config.flags &= ~raster::BLEND_BIT_MASK;
-    raster_config.flags |= (setting << raster::BLEND_SHIFT) & raster::BLEND_BIT_MASK;
+    raster_config.flags &= ~raster::BLEND_MASK;
+    raster_config.flags |= (setting << raster::BLEND_SHIFT) & raster::BLEND_MASK;
 }
 
-void renderer::set_mip_type(uint32_t setting)
+void renderer::set_texture_mask(uint32_t setting)
 {
-    raster_config.flags &= ~raster::MIP_BIT_MASK;
-    raster_config.flags |= (setting << raster::MIP_SHIFT) & raster::MIP_BIT_MASK;
+    raster_config.flags &= ~raster::TEXMASK_MASK;
+    raster_config.flags |= (setting << raster::TEXMASK_SHIFT) & raster::TEXMASK_MASK;
 }
 
-void renderer::set_filter_type(uint32_t setting)
+void renderer::set_texture_filter_type(uint32_t setting)
 {
-    raster_config.flags &= ~raster::FILTER_BIT_MASK;
-    raster_config.flags |= (setting << raster::FILTER_SHIFT) & raster::FILTER_BIT_MASK;
+    raster_config.flags &= ~raster::TEXFILTER_MASK;
+    raster_config.flags |= (setting << raster::TEXFILTER_SHIFT) & raster::TEXFILTER_MASK;
+}
+
+void renderer::set_texture_mip_type(uint32_t setting)
+{
+    raster_config.flags &= ~raster::TEXMIP_MASK;
+    raster_config.flags |= (setting << raster::TEXMIP_SHIFT) & raster::TEXMIP_MASK;
 }
 
 void renderer::set_fill_color(raster::ARGB color)
@@ -465,7 +477,7 @@ void renderer::render_draw()
     geometry_source[0].count = 3;
     geometry_source[0].stride = geometry_coord_stride;
 
-    if ((raster_config.flags & raster::FILL_BIT_MASK) == raster::FILL_VERTEX)
+    if ((raster_config.flags & raster::FILL_MASK) == raster::FILL_VERTEX)
     {
         assert(geometry_color_data);
         assert(geometry_color_stride >= 4);
@@ -476,7 +488,7 @@ void renderer::render_draw()
         attribute_count += 4;
     }
     else
-    if ((raster_config.flags & raster::FILL_BIT_MASK) == raster::FILL_TEXTURE)
+    if ((raster_config.flags & raster::FILL_MASK) == raster::FILL_TEXTURE)
     {
         assert(geometry_tex_coord_data);
         assert(geometry_tex_coord_stride >= 2);
@@ -487,7 +499,7 @@ void renderer::render_draw()
         attribute_count += 2;
     }
 
-    if ((raster_config.flags & raster::SHADE_BIT_MASK) == raster::SHADE_VERTEX)
+    if ((raster_config.flags & raster::SHADE_MASK) == raster::SHADE_VERTEX)
     {
         assert(geometry_light_color_data);
         assert(geometry_light_color_stride >= 3);
@@ -498,7 +510,7 @@ void renderer::render_draw()
         attribute_count += 3;
     }
     else
-    if ((raster_config.flags & raster::SHADE_BIT_MASK) == raster::SHADE_LIGHTMAP)
+    if ((raster_config.flags & raster::SHADE_MASK) == raster::SHADE_LIGHTMAP)
     {
         assert(geometry_lmap_coord_data);
         assert(geometry_lmap_coord_stride >= 2);
@@ -509,7 +521,7 @@ void renderer::render_draw()
         attribute_count += 2;
     }
     else
-    if ((raster_config.flags & raster::SHADE_BIT_MASK) == raster::SHADE_LIGHT)
+    if ((raster_config.flags & raster::SHADE_MASK) == raster::SHADE_LIGHT)
     {
         assert(geometry_norm_data);
         assert(geometry_norm_stride >= 3);

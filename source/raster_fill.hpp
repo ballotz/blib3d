@@ -74,7 +74,7 @@ struct blend_alpha
 
 //------------------------------------------------------------------------------
 
-struct depth_off
+struct depth_notest_nowrite
 {
     static blib3d_force_inline bool process_test(float* /*buffer*/, float /*depth*/)
     {
@@ -86,7 +86,20 @@ struct depth_off
     }
 };
 
-struct depth_test
+struct depth_notest_write
+{
+    static blib3d_force_inline bool process_test(float* /*buffer*/, float /*depth*/)
+    {
+        return true;
+    }
+
+    static blib3d_force_inline void process_write(float* buffer, float depth)
+    {
+        *buffer = depth;
+    }
+};
+
+struct depth_test_nowrite
 {
     static blib3d_force_inline bool process_test(float* buffer, float depth)
     {
@@ -243,8 +256,8 @@ struct sample_bilinear
         //    plut[pdata[s1 + t0]],
         //    plut[pdata[s0 + t1]],
         //    plut[pdata[s1 + t1]],
-        //    (s >> 16) & 0xFF,
-        //    (t >> 16) & 0xFF);
+        //    (s >> 8) & 0xFF,
+        //    (t >> 8) & 0xFF);
         //return bilinear44(
         //    plut[pdata[s0 + t0]],
         //    plut[pdata[s1 + t0]],

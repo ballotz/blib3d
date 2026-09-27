@@ -82,8 +82,16 @@ public:
 
     enum
     {
-        FILL_WIREFRAME,
-        FILL_DEPTH,
+        DEPTH_OFF,
+        DEPTH_WRITE,
+        DEPTH_TEST,
+        DEPTH_TEST_WRITE
+    };
+    void set_depth_type(uint32_t setting);
+
+    enum
+    {
+        FILL_NONE,
         FILL_SOLID,
         FILL_VERTEX,
         FILL_TEXTURE
@@ -130,17 +138,24 @@ public:
 
     enum
     {
-        MIP_NONE,
-        MIP_FACE
+        TEXMASK_ON,
+        TEXMASK_OFF,
     };
-    void set_mip_type(uint32_t setting);
+    void set_texture_mask(uint32_t setting);
 
     enum
     {
-        FILTER_NONE,
-        FILTER_LINEAR
+        TEXFILTER_NONE,
+        TEXFILTER_LINEAR
     };
-    void set_filter_type(uint32_t setting);
+    void set_texture_filter_type(uint32_t setting);
+
+    enum
+    {
+        TEXMIP_NONE,
+        TEXMIP_FACE
+    };
+    void set_texture_mip_type(uint32_t setting);
 
     //----------------------------------
 

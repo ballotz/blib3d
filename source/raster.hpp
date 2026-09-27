@@ -41,39 +41,49 @@ struct alignas(4) ARGB
 
 enum
 {
-    FILL_SHIFT      = 0,
-    FILL_BIT_MASK   = 0b0000000111,
-    SHADE_SHIFT     = 3,
-    SHADE_BIT_MASK  = 0b0000011000,
-    BLEND_SHIFT     = 5,
-    BLEND_BIT_MASK  = 0b0011100000,
-    MIP_SHIFT       = 8,
-    MIP_BIT_MASK    = 0b0100000000,
-    FILTER_SHIFT    = 9,
-    FILTER_BIT_MASK = 0b1000000000,
+    DEPTH_SHIFT         = 0,
+    DEPTH_MASK          = 0b00000000011,
+    FILL_SHIFT          = 2,
+    FILL_MASK           = 0b00000001100,
+    SHADE_SHIFT         = 4,
+    SHADE_MASK          = 0b00000110000,
+    BLEND_SHIFT         = 6,
+    BLEND_MASK          = 0b00011000000,
+    TEXMASK_SHIFT       = 8,
+    TEXMASK_MASK        = 0b00100000000,
+    TEXFILTER_SHIFT     = 9,
+    TEXFILTER_MASK      = 0b01000000000,
+    TEXMIP_SHIFT        = 10,
+    TEXMIP_MASK         = 0b10000000000,
 
-    FILL_WIREFRAME  = 0,
-    FILL_DEPTH      = 1,
-    FILL_SOLID      = 2,
-    FILL_VERTEX     = 3,
-    FILL_TEXTURE    = 4,
+    DEPTH_OFF           = 0,
+    DEPTH_WRITE         = 1,
+    DEPTH_TEST          = 2,
+    DEPTH_TEST_WRITE    = 3,
 
-    SHADE_NONE      = 0 << SHADE_SHIFT,
-    SHADE_VERTEX    = 1 << SHADE_SHIFT,
-    SHADE_LIGHTMAP  = 2 << SHADE_SHIFT,
-    SHADE_LIGHT     = 3 << SHADE_SHIFT,
+    FILL_NONE           = 0 << FILL_SHIFT,
+    FILL_SOLID          = 1 << FILL_SHIFT,
+    FILL_VERTEX         = 2 << FILL_SHIFT,
+    FILL_TEXTURE        = 3 << FILL_SHIFT,
 
-    BLEND_NONE      = 0 << BLEND_SHIFT,
-    BLEND_MASK      = 1 << BLEND_SHIFT,
-    BLEND_ADD       = 2 << BLEND_SHIFT,
-    BLEND_MUL       = 3 << BLEND_SHIFT,
-    BLEND_ALPHA     = 4 << BLEND_SHIFT,
+    SHADE_NONE          = 0 << SHADE_SHIFT,
+    SHADE_VERTEX        = 1 << SHADE_SHIFT,
+    SHADE_LIGHTMAP      = 2 << SHADE_SHIFT,
+    SHADE_LIGHT         = 3 << SHADE_SHIFT,
 
-    MIP_NONE        = 0 << MIP_SHIFT,
-    MIP_FACE        = 1 << MIP_SHIFT,
+    BLEND_NONE          = 0 << BLEND_SHIFT,
+    BLEND_ADD           = 1 << BLEND_SHIFT,
+    BLEND_MUL           = 2 << BLEND_SHIFT,
+    BLEND_ALPHA         = 3 << BLEND_SHIFT,
 
-    FILTER_NONE     = 0 << FILTER_SHIFT,
-    FILTER_LINEAR   = 1 << FILTER_SHIFT,
+    TEXMASK_OFF         = 0 << TEXMASK_SHIFT,
+    TEXMASK_ON          = 1 << TEXMASK_SHIFT,
+
+    TEXFILTER_NONE      = 0 << TEXFILTER_SHIFT,
+    TEXFILTER_LINEAR    = 1 << TEXFILTER_SHIFT,
+
+    TEXMIP_NONE         = 0 << TEXMIP_SHIFT,
+    TEXMIP_FACE         = 1 << TEXMIP_SHIFT,
 };
 
 struct config
@@ -109,6 +119,8 @@ struct config
     const light* light_data;
     const math::powfast_table* light_table;
 };
+
+void scan_faces_wireframe(const config* c);
 
 void scan_faces(const config* c);
 

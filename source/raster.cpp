@@ -366,6 +366,7 @@ void sample_light(
 
 //------------------------------------------------------------------------------
 
+template<typename depth_type = depth_test_write>
 struct raster_depth : public scan
 {
     raster_depth(const config* c)
@@ -422,7 +423,8 @@ struct raster_depth : public scan
 
     blib3d_force_inline static void fill(span_data& s)
     {
-        *s.depth_addr = math::min(*s.depth_addr, s.depth);
+        if (depth_type::process_test(s.depth_addr, s.depth))
+            depth_type::process_write(s.depth_addr, s.depth);
 
         s.depth += s.gdx;
 
@@ -1804,7 +1806,7 @@ struct raster_texture_shade_none : public scan
 {
     raster_texture_shade_none(const config* c)
     {
-        mip_enable = (c->flags & MIP_FACE) != 0;
+        mip_enable = (c->flags & TEXMIP_FACE) != 0;
 
         texture_width = c->texture_width;
         texture_height = c->texture_height;
@@ -2002,7 +2004,7 @@ struct raster_texture_shade_vertex : public scan
 {
     raster_texture_shade_vertex(const config* c)
     {
-        mip_enable = (c->flags & MIP_FACE) != 0;
+        mip_enable = (c->flags & TEXMIP_FACE) != 0;
 
         texture_width = c->texture_width;
         texture_height = c->texture_height;
@@ -2234,7 +2236,7 @@ struct raster_texture_shade_lightmap : public scan
 {
     raster_texture_shade_lightmap(const config* c)
     {
-        mip_enable = (c->flags & MIP_FACE) != 0;
+        mip_enable = (c->flags & TEXMIP_FACE) != 0;
 
         texture_width = c->texture_width;
         texture_height = c->texture_height;
@@ -2498,7 +2500,7 @@ struct raster_texture_shade_light : public scan
 {
     raster_texture_shade_light(const config* c)
     {
-        mip_enable = (c->flags & MIP_FACE) != 0;
+        mip_enable = (c->flags & TEXMIP_FACE) != 0;
 
         texture_width = c->texture_width;
         texture_height = c->texture_height;
@@ -2785,23 +2787,142 @@ struct raster_texture_shade_light : public scan
 
 //------------------------------------------------------------------------------
 
-void scan_faces(const config* c)
+struct fill_solid_tag {};
+struct fill_vertex_tag {};
+struct fill_texture_tag {};
+
+struct shade_none_tag {};
+struct shade_vertex_tag {};
+struct shade_lightmap_tag {};
+struct shade_light_tag {};
+
+template<typename depth_type, typename fill_tag, typename shade_tag, typename blend_type, typename mask_type, typename sample_type>
+blib3d_force_inline scan* create_raster_texfilter(void* addr, const config* c)
 {
-    if ((c->flags & FILL_BIT_MASK) == FILL_WIREFRAME)
+    if constexpr (std::is_same_v<fill_tag, fill_texture_tag>)
     {
-        batch_draw_wireframe(c);
-        return;
+        if constexpr (std::is_same_v<shade_tag, shade_none_tag>)
+            return new (addr) raster_texture_shade_none<sample_type, blend_type, depth_type, mask_type>(c);
+        if constexpr (std::is_same_v<shade_tag, shade_vertex_tag>)
+            return new (addr) raster_texture_shade_vertex<sample_type, blend_type, depth_type, mask_type>(c);
+        if constexpr (std::is_same_v<shade_tag, shade_lightmap_tag>)
+            return new (addr) raster_texture_shade_lightmap<sample_type, blend_type, depth_type, mask_type>(c);
+        if constexpr (std::is_same_v<shade_tag, shade_light_tag>)
+            return new (addr) raster_texture_shade_light<sample_type, blend_type, depth_type, mask_type>(c);
+    }
+    return nullptr;
+}
+
+template<typename depth_type, typename fill_tag, typename shade_tag, typename blend_type, typename mask_type>
+blib3d_force_inline scan* create_raster_texmask(void* addr, const config* c)
+{
+    switch (c->flags & TEXFILTER_MASK)
+    {
+    case TEXFILTER_NONE: return create_raster_texfilter<depth_type, fill_tag, shade_tag, blend_type, mask_type, sample_nearest>(addr, c);
+    case TEXFILTER_LINEAR: return create_raster_texfilter<depth_type, fill_tag, shade_tag, blend_type, mask_type, sample_bilinear>(addr, c);
+    default: return nullptr;
+    }
+}
+
+template<typename depth_type, typename fill_tag, typename shade_tag, typename blend_type>
+blib3d_force_inline scan* create_raster_blend(void* addr, const config* c)
+{
+    if constexpr (std::is_same_v<fill_tag, fill_solid_tag>)
+    {
+        if constexpr (std::is_same_v<shade_tag, shade_none_tag>)
+            return new (addr) raster_solid_shade_none<blend_type, depth_type>(c);
+        if constexpr (std::is_same_v<shade_tag, shade_vertex_tag>)
+            return new (addr) raster_solid_shade_vertex<blend_type, depth_type>(c);
+        if constexpr (std::is_same_v<shade_tag, shade_lightmap_tag>)
+            return new (addr) raster_solid_shade_lightmap<blend_type, depth_type>(c);
+        if constexpr (std::is_same_v<shade_tag, shade_light_tag>)
+            return new (addr) raster_solid_shade_light<blend_type, depth_type>(c);
+        return nullptr;
+    }
+    if constexpr (std::is_same_v<fill_tag, fill_vertex_tag>)
+    {
+        if constexpr (std::is_same_v<shade_tag, shade_none_tag>)
+            return new (addr) raster_vertex_shade_none<blend_type, depth_type>(c);
+        if constexpr (std::is_same_v<shade_tag, shade_vertex_tag>)
+            return new (addr) raster_vertex_shade_vertex<blend_type, depth_type>(c);
+        if constexpr (std::is_same_v<shade_tag, shade_lightmap_tag>)
+            return new (addr) raster_vertex_shade_lightmap<blend_type, depth_type>(c);
+        if constexpr (std::is_same_v<shade_tag, shade_light_tag>)
+            return new (addr) raster_vertex_shade_light<blend_type, depth_type>(c);
+        return nullptr;
     }
 
-    //------------------------------------//
+    switch (c->flags & TEXMASK_MASK)
+    {
+    case TEXMASK_OFF: return create_raster_texmask<depth_type, fill_tag, shade_tag, blend_type, mask_texture_off>(addr, c);
+    case TEXMASK_ON: return create_raster_texmask<depth_type, fill_tag, shade_tag, blend_type, mask_texture_on>(addr, c);
+    default: return nullptr;
+    }
+}
 
-    scan* r{};
+template<typename depth_type, typename fill_tag, typename shade_tag>
+blib3d_force_inline scan* create_raster_shade(void* addr, const config* c)
+{
+    switch (c->flags & BLEND_MASK)
+    {
+    case BLEND_NONE: return create_raster_blend<depth_type, fill_tag, shade_tag, blend_none>(addr, c);
+    case BLEND_ADD: return create_raster_blend<depth_type, fill_tag, shade_tag, blend_add>(addr, c);
+    case BLEND_MUL: return create_raster_blend<depth_type, fill_tag, shade_tag, blend_mul>(addr, c);
+    case BLEND_ALPHA: return create_raster_blend<depth_type, fill_tag, shade_tag, blend_alpha>(addr, c);
+    default: return nullptr;
+    }
+}
 
-    //------------------------------------//
+template<typename depth_type, typename fill_tag>
+blib3d_force_inline scan* create_raster_fill(void* addr, const config* c)
+{
+    switch (c->flags & SHADE_MASK)
+    {
+    case SHADE_NONE: return create_raster_shade<depth_type, fill_tag, shade_none_tag>(addr, c);
+    case SHADE_VERTEX: return create_raster_shade<depth_type, fill_tag, shade_vertex_tag>(addr, c);
+    case SHADE_LIGHTMAP: return create_raster_shade<depth_type, fill_tag, shade_lightmap_tag>(addr, c);
+    case SHADE_LIGHT: return create_raster_shade<depth_type, fill_tag, shade_light_tag>(addr, c);
+    default: return nullptr;
+    }
+}
 
+template<typename depth_type>
+blib3d_force_inline scan* create_raster_depth(void* addr, const config* c)
+{
+    switch (c->flags & FILL_MASK)
+    {
+    case FILL_NONE: return new (addr) raster_depth<depth_type>(c);
+    case FILL_SOLID: return create_raster_fill<depth_type, fill_solid_tag>(addr, c);
+    case FILL_VERTEX: return create_raster_fill<depth_type, fill_vertex_tag>(addr, c);
+    case FILL_TEXTURE: return create_raster_fill<depth_type, fill_texture_tag>(addr, c);
+    default: return nullptr;
+    }
+}
+
+blib3d_force_inline scan* create_raster(void* addr, const config* c)
+{
+    switch (c->flags & DEPTH_MASK)
+    {
+    case DEPTH_OFF: return create_raster_depth<depth_notest_nowrite>(addr, c);
+    case DEPTH_WRITE: return create_raster_depth<depth_notest_write>(addr, c);
+    case DEPTH_TEST: return create_raster_depth<depth_test_nowrite>(addr, c);
+    case DEPTH_TEST_WRITE: return create_raster_depth<depth_test_write>(addr, c);
+    default: return nullptr;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void scan_faces_wireframe(const config* c)
+{
+    batch_draw_wireframe(c);
+}
+
+void scan_faces(const config* c)
+{
     union raster_pool
     {
-        raster_depth r0;
+        raster_depth<> r0;
         raster_solid_shade_none<> r1;
         raster_solid_shade_vertex<> r2;
         raster_solid_shade_lightmap<> r3;
@@ -2815,247 +2936,9 @@ void scan_faces(const config* c)
         raster_texture_shade_lightmap<> r11;
         raster_texture_shade_light<> r12;
     };
-    alignas(alignof(raster_pool)) uint8_t raster[sizeof(raster_pool)];
+    alignas(alignof(raster_pool)) uint8_t buffer[sizeof(raster_pool)];
 
-    switch (c->flags & FILL_BIT_MASK)
-    {
-    case FILL_DEPTH:
-        r = new (raster) raster_depth(c);
-        break;
-    case FILL_SOLID:
-        switch (c->flags & (SHADE_BIT_MASK | BLEND_BIT_MASK))
-        {
-        case (SHADE_NONE | BLEND_NONE):
-            r = new (raster) raster_solid_shade_none(c);
-            break;
-        case (SHADE_NONE | BLEND_ADD):
-            r = new (raster) raster_solid_shade_none<blend_add, depth_test>(c);
-            break;
-        case (SHADE_NONE | BLEND_MUL):
-            r = new (raster) raster_solid_shade_none<blend_mul, depth_test>(c);
-            break;
-        case (SHADE_NONE | BLEND_ALPHA):
-            r = new (raster) raster_solid_shade_none<blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_NONE):
-            r = new (raster) raster_solid_shade_vertex(c);
-            break;
-        case (SHADE_VERTEX | BLEND_ADD):
-            r = new (raster) raster_solid_shade_vertex<blend_add, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_MUL):
-            r = new (raster) raster_solid_shade_vertex<blend_mul, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_ALPHA):
-            r = new (raster) raster_solid_shade_vertex<blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_NONE):
-            r = new (raster) raster_solid_shade_lightmap(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_ADD):
-            r = new (raster) raster_solid_shade_lightmap<blend_add, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_MUL):
-            r = new (raster) raster_solid_shade_lightmap<blend_mul, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_ALPHA):
-            r = new (raster) raster_solid_shade_lightmap<blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_NONE):
-            r = new (raster) raster_solid_shade_light(c);
-            break;
-        case (SHADE_LIGHT | BLEND_ADD):
-            r = new (raster) raster_solid_shade_light<blend_add, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_MUL):
-            r = new (raster) raster_solid_shade_light<blend_mul, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_ALPHA):
-            r = new (raster) raster_solid_shade_light<blend_alpha, depth_test>(c);
-            break;
-        }
-        break;
-    case FILL_VERTEX:
-        switch (c->flags & (SHADE_BIT_MASK | BLEND_BIT_MASK))
-        {
-        case (SHADE_NONE | BLEND_NONE):
-            r = new (raster) raster_vertex_shade_none(c);
-            break;
-        case (SHADE_NONE | BLEND_ADD):
-            r = new (raster) raster_vertex_shade_none<blend_add, depth_test>(c);
-            break;
-        case (SHADE_NONE | BLEND_MUL):
-            r = new (raster) raster_vertex_shade_none<blend_mul, depth_test>(c);
-            break;
-        case (SHADE_NONE | BLEND_ALPHA):
-            r = new (raster) raster_vertex_shade_none<blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_NONE):
-            r = new (raster) raster_vertex_shade_vertex(c);
-            break;
-        case (SHADE_VERTEX | BLEND_ADD):
-            r = new (raster) raster_vertex_shade_vertex<blend_add, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_MUL):
-            r = new (raster) raster_vertex_shade_vertex<blend_mul, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_ALPHA):
-            r = new (raster) raster_vertex_shade_vertex<blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_NONE):
-            r = new (raster) raster_vertex_shade_lightmap(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_ADD):
-            r = new (raster) raster_vertex_shade_lightmap<blend_add, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_MUL):
-            r = new (raster) raster_vertex_shade_lightmap<blend_mul, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_ALPHA):
-            r = new (raster) raster_vertex_shade_lightmap<blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_NONE):
-            r = new (raster) raster_vertex_shade_light(c);
-            break;
-        case (SHADE_LIGHT | BLEND_ADD):
-            r = new (raster) raster_vertex_shade_light<blend_add, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_MUL):
-            r = new (raster) raster_vertex_shade_light<blend_mul, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_ALPHA):
-            r = new (raster) raster_vertex_shade_light<blend_alpha, depth_test>(c);
-            break;
-        }
-        break;
-    case FILL_TEXTURE:
-        switch (c->flags & (SHADE_BIT_MASK | BLEND_BIT_MASK | FILTER_BIT_MASK))
-        {
-        case (SHADE_NONE | BLEND_NONE | FILTER_NONE):
-            r = new (raster) raster_texture_shade_none<sample_nearest>(c);
-            break;
-        case (SHADE_NONE | BLEND_MASK | FILTER_NONE):
-            r = new (raster) raster_texture_shade_none<sample_nearest, blend_none, depth_test_write, mask_texture_on>(c);
-            break;
-        case (SHADE_NONE | BLEND_ADD | FILTER_NONE):
-            r = new (raster) raster_texture_shade_none<sample_nearest, blend_add, depth_test>(c);
-            break;
-        case (SHADE_NONE | BLEND_MUL | FILTER_NONE):
-            r = new (raster) raster_texture_shade_none<sample_nearest, blend_mul, depth_test>(c);
-            break;
-        case (SHADE_NONE | BLEND_ALPHA | FILTER_NONE):
-            r = new (raster) raster_texture_shade_none<sample_nearest, blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_NONE | FILTER_NONE):
-            r = new (raster) raster_texture_shade_vertex<sample_nearest>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_MASK | FILTER_NONE):
-            r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_none, depth_test_write, mask_texture_on>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_ADD | FILTER_NONE):
-            r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_add, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_MUL | FILTER_NONE):
-            r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_mul, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_ALPHA | FILTER_NONE):
-            r = new (raster) raster_texture_shade_vertex<sample_nearest, blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_NONE | FILTER_NONE):
-            r = new (raster) raster_texture_shade_lightmap<sample_nearest>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_MASK | FILTER_NONE):
-            r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_none, depth_test_write, mask_texture_on>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_ADD | FILTER_NONE):
-            r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_add, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_MUL | FILTER_NONE):
-            r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_mul, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_ALPHA | FILTER_NONE):
-            r = new (raster) raster_texture_shade_lightmap<sample_nearest, blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_NONE | FILTER_NONE):
-            r = new (raster) raster_texture_shade_light<sample_nearest>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_MASK | FILTER_NONE):
-            r = new (raster) raster_texture_shade_light<sample_nearest, blend_none, depth_test_write, mask_texture_on>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_ADD | FILTER_NONE):
-            r = new (raster) raster_texture_shade_light<sample_nearest, blend_add, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_MUL | FILTER_NONE):
-            r = new (raster) raster_texture_shade_light<sample_nearest, blend_mul, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_ALPHA | FILTER_NONE):
-            r = new (raster) raster_texture_shade_light<sample_nearest, blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_NONE | BLEND_NONE | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_none<sample_bilinear>(c);
-            break;
-        case (SHADE_NONE | BLEND_MASK | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_none<sample_bilinear, blend_none, depth_test_write, mask_texture_on>(c);
-            break;
-        case (SHADE_NONE | BLEND_ADD | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_none<sample_bilinear, blend_add, depth_test>(c);
-            break;
-        case (SHADE_NONE | BLEND_MUL | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_none<sample_bilinear, blend_mul, depth_test>(c);
-            break;
-        case (SHADE_NONE | BLEND_ALPHA | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_none<sample_bilinear, blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_NONE | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_vertex<sample_bilinear>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_MASK | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_none, depth_test_write, mask_texture_on>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_ADD | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_add, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_MUL | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_mul, depth_test>(c);
-            break;
-        case (SHADE_VERTEX | BLEND_ALPHA | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_vertex<sample_bilinear, blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_NONE | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_lightmap<sample_bilinear>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_MASK | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_none, depth_test_write, mask_texture_on>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_ADD | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_add, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_MUL | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_mul, depth_test>(c);
-            break;
-        case (SHADE_LIGHTMAP | BLEND_ALPHA | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_lightmap<sample_bilinear, blend_alpha, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_NONE | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_light<sample_bilinear>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_MASK | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_light<sample_bilinear, blend_none, depth_test_write, mask_texture_on>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_ADD | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_light<sample_bilinear, blend_add, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_MUL | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_light<sample_bilinear, blend_mul, depth_test>(c);
-            break;
-        case (SHADE_LIGHT | BLEND_ALPHA | FILTER_LINEAR):
-            r = new (raster) raster_texture_shade_light<sample_bilinear, blend_alpha, depth_test>(c);
-            break;
-        }
-        break;
-    }
-
-    //------------------------------------//
+    scan* r{ create_raster(buffer, c) };
 
     if (r)
         r->batch_draw(c);
