@@ -303,10 +303,9 @@ void draw(uint32_t* pixels, float* zbuffer, int32_t stride)
     renderer.render_clear_frame();
     renderer.render_clear_depth();
 
-    text_model_draw(renderer);
-
     rect_model_draw(renderer);
 
+    text_model_draw(renderer);
 
     draw2d_draw_string<uint32_t>(&rect, 0, 0, string, 0xFF888888);
 

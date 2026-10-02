@@ -85,6 +85,8 @@ void rect_model_draw(blib3d::render::renderer& renderer)
 
     renderer.set_fill_color({ 128, 128, 128, 64 });
 
+    renderer.set_depth_type(blib3d::render::renderer::DEPTH_WRITE);
+
     //renderer.set_fill_type(blib3d::render::renderer::FILL_SOLID);
     //renderer.set_fill_type(blib3d::render::renderer::FILL_VERTEX);
     renderer.set_fill_type(blib3d::render::renderer::FILL_TEXTURE);
@@ -99,8 +101,8 @@ void rect_model_draw(blib3d::render::renderer& renderer)
     //renderer.set_blend_type(blib3d::render::renderer::BLEND_MUL);
     //renderer.set_blend_type(blib3d::render::renderer::BLEND_ALPHA);
 
-    renderer.set_filter_type(blib3d::render::renderer::FILTER_NONE);
-    //renderer.set_filter_type(blib3d::render::renderer::FILTER_LINEAR);
+    renderer.set_texture_filter_type(blib3d::render::renderer::TEXFILTER_NONE);
+    //renderer.set_texture_filter_type(blib3d::render::renderer::TEXFILTER_LINEAR);
 
     renderer.render_draw();
 }
