@@ -701,7 +701,6 @@ struct raster_solid_shade_lightmap : public scan
         int32_t l_attrib_int[attrib_count - 2]; // 16.16
         int32_t l_attrib_int_next[attrib_count - 2]; // 16.16
         uint32_t l_shade_counter;
-        uint32_t l_shade_trigger;
         uint32_t l_shade[3];
 
         float x0f{ raster_to_real(x0) };
@@ -729,7 +728,7 @@ struct raster_solid_shade_lightmap : public scan
         l_depth_addr = &depth_buffer[start];
         l_frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
         l_shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
-        l_shade_trigger = 1;
+        l_shade_counter |= 0x80000000;
 
         int32_t n{ x1 - x0 };
         while (n)
@@ -764,9 +763,9 @@ struct raster_solid_shade_lightmap : public scan
             {
                 if (depth_type::process_test(l_depth_addr, l_depth))
                 {
-                    if (((l_shade_counter & shade_mask) == 0) | l_shade_trigger)
+                    if (((l_shade_counter & shade_mask) == 0) | (l_shade_counter >> 31))
                     {
-                        l_shade_trigger = 0;
+                        l_shade_counter &= ~0x80000000;
                         uint32_t shade_color{ sample_lightmap(
                             l_attrib_int[0],
                             l_attrib_int[1],
@@ -787,7 +786,7 @@ struct raster_solid_shade_lightmap : public scan
                 }
                 else
                 {
-                    l_shade_trigger = 1;
+                    l_shade_counter |= 0x80000000;
                 }
 
                 l_depth += l_gdx[0];
@@ -868,7 +867,6 @@ struct raster_solid_shade_light : public scan
         float l_attrib_int[attrib_count - 2];
         float l_attrib_int_next[attrib_count - 2];
         uint32_t l_shade_counter;
-        uint32_t l_shade_trigger;
         uint32_t l_shade[3];
 
         float x0f{ raster_to_real(x0) };
@@ -907,7 +905,7 @@ struct raster_solid_shade_light : public scan
         l_depth_addr = &depth_buffer[start];
         l_frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
         l_shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
-        l_shade_trigger = 1;
+        l_shade_counter |= 0x80000000;
 
         int32_t n{ x1 - x0 };
         while (n)
@@ -950,9 +948,9 @@ struct raster_solid_shade_light : public scan
             {
                 if (depth_type::process_test(l_depth_addr, l_depth))
                 {
-                    if (((l_shade_counter & shade_mask) == 0) | l_shade_trigger)
+                    if (((l_shade_counter & shade_mask) == 0) | (l_shade_counter >> 31))
                     {
-                        l_shade_trigger = 0;
+                        l_shade_counter &= ~0x80000000;
                         sample_light(
                             &l_attrib_int[0], &l_attrib_int[3],
                             l_light_data, l_num_lights,
@@ -971,7 +969,7 @@ struct raster_solid_shade_light : public scan
                 }
                 else
                 {
-                    l_shade_trigger = 1;
+                    l_shade_counter |= 0x80000000;
                 }
 
                 l_depth += l_gdx[0];
@@ -1358,7 +1356,6 @@ struct raster_vertex_shade_lightmap : public scan
         int32_t l_attrib_int[attrib_count - 2]; // 16.16
         int32_t l_attrib_int_next[attrib_count - 2]; // 16.16
         uint32_t l_shade_counter;
-        uint32_t l_shade_trigger;
         uint32_t l_shade[3];
 
         float x0f{ raster_to_real(x0) };
@@ -1394,7 +1391,7 @@ struct raster_vertex_shade_lightmap : public scan
         l_depth_addr = &depth_buffer[start];
         l_frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
         l_shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
-        l_shade_trigger = 1;
+        l_shade_counter |= 0x80000000;
 
         int32_t n{ x1 - x0 };
         while (n)
@@ -1449,9 +1446,9 @@ struct raster_vertex_shade_lightmap : public scan
             {
                 if (depth_type::process_test(l_depth_addr, l_depth))
                 {
-                    if (((l_shade_counter & shade_mask) == 0) | l_shade_trigger)
+                    if (((l_shade_counter & shade_mask) == 0) | (l_shade_counter >> 31))
                     {
-                        l_shade_trigger = 0;
+                        l_shade_counter &= ~0x80000000;
                         uint32_t shade_color{ sample_lightmap(
                             l_attrib_int[4],
                             l_attrib_int[5],
@@ -1472,7 +1469,7 @@ struct raster_vertex_shade_lightmap : public scan
                 }
                 else
                 {
-                    l_shade_trigger = 1;
+                    l_shade_counter |= 0x80000000;
                 }
 
                 l_depth += l_gdx[0];
@@ -1558,7 +1555,6 @@ struct raster_vertex_shade_light : public scan
         int32_t l_attrib_inti_next[4]; // 16.16
         float l_attrib_intf_next[6];
         uint32_t l_shade_counter;
-        uint32_t l_shade_trigger;
         uint32_t l_shade[3];
 
         float x0f{ raster_to_real(x0) };
@@ -1606,7 +1602,7 @@ struct raster_vertex_shade_light : public scan
         l_depth_addr = &depth_buffer[start];
         l_frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
         l_shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
-        l_shade_trigger = 1;
+        l_shade_counter |= 0x80000000;
 
         int32_t n{ x1 - x0 };
         while (n)
@@ -1677,9 +1673,9 @@ struct raster_vertex_shade_light : public scan
             {
                 if (depth_type::process_test(l_depth_addr, l_depth))
                 {
-                    if (((l_shade_counter & shade_mask) == 0) | l_shade_trigger)
+                    if (((l_shade_counter & shade_mask) == 0) | (l_shade_counter >> 31))
                     {
-                        l_shade_trigger = 0;
+                        l_shade_counter &= ~0x80000000;
                         sample_light(
                             &l_attrib_intf[0], &l_attrib_intf[3],
                             l_light_data, l_num_lights,
@@ -1698,7 +1694,7 @@ struct raster_vertex_shade_light : public scan
                 }
                 else
                 {
-                    l_shade_trigger = 1;
+                    l_shade_counter |= 0x80000000;
                 }
 
                 l_depth += l_gdx[0];
@@ -2358,7 +2354,6 @@ struct raster_texture_shade_lightmap : public scan
         int32_t l_attrib_int[attrib_count - 2]; // 16.16
         int32_t l_attrib_int_next[attrib_count - 2]; // 16.16
         uint32_t l_shade_counter;
-        uint32_t l_shade_trigger;
         uint32_t l_shade[3];
 
         float x0f{ raster_to_real(x0) };
@@ -2393,7 +2388,7 @@ struct raster_texture_shade_lightmap : public scan
         l_depth_addr = &depth_buffer[start];
         l_frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
         l_shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
-        l_shade_trigger = 1;
+        l_shade_counter |= 0x80000000;
 
         int32_t n{ x1 - x0 };
         while (n)
@@ -2444,9 +2439,9 @@ struct raster_texture_shade_lightmap : public scan
                         l_smask, l_tmask, l_tshift, l_texture_lut, l_texture_data) };
                     if (mask_type::process(texel))
                     {
-                        if (((l_shade_counter & shade_mask) == 0) | l_shade_trigger)
+                        if (((l_shade_counter & shade_mask) == 0) | (l_shade_counter >> 31))
                         {
-                            l_shade_trigger = 0;
+                            l_shade_counter &= ~0x80000000;
                             uint32_t shade_color{ sample_lightmap(
                                 l_attrib_int[2],
                                 l_attrib_int[3],
@@ -2468,7 +2463,7 @@ struct raster_texture_shade_lightmap : public scan
                 }
                 else
                 {
-                    l_shade_trigger = 1;
+                    l_shade_counter |= 0x80000000;
                 }
 
                 l_depth += l_gdx[0];
@@ -2626,7 +2621,6 @@ struct raster_texture_shade_light : public scan
         int32_t l_attrib_inti_next[2]; // 16.16
         float l_attrib_intf_next[6];
         uint32_t l_shade_counter;
-        uint32_t l_shade_trigger;
         uint32_t l_shade[3];
 
         float x0f{ raster_to_real(x0) };
@@ -2673,7 +2667,7 @@ struct raster_texture_shade_light : public scan
         l_depth_addr = &depth_buffer[start];
         l_frame_addr = reinterpret_cast<uint32_t*>(&frame_buffer[start]);
         l_shade_counter = ((y & 1 ? shade_hold >> 1u : 0u) + x0) & shade_mask;
-        l_shade_trigger = 1;
+        l_shade_counter |= 0x80000000;
 
         int32_t n{ x1 - x0 };
         while (n)
@@ -2740,9 +2734,9 @@ struct raster_texture_shade_light : public scan
                         l_smask, l_tmask, l_tshift, l_texture_lut, l_texture_data) };
                     if (mask_type::process(texel))
                     {
-                        if (((l_shade_counter & shade_mask) == 0) | l_shade_trigger)
+                        if (((l_shade_counter & shade_mask) == 0) | (l_shade_counter >> 31))
                         {
-                            l_shade_trigger = 0;
+                            l_shade_counter &= ~0x80000000;
                             sample_light(
                                 &l_attrib_intf[0], &l_attrib_intf[3],
                                 l_light_data, l_num_lights,
@@ -2762,7 +2756,7 @@ struct raster_texture_shade_light : public scan
                 }
                 else
                 {
-                    l_shade_trigger = 1;
+                    l_shade_counter |= 0x80000000;
                 }
 
                 l_depth += l_gdx[0];
