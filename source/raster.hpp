@@ -10,7 +10,7 @@ namespace blib3d::raster
 
 static constexpr uint32_t num_max_vertices{ 12 };
 
-// [x y] z w
+// [x y] z
 // [x y] z w sr sg sb
 // [x y] z w su sv
 // [x y] z w px py pz nx ny nz
