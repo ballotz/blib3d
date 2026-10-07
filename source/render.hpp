@@ -129,7 +129,6 @@ public:
     enum
     {
         BLEND_NONE,
-        BLEND_MASK,
         BLEND_ADD,
         BLEND_MUL,
         BLEND_ALPHA
