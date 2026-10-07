@@ -208,6 +208,7 @@ blib3d_force_inline uint32_t bilinear62(
 
 blib3d_force_inline uint32_t sample_lightmap(int32_t u, int32_t v, int32_t vshift, const uint32_t* pt)
 {
+    //return pt[(u >> 16) + (v >> 16 << vshift)];
     int32_t r0{ (u >> 16) + (v >> 16 << vshift) };
     int32_t r1{ r0 + (1 << vshift) };
     return bilinear88(
@@ -217,6 +218,27 @@ blib3d_force_inline uint32_t sample_lightmap(int32_t u, int32_t v, int32_t vshif
         pt[r1 + 1],
         (u >> 8) & 0xFF,
         (v >> 8) & 0xFF);
+    //return bilinear44(
+    //   pt[r0],
+    //   pt[r0 + 1],
+    //   pt[r1],
+    //   pt[r1 + 1],
+    //   (u >> 12) & 0xF,
+    //   (v >> 12) & 0xF);
+    //return bilinear53(
+    //    pt[r0],
+    //    pt[r0 + 1],
+    //    pt[r1],
+    //    pt[r1 + 1],
+    //    (u >> 13) & 0x7,
+    //    (v >> 13) & 0x7);
+    //return bilinear62(
+    //    pt[r0],
+    //    pt[r0 + 1],
+    //    pt[r1],
+    //    pt[r1 + 1],
+    //    (u >> 14) & 0x3,
+    //    (v >> 14) & 0x3);
 }
 
 //------------------------------------------------------------------------------

@@ -140,6 +140,7 @@ int SDL_main(int argc, char* argv[])
         SDLK_RIGHT,
 
         SDLK_r,
+        SDLK_p,
     };
     int32_t controller_move[2]{};
 

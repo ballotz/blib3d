@@ -156,6 +156,9 @@ float text_model_angle_speed{ 3.1416f / 10.f };
 //float text_model_angle{ 0 };
 //float text_model_angle_speed{ 0 };
 
+bool running{ true };
+bool pause_debounce{ false };
+
 float fps{};
 float fps_count{};
 float ms{};
@@ -177,6 +180,18 @@ void tick(uint32_t controller, int32_t dx, int32_t dy)
     if (controller & (1 << CONTROLLER_RESET))
     {
         fps_count = 0;
+        profile_fps_count = 0;
+    }
+    
+    if (controller & (1 << CONTROLLER_PAUSE))
+    {
+        if (!pause_debounce)
+            running = !running;
+        pause_debounce = true;
+    }
+    else
+    {
+        pause_debounce = false;
     }
 
     {
@@ -240,27 +255,30 @@ void tick(uint32_t controller, int32_t dx, int32_t dy)
         renderer.set_geometry_transform(mat_pre);
     }
 
-    rect_light_angle += rect_light_angle_speed * dt;
-    float rect_light_x{ std::cos(rect_light_angle) * 0.25f + 0.5f };
-    float rect_light_y{ std::sin(rect_light_angle) * -0.25f + 0.5f };
-    rect_model_tick(rect_light_x, rect_light_y);
+    if (running)
+    {
+        rect_light_angle += rect_light_angle_speed * dt;
+        float rect_light_x{ std::cos(rect_light_angle) * 0.25f + 0.5f };
+        float rect_light_y{ std::sin(rect_light_angle) * -0.25f + 0.5f };
+        rect_model_tick(rect_light_x, rect_light_y);
 
-    if (text_model_angle > +(blib3d::math::pi / 2.f))
-    {
-    	text_model_angle = +(blib3d::math::pi / 2.f);
-    	text_model_angle_speed = -text_model_angle_speed;
+        if (text_model_angle > +(blib3d::math::pi / 2.f))
+        {
+            text_model_angle = +(blib3d::math::pi / 2.f);
+            text_model_angle_speed = -text_model_angle_speed;
+        }
+        if (text_model_angle < -(blib3d::math::pi / 2.f))
+        {
+            text_model_angle = -(blib3d::math::pi / 2.f);
+            text_model_angle_speed = -text_model_angle_speed;
+        }
+        text_model_angle += text_model_angle_speed * dt;
+        if (text_model_angle >= blib3d::math::pi)
+            text_model_angle -= (blib3d::math::pi * 2.f);
+        if (text_model_angle < -blib3d::math::pi)
+            text_model_angle += (blib3d::math::pi * 2.f);
+        text_model_tick(text_model_angle);
     }
-    if (text_model_angle < -(blib3d::math::pi / 2.f))
-    {
-    	text_model_angle = -(blib3d::math::pi / 2.f);
-    	text_model_angle_speed = -text_model_angle_speed;
-    }
-    text_model_angle += text_model_angle_speed * dt;
-    if (text_model_angle >= blib3d::math::pi)
-    	text_model_angle -= (blib3d::math::pi * 2.f);
-    if (text_model_angle < -blib3d::math::pi)
-    	text_model_angle += (blib3d::math::pi * 2.f);
-    text_model_tick(text_model_angle);
 
     if (dt != 0)
     {

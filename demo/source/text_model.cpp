@@ -414,22 +414,17 @@ void text_model_tick(float angle)
 
 void text_model_draw(blib3d::render::renderer& renderer)
 {
-    renderer.set_geometry_light_color(&vertex_data[0][4], vert_stride);
-    renderer.set_geometry_lmap_coord(&vertex_data[0][4], vert_stride);
-
-    renderer.set_geometry_tex_coord(&vertex_data[0][7], vert_stride);
-
     renderer.set_geometry_coord(&vertex_data_transformed[0][0], vert_stride);
     renderer.set_geometry_norm(&vertex_data_transformed[0][9], vert_stride);
-
+    renderer.set_geometry_tex_coord(&vertex_data[0][7], vert_stride);
+    renderer.set_geometry_light_color(&vertex_data[0][4], vert_stride);
+    renderer.set_geometry_lmap_coord(&vertex_data[0][4], vert_stride);
+    renderer.set_fill_color({ 255, 255, 255, 128 });
+    renderer.set_fill_texture(brick_width, brick_height, (blib3d::raster::ARGB*)brick_lut, (uint8_t*)brick_data);
+    renderer.set_shade_lightmap(2, 2 * 1024, (blib3d::raster::ARGB*)lightmap);
     renderer.set_geometry_face(faces, num_faces);
     renderer.set_geometry_face_index(nullptr, 0);
     renderer.set_geometry_back_cull(true);
-
-    renderer.set_fill_color({ 255, 255, 255, 128 });
-    renderer.set_fill_texture(brick_width, brick_height, (blib3d::raster::ARGB*)brick_lut, (uint8_t*)brick_data);
-
-    renderer.set_shade_lightmap(2, 2 * 1024, (blib3d::raster::ARGB*)lightmap);
 
     renderer.set_depth_type(blib3d::render::renderer::DEPTH_TEST_WRITE);
 
@@ -445,8 +440,8 @@ void text_model_draw(blib3d::render::renderer& renderer)
     //renderer.set_shade_type(blib3d::render::renderer::SHADE_NONE);
     //renderer.set_shade_type(blib3d::render::renderer::SHADE_LIGHT);
 
-    renderer.set_blend_type(blib3d::render::renderer::BLEND_NONE);
-    //renderer.set_blend_type(blib3d::render::renderer::BLEND_ADD);
+    // renderer.set_blend_type(blib3d::render::renderer::BLEND_NONE);
+    // renderer.set_blend_type(blib3d::render::renderer::BLEND_ADD);
     //renderer.set_blend_type(blib3d::render::renderer::BLEND_MUL);
     //renderer.set_blend_type(blib3d::render::renderer::BLEND_ALPHA);
 
