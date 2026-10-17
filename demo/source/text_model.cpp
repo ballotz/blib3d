@@ -4,17 +4,18 @@
 #include <cassert>
 
 #define VERTEX_SHADE
+//#define GHOST
 
 namespace demo
 {
 
 static constexpr int vert_stride{ 12 };
 
-static constexpr int max_num_vertices{ 3072 };
+static constexpr int max_num_vertices{ 2560 };
 static int num_vertices{};
 static float vertex_data[max_num_vertices][vert_stride];
 
-static constexpr int max_num_faces{ 768 };
+static constexpr int max_num_faces{ 640 };
 static int num_faces{};
 static blib3d::render::face faces[max_num_faces];
 
@@ -115,7 +116,7 @@ void text_model_setup(float step, float depth)
                     else
                         enclose_left = true;
 
-                    if (x < char_w - 1)
+                    if (x < image_w - 1)
                     {
                         if (image[y][x + 1] == 0)
                             enclose_right = true;
@@ -131,7 +132,7 @@ void text_model_setup(float step, float depth)
                     else
                         enclose_top = true;
 
-                    if (y < char_h - 1)
+                    if (y < image_h - 1)
                     {
                         if (image[y + 1][x] == 0)
                             enclose_bottom = true;
@@ -334,7 +335,11 @@ void text_model_tick(float angle)
                 float dist2{ blib3d::math::dot3(v0, v0) };
                 float scale{ blib3d::math::dot3(v0, normal) };
                 if (scale < 0)
+#ifdef GHOST
+                    scale = -scale;
+#else
                     scale = 0;
+#endif
                 scale *= blib3d::math::invsqrt(dist2);
                 scale /= dist2;
                 blib3d::math::vec3 light;
@@ -424,9 +429,17 @@ void text_model_draw(blib3d::render::renderer& renderer)
     renderer.set_shade_lightmap(2, 2 * 1024, (blib3d::raster::ARGB*)lightmap);
     renderer.set_geometry_face(faces, num_faces);
     renderer.set_geometry_face_index(nullptr, 0);
+#ifdef GHOST
+    renderer.set_geometry_back_cull(false);
+#else
     renderer.set_geometry_back_cull(true);
+#endif
 
+#ifdef GHOST
+    renderer.set_depth_type(blib3d::render::renderer::DEPTH_TEST);
+#else
     renderer.set_depth_type(blib3d::render::renderer::DEPTH_TEST_WRITE);
+#endif
 
     renderer.set_fill_type(blib3d::render::renderer::FILL_SOLID);
     //renderer.set_fill_type(blib3d::render::renderer::FILL_VERTEX);
@@ -440,10 +453,13 @@ void text_model_draw(blib3d::render::renderer& renderer)
     //renderer.set_shade_type(blib3d::render::renderer::SHADE_NONE);
     //renderer.set_shade_type(blib3d::render::renderer::SHADE_LIGHT);
 
-    // renderer.set_blend_type(blib3d::render::renderer::BLEND_NONE);
-    // renderer.set_blend_type(blib3d::render::renderer::BLEND_ADD);
+#ifdef GHOST
+    renderer.set_blend_type(blib3d::render::renderer::BLEND_ADD);
+#else
+    renderer.set_blend_type(blib3d::render::renderer::BLEND_NONE);
     //renderer.set_blend_type(blib3d::render::renderer::BLEND_MUL);
     //renderer.set_blend_type(blib3d::render::renderer::BLEND_ALPHA);
+#endif
 
     renderer.set_texture_filter_type(blib3d::render::renderer::TEXFILTER_NONE);
     //renderer.set_texture_filter_type(blib3d::render::renderer::TEXFILTER_LINEAR);
