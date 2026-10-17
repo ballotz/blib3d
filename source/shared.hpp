@@ -5,11 +5,11 @@
 
 // architecture
 
-#ifdef _M_IX86
+#if defined(_M_IX86) || defined(__i386__)
 #define BLIB3D_ARCH_X86
 #endif
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(__x86_64__)
 #define BLIB3D_ARCH_X64
 #endif
 

@@ -12,7 +12,7 @@
 namespace blib3d::timer
 {
 
-#if defined(CPU_MIMXRT1176DVMAA)
+#if defined(CPU_MIMXRT1176DVMAA_cm7)
 using time_point_type = uint32_t;
 using duration_type = uint32_t;
 #else
@@ -27,7 +27,7 @@ class profile
 public:
     inline void start()
     {
-#if defined(CPU_MIMXRT1176DVMAA)
+#if defined(CPU_MIMXRT1176DVMAA_cm7)
         t = DWT->CYCCNT;
 #else
         t = std::chrono::high_resolution_clock::now();
@@ -36,7 +36,7 @@ public:
 
     inline void stop()
     {
-#if defined(CPU_MIMXRT1176DVMAA)
+#if defined(CPU_MIMXRT1176DVMAA_cm7)
         e += DWT->CYCCNT - t;
 #else
         e += std::chrono::high_resolution_clock::now() - t;
@@ -66,7 +66,7 @@ class interval
 public:
     inline void tick()
     {
-#if defined(CPU_MIMXRT1176DVMAA)
+#if defined(CPU_MIMXRT1176DVMAA_cm7)
         time_point_type new_t = DWT->CYCCNT;
         us = (uint32_t)((float)(new_t - t) * (1e6f / (float)SystemCoreClock));
 #else

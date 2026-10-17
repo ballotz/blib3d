@@ -7,7 +7,7 @@ namespace blib3d::timer
 
 void profile::reset()
 {
-#if defined(CPU_MIMXRT1176DVMAA)
+#if defined(CPU_MIMXRT1176DVMAA_cm7)
     e = 0;
 #else
     e = duration_type::zero();
@@ -20,7 +20,7 @@ void profile::reset()
 
 void profile::update()
 {
-#if defined(CPU_MIMXRT1176DVMAA)
+#if defined(CPU_MIMXRT1176DVMAA_cm7)
     uint32_t us{ (uint32_t)((float)e * (1e6f / (float)SystemCoreClock)) };
     e = 0;
 #else
@@ -38,7 +38,7 @@ void profile::update()
 
 void interval::reset()
 {
-#if defined(CPU_MIMXRT1176DVMAA)
+#if defined(CPU_MIMXRT1176DVMAA_cm7)
     t = DWT->CYCCNT;
 #else
     t = std::chrono::high_resolution_clock::now();

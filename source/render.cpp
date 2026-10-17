@@ -614,7 +614,7 @@ void renderer::render_draw()
         }
 #else
         float* in[max_num_geometry_sources];
-        for (uint32_t ns{ 0 }; ns < max_num_geometry_sources; ++ns)
+        for (uint32_t ns{ 0 }; ns < geometry_source_count; ++ns)
             in[ns] = &geometry_source[ns].data[geometry_source[ns].stride * face_in.index];
         for (uint32_t nv{ 0 }; nv < face_in.count; ++nv)
         {

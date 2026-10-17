@@ -25,6 +25,13 @@ extern void surface_normal(float* vertices, int32_t vert_stride, int32_t vert_co
 
 void rect_model_setup()
 {
+    blib3d::math::vec3 normal;
+    surface_normal(&vertices[0][0], num_components, 4, normal);
+    blib3d::math::copy3(&vertices[0][15], normal);
+    blib3d::math::copy3(&vertices[1][15], normal);
+    blib3d::math::copy3(&vertices[2][15], normal);
+    blib3d::math::copy3(&vertices[3][15], normal);
+
     faces[0].count = num_vertices;
     faces[0].index = 0;
 }
@@ -61,13 +68,6 @@ void rect_model_tick(float light_x, float light_y)
             lightmap[i >> light_shift][j >> light_shift] += color + (color << 8u) + (color << 16u);
         }
     }
-
-    blib3d::math::vec3 normal;
-    surface_normal(&vertices[0][0], num_components, 4, normal);
-    blib3d::math::copy3(&vertices[0][15], normal);
-    blib3d::math::copy3(&vertices[1][15], normal);
-    blib3d::math::copy3(&vertices[2][15], normal);
-    blib3d::math::copy3(&vertices[3][15], normal);
 }
 
 void rect_model_draw(blib3d::render::renderer& renderer)

@@ -357,28 +357,28 @@ blib3d_force_inline int32_t div_fast_round_zero(int32_t num, int den)
     }
 }
 
-template<typename int32_t size>
+template<int32_t size>
 blib3d_force_inline void init_gdx(float (&gdx)[size], gradient (&g)[size])
 {
     for (int32_t n{ 0 }; n < size; ++n)
         gdx[n] = g[n].dx;
 }
 
-template<typename int32_t size>
+template<int32_t size>
 blib3d_force_inline void init_attrib(float (&attrib)[size], gradient (&g)[size], float x, float y)
 {
     for (int32_t n{ 0 }; n < size; ++n)
         attrib[n] = g[n].dx * x + g[n].dy * y + g[n].d;
 }
 
-template<typename int32_t size>
+template<int32_t size>
 blib3d_force_inline void advance_attrib(float (&attrib)[size], float (&gdx)[size], float scale)
 {
     for (int32_t n{ 0 }; n < size; ++n)
         attrib[n] += gdx[n] * scale;
 }
 
-template<typename int32_t size>
+template<int32_t size>
 blib3d_force_inline void compute_attrib_int_dx(
     int32_t (&attrib_int_dx)[size],
     int32_t (&attrib_int)[size],
@@ -410,7 +410,7 @@ blib3d_force_inline void compute_attrib_int_dx(
     }
 }
 
-template<typename int32_t size>
+template<int32_t size>
 blib3d_force_inline void compute_attrib_int_dx(
     float (&attrib_int_dx)[size],
     float (&attrib_int)[size],

@@ -137,8 +137,8 @@ public:
 
     enum
     {
-        TEXMASK_ON,
         TEXMASK_OFF,
+        TEXMASK_ON
     };
     void set_texture_mask(uint32_t setting);
 

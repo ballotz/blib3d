@@ -1,5 +1,5 @@
-#include "../../source/timer.hpp"
-#include "../../source/math.hpp"
+#include "../../../source/timer.hpp"
+#include "../../../source/math.hpp"
 #include <cstdio>
 #include <cmath>
 

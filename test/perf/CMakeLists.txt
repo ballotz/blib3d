@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_subdirectory(../../ blib3d)
 
-add_executable(perf main.cpp)
+add_executable(perf source/main.cpp)
 
 target_link_libraries(perf PRIVATE
     blib3d
