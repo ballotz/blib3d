@@ -4,7 +4,7 @@
 #include "shared.hpp"
 #include <cmath>
 
-#if defined(BLIB3D_ARCH_SSE) && defined(BLIB3D_USE_SIMD)
+#if defined(BLIB3D_ARCH_SSE)
 #include <xmmintrin.h>
 #endif
 
@@ -133,23 +133,26 @@ blib3d_force_inline float log2fast(float v)
     return (float)reinterpret_cast<int32_t&>(v) * scale - 127.f;
 }
 
+// // 0x7EF311C2 minimizes the max relative error: 5.05% (0x7F000000: 12.5%)
 // blib3d_force_inline float recipfast(float v)
 // {
-//     int32_t r{ 0x7F000000 - reinterpret_cast<int32_t&>(v) };
+//     int32_t r{ 0x7EF311C2 - reinterpret_cast<int32_t&>(v) };
 //     return reinterpret_cast<float&>(r);
 // }
 
 // // assume v is positive
+// // 0x1FBB4F2E minimizes the max relative error: 3.47% (0x1FC00000: 6.07%)
 // blib3d_force_inline float sqrtfast(float v)
 // {
-//     int32_t r{ (reinterpret_cast<int32_t&>(v) >> 1) + 0x1FC00000 };
+//     int32_t r{ (reinterpret_cast<int32_t&>(v) >> 1) + 0x1FBB4F2E };
 //     return reinterpret_cast<float&>(r);
 // }
 
 // // assume v is positive
+// // 0x5F37642F minimizes the max relative error: 3.42% (0x5F400000: 8.87%)
 // blib3d_force_inline float invsqrtfast(float v)
 // {
-//     int32_t r{ 0x5F400000 - (reinterpret_cast<int32_t&>(v) >> 1) };
+//     int32_t r{ 0x5F37642F - (reinterpret_cast<int32_t&>(v) >> 1) };
 //     return reinterpret_cast<float&>(r);
 // }
 
@@ -161,6 +164,11 @@ blib3d_force_inline float log2fast(float v)
 // blib3d_force_inline float sqrtiter(float v, float r)
 // {
 //     return 0.5f * (r + v / r);
+// }
+
+// blib3d_force_inline float invsqrtiter(float v, float r)
+// {
+//     return r * (1.5f - (0.5f * v) * r * r);
 // }
 
 struct powfast_table
@@ -219,11 +227,14 @@ blib3d_force_inline int32_t log2(int32_t v)
 blib3d_force_inline float invsqrt(float v)
 {
 #if 0
-    float vh{ v * 0.5f };
-    reinterpret_cast<uint32_t&>(v) = 0x5F3759DFu - (reinterpret_cast<uint32_t&>(v) >> 1u);
-    v *= 1.5f - vh * v * v;
-    v *= 1.5f - vh * v * v;
-    return v;
+#if defined(BLIB3D_ARCH_SSE)
+    float r{ _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(v))) };
+#else
+    float r{ invsqrtfast(v) };
+#endif
+    r = invsqrtiter(v, r);
+    // r = invsqrtiter(v, r);
+    return r;
 #else
     return 1.f / sqrt(v);
 #endif
