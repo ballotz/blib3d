@@ -13,8 +13,32 @@
 #define BLIB3D_ARCH_X64
 #endif
 
-#if defined(BLIB3D_ARCH_X86) | defined(BLIB3D_ARCH_X64)
+#if defined(BLIB3D_ARCH_X86) || defined(BLIB3D_ARCH_X64)
 #define BLIB3D_ARCH_INTEL
+#endif
+
+#if defined(BLIB3D_ARCH_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2) || defined(__SSE2__)
+#define BLIB3D_ARCH_SSE
+#endif
+
+#if defined(_M_ARM) || defined(__arm__)
+#define BLIB3D_ARCH_ARM32
+#endif
+
+#if defined(_M_ARM64) || defined(__aarch64__)
+#define BLIB3D_ARCH_ARM64
+#endif
+
+#if defined(BLIB3D_ARCH_ARM32) || defined(BLIB3D_ARCH_ARM64)
+#define BLIB3D_ARCH_ARM
+#endif
+
+#if defined(BLIB3D_ARCH_ARM32) && defined(__ARM_FEATURE_DSP)
+#define BLIB3D_ARM_DSP
+#endif
+
+#if defined(BLIB3D_ARCH_ARM) && defined(__ARM_NEON)
+#define BLIB3D_ARM_NEON
 #endif
 
 // compiler

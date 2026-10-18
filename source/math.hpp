@@ -4,7 +4,7 @@
 #include "shared.hpp"
 #include <cmath>
 
-#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
+#if defined(BLIB3D_ARCH_SSE) && defined(BLIB3D_USE_SIMD)
 #include <xmmintrin.h>
 #endif
 
@@ -240,7 +240,7 @@ blib3d_force_inline void copy3(vec3 out, const vec3 in)
 
 blib3d_force_inline void copy4(vec4 out, const vec4 in)
 {
-#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
+#if defined(BLIB3D_ARCH_SSE) && defined(BLIB3D_USE_SIMD)
     _mm_storeu_ps(out, _mm_loadu_ps(in));
 #else
     out[0] = in[0];
@@ -252,7 +252,7 @@ blib3d_force_inline void copy4(vec4 out, const vec4 in)
 
 blib3d_force_inline void copy3x3(mat3x3 out, const mat3x3 in)
 {
-#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
+#if defined(BLIB3D_ARCH_SSE) && defined(BLIB3D_USE_SIMD)
     _mm_storeu_ps(out + 0, _mm_loadu_ps(in + 0));
     _mm_storeu_ps(out + 4, _mm_loadu_ps(in + 4));
 #else
@@ -270,7 +270,7 @@ blib3d_force_inline void copy3x3(mat3x3 out, const mat3x3 in)
 
 blib3d_force_inline void copy4x4(mat4x4 out, const mat4x4 in)
 {
-#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
+#if defined(BLIB3D_ARCH_SSE) && defined(BLIB3D_USE_SIMD)
     _mm_storeu_ps(out +  0, _mm_loadu_ps(in +  0));
     _mm_storeu_ps(out +  4, _mm_loadu_ps(in +  4));
     _mm_storeu_ps(out +  8, _mm_loadu_ps(in +  8));
@@ -365,7 +365,7 @@ blib3d_force_inline void mul3(vec3 out, const vec3 a, const vec3 b)
 
 blib3d_force_inline void mul4(vec4 inout, const float a)
 {
-#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
+#if defined(BLIB3D_ARCH_SSE) && defined(BLIB3D_USE_SIMD)
     _mm_storeu_ps(inout, _mm_mul_ps(_mm_loadu_ps(inout), _mm_set_ps1(a)));
 #else
     inout[0] *= a;
@@ -404,7 +404,7 @@ blib3d_force_inline void mul3x3_3x3(mat3x3 out, const mat3x3 a, const mat3x3 b)
 
 blib3d_force_inline void mul4x4t_3(vec4 out, const mat4x4 a, const vec3 b)
 {
-#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
+#if defined(BLIB3D_ARCH_SSE) && defined(BLIB3D_USE_SIMD)
     __m128 t0{ _mm_mul_ps(_mm_loadu_ps(a + 0), _mm_load_ps1(b + 0)) };
     __m128 t1{ _mm_mul_ps(_mm_loadu_ps(a + 4), _mm_load_ps1(b + 1)) };
     __m128 t2{ _mm_mul_ps(_mm_loadu_ps(a + 8), _mm_load_ps1(b + 2)) };
@@ -422,7 +422,7 @@ blib3d_force_inline void mul4x4t_3(vec4 out, const mat4x4 a, const vec3 b)
 
 blib3d_force_inline void mul4x4t_4(vec4 out, const mat4x4 a, const vec4 b)
 {
-#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
+#if defined(BLIB3D_ARCH_SSE) && defined(BLIB3D_USE_SIMD)
     __m128 t0{ _mm_mul_ps(_mm_loadu_ps(a +  0), _mm_load_ps1(b + 0)) };
     __m128 t1{ _mm_mul_ps(_mm_loadu_ps(a +  4), _mm_load_ps1(b + 1)) };
     __m128 t2{ _mm_mul_ps(_mm_loadu_ps(a +  8), _mm_load_ps1(b + 2)) };
@@ -441,7 +441,7 @@ blib3d_force_inline void mul4x4t_4(vec4 out, const mat4x4 a, const vec4 b)
 
 blib3d_force_inline void mul4x4_4x4(mat4x4 out, const mat4x4 a, const mat4x4 b)
 {
-#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
+#if defined(BLIB3D_ARCH_SSE) && defined(BLIB3D_USE_SIMD)
     __m128 t0, t1, t2, t3, t4, t5, t6;
     __m128 b0{ _mm_loadu_ps(b +  0) };
     __m128 b1{ _mm_loadu_ps(b +  4) };
@@ -532,7 +532,7 @@ blib3d_force_inline void trn3x3(mat3x3 out, const mat3x3 in)
 
 blib3d_force_inline void trn4x4(mat4x4 out, const mat4x4 in)
 {
-#if defined(BLIB3D_ARCH_INTEL) && defined(BLIB3D_USE_SIMD)
+#if defined(BLIB3D_ARCH_SSE) && defined(BLIB3D_USE_SIMD)
     __m128 a0{ _mm_loadu_ps(in +  0) };
     __m128 a1{ _mm_loadu_ps(in +  4) };
     __m128 a2{ _mm_loadu_ps(in +  8) };
